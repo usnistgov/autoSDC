@@ -1,9 +1,29 @@
 #!/usr/bin/env python
-
+import os
+import clr
+import sys
 import time
 
-from solartron import Instrument, Immediate, Experiment
-from solartron import XCD, XcdSettings, IPAddress
+# pythonnet checks PYTHONPATH for assemblies to load...
+# so add the VeraScan libraries to sys.path
+versascan_path = "C:/Program Files (x86)/Princeton Applied Research/VersaSCAN"
+sys.path.append(versascan_path)
+sys.path.append(os.path.join(versascan_path, "Devices"))
+
+dlls = [
+    'CommsLibrary',
+    'DeviceInterface',
+    'ScanDevices',
+    'NanomotionXCD'
+]
+for dll in dlls:
+    clr.AddReference(dll)
+
+clr.AddReference('System')
+clr.AddReference('System.Net')
+
+from System.Net import IPAddress
+from SolartronAnalytical.DeviceInterface.NanomotionXCD import XCD, XcdSettings
 
 def print_position_status(pos):
     
