@@ -1,37 +1,9 @@
 #!/usr/bin/env python
 
-import os
-import clr
-import sys
 import time
 
-# pythonnet checks PYTHONPATH for assemblies to load...
-# so add the VeraScan libraries to sys.path
-vpath = "C:/Program Files (x86)/Princeton Applied Research/VersaSCAN"
-vdkpath = "C:/Program Files (x86)/Princeton Applied Research/VersaSTAT Development Kit"
-sys.path.append(vpath)
-sys.path.append(os.path.join(vpath, "Devices"))
-sys.path.append(vdkpath)
-
-# load instrument control library...
-clr.AddReference("VersaSTATControl")
-from VersaSTATControl import Instrument 
-
-# load motion controller library
-dlls = [
-    'CommsLibrary',
-    'DeviceInterface',
-    'ScanDevices',
-    'NanomotionXCD'
-]
-for dll in dlls:
-    clr.AddReference(dll)
-
-from SolartronAnalytical.DeviceInterface.NanomotionXCD import XCD, XcdSettings
-
-clr.AddReference('System')
-clr.AddReference('System.Net')
-from System.Net import IPAddress
+from solartron import Instrument, Immediate, Experiment
+from solartron import XCD, XcdSettings, IPAddress
 
 def print_position_status(pos):
     
@@ -86,5 +58,5 @@ def step():
 
     pos.Disconnect()
     
-if __name__ == __main__():
+if __name__ == '__main__':
     step()
