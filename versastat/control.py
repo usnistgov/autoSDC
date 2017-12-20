@@ -205,17 +205,17 @@ indicates E, Power Amp or Thermal Overload has occurred.
         """
         self.instrument.Experiment.Skip()
 
-    def sequence_running():
+    def sequence_running(self):
         """ Returns true if a sequence is currently running on the connected instrument, false if not. """
         return self.instrument.Experiment.IsSequenceRunning()
 
-    def points_available():
+    def points_available(self):
         """  Returns the number of points that have been stored by the instrument after a sequence of actions has begun.
         Returns -1 when all data has been retrieved from the instrument.
         """
         return self.instrument.Experiment.GetNumPointsAvailable()
 
-    def last_open_circuit():
+    def last_open_circuit(self):
         """ Returns the last measured Open Circuit value.
         This value is stored at the beginning of the sequence (and updated anytime the “AddMeasureOpenCircuit” action is called) """
         return self.instrument.Experiment.GetLastMeasuredOC()
@@ -229,8 +229,16 @@ indicates E, Power Amp or Thermal Overload has occurred.
     # TODO: write a class interface for different experimental actions to streamline logging and serialization?
 
     # TODO: code-generation for GetData* interface?
+
+    def potential(self, start=0, num_points=None):
+
+        if num_points is None:
+            num_points = self.points_available(
+
+        return self.instrument.Experiment.GetDataPotential(start, num_points)
     
     def add_open_circuit(params):
+        default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
         status = self.instrument.Experiment.AddOpenCircuit(params)
         return status
 
@@ -238,7 +246,71 @@ indicates E, Power Amp or Thermal Overload has occurred.
         status = self.instrument.Experiment.AddLinearScanVoltammetry(params)
         return status
 
-    def cyclic_voltammetry(params):
-        status = self.instrument.Experiment.AddCyclycVoltammetry(params)
+    # NOTE: use enum for options?
+    def cyclic_voltammetry(self,
+            initial_potential=-.2,
+            versus_initial='VS REF',
+            vertex_potential=0.0,
+            versus_vertex='VS REF',
+            vertex_hold=1,
+            acquire_data_during_vertex_hold=True,
+            final_potential=0.7,
+            versus_final='VS REF',
+            scan_rate=0.1,
+            limit_1_type=None,
+            limit_1_direction='<',
+            limit_1_value=0,
+            limit_2_type=None,
+            limit_2_direction='<',
+            limit_2_value=0,
+            current_range='AUTO',
+            electrometer='AUTO',
+            e_filter='AUTO',
+            i_filter='AUTO',
+            leave_cell_on='YES',
+            cell_to_use='INTERNAL',
+            enable_ir_compensation='ENABLED',
+            user_defined_the_amount_of_ir_comp=1,
+            use_previously_determined_ir_comp='YES',
+            bandwidth='AUTO',
+            low_current_interface_bandwidth='AUTO'):
+        """ cyclic_voltammetry
+
+        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        vertex_potential [Vertex Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Vertex Scan)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        vertex_hold [Vertex Hold] (s) {User value}
+        acquire_data_during_vertex_hold [Acquire data during Vertex Hold] {YES or NO}
+        final_potential [Final Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        scan_rate [Scan Rate] (V/s) {User value}
+        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_1_direction [Limit 1 Direction] {< or >}
+        limit_1_value [Limit 1 Value] {User value}
+        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_2_direction [Limit 2 Direction] {< or >}
+        limit_2_value [Limit 2 Value] {User value}
+        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
+        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
+        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
+        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
+        leave_cell_on [Leave Cell On] {YES or NO}
+        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
+        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
+        user_defined_the_amount_of_ir_comp [User defined the amount of iR Comp] (ohms) {User value}
+        use_previously_determined_ir_comp [Use previously determined iR Comp] {YES or NO}
+        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
+        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
+        """
+
+        # concatenate argument values in function signature order
+        args = inspect.getfullargspec(cyclic_voltammetry).args
+        vals = locals()
+
+        params = ','.join([str(vals[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddCyclicVoltammetry(params)
+
         return status
-    
+   
+
