@@ -233,28 +233,36 @@ indicates E, Power Amp or Thermal Overload has occurred.
     def potential(self, start=0, num_points=None):
 
         if num_points is None:
-            num_points = self.points_available(
+            num_points = self.points_available(self)
 
         return self.instrument.Experiment.GetDataPotential(start, num_points)
-    
-    def add_open_circuit(params):
+
+
+    def current(self, start=0, num_points=None):
+
+        if num_points is None:
+            num_points = self.points_available(self)
+
+        return self.instrument.Experiment.GetDataCurrent(start, num_points)
+
+    def add_open_circuit(self, params):
         default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
         status = self.instrument.Experiment.AddOpenCircuit(params)
         return status
 
-    def linear_scan_voltammetry(params):
+    def linear_scan_voltammetry(self, params):
         status = self.instrument.Experiment.AddLinearScanVoltammetry(params)
         return status
 
     # NOTE: use enum for options?
     def cyclic_voltammetry(self,
-            initial_potential=-.2,
+            initial_potential=0.0,
             versus_initial='VS REF',
-            vertex_potential=0.0,
+            vertex_potential=0.65,
             versus_vertex='VS REF',
-            vertex_hold=1,
-            acquire_data_during_vertex_hold=True,
-            final_potential=0.7,
+            vertex_hold=0.0,
+            acquire_data_during_vertex_hold=False,
+            final_potential=0.25,
             versus_final='VS REF',
             scan_rate=0.1,
             limit_1_type=None,
@@ -269,7 +277,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
             i_filter='AUTO',
             leave_cell_on='YES',
             cell_to_use='INTERNAL',
-            enable_ir_compensation='ENABLED',
+            enable_ir_compensation='DISABLED',
             user_defined_the_amount_of_ir_comp=1,
             use_previously_determined_ir_comp='YES',
             bandwidth='AUTO',
