@@ -2,6 +2,7 @@
 import os
 import clr
 import sys
+import inspect
 
 # pythonnet checks PYTHONPATH for assemblies to load...
 # so add the VeraScan libraries to sys.path
@@ -21,7 +22,8 @@ class Control():
     methods are broken out into `Immediate` (direct instrument control) and `Experiment`.
     """
     def __init__(self, start_idx=0, initial_mode='potentiostat'):
-        self.instrument = Instrument()        
+        self.instrument = Instrument()
+        self.start_idx = start_idx
         self.connect()
 
         self.serial_number = self.instrument.GetSerialNumber()
@@ -34,8 +36,8 @@ class Control():
         return
     
     def connect(self):
-        self.index = Instrument.FindNext(self.start_idx)
-        self.connected = Instrument.Connect(idx)
+        self.index = self.instrument.FindNext(self.start_idx)
+        self.connected = self.instrument.Connect(self.index)
         return
 
     def disconnect(self):
@@ -90,7 +92,7 @@ class Control():
         self.current_range = current_range
         
         # dispatch the right SetIRange_* function....
-        current = 'SetIRange_{}'.format(current_string)
+        current = 'SetIRange_{}'.format(current_range)
         set_current = getattr(self.instrument.Immediate, current)
         set_current()
 
@@ -155,10 +157,12 @@ indicates E, Power Amp or Thermal Overload has occurred.
         
         overload_code = self.instrument.Immediate.GetOverload()
 
-        if overload:
+        if overload_code:
             msg = 'A ' + overload_cause[overload_code] + ' has occurred.'
             raise VersaStatError(msg)
-        
+
+        return overload_code
+
     def booster_enabled(self):
         """ check status of the booster switch. """
         return self.instrument.Immediate.GetBoosterEnabled()
@@ -233,7 +237,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
     def potential(self, start=0, num_points=None):
 
         if num_points is None:
-            num_points = self.points_available(self)
+            num_points = self.points_available()
 
         return self.instrument.Experiment.GetDataPotential(start, num_points)
 
@@ -241,14 +245,14 @@ indicates E, Power Amp or Thermal Overload has occurred.
     def current(self, start=0, num_points=None):
 
         if num_points is None:
-            num_points = self.points_available(self)
+            num_points = self.points_available()
 
         return self.instrument.Experiment.GetDataCurrent(start, num_points)
 
     def add_open_circuit(self, params):
         default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
-        status = self.instrument.Experiment.AddOpenCircuit(params)
-        return status
+        status = self.instrument.Experiment.AddOpenCircuit(default_params)
+        return status, default_params
 
     def linear_scan_voltammetry(self, params):
         status = self.instrument.Experiment.AddLinearScanVoltammetry(params)
@@ -261,7 +265,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
             vertex_potential=0.65,
             versus_vertex='VS REF',
             vertex_hold=0.0,
-            acquire_data_during_vertex_hold=False,
+            acquire_data_during_vertex_hold=True,
             final_potential=0.25,
             versus_final='VS REF',
             scan_rate=0.1,
@@ -275,7 +279,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
             electrometer='AUTO',
             e_filter='AUTO',
             i_filter='AUTO',
-            leave_cell_on='YES',
+            leave_cell_on='NO',
             cell_to_use='INTERNAL',
             enable_ir_compensation='DISABLED',
             user_defined_the_amount_of_ir_comp=1,
@@ -313,12 +317,16 @@ indicates E, Power Amp or Thermal Overload has occurred.
         """
 
         # concatenate argument values in function signature order
-        args = inspect.getfullargspec(cyclic_voltammetry).args
+        args = inspect.getfullargspec(self.cyclic_voltammetry).args
+
+        # get rid of self
+        args = args[1:]
+
         vals = locals()
 
         params = ','.join([str(vals[arg]).upper() for arg in args])
         status = self.instrument.Experiment.AddCyclicVoltammetry(params)
 
-        return status
+        return status, params
    
 
