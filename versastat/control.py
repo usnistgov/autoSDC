@@ -1,4 +1,5 @@
-""" solartron: set up pythonnet .NET interface to VersaSTAT/VersaSCAN libraries """
+""" versastat.control: pythonnet .NET interface to VersaSTAT/VersaSCAN libraries """
+
 import os
 import clr
 import sys

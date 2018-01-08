@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+""" versastat.position: pythonnet .NET interface to VersaSTAT motion controller """
+
 import os
 import clr
 import sys
@@ -26,7 +28,7 @@ from System.Net import IPAddress
 from SolartronAnalytical.DeviceInterface.NanomotionXCD import XCD, XcdSettings
 
 def print_position_status(pos):
-    
+    """ print motion controller status for each axis. """
     for axis in pos.Parameters:
         print('{} setpoint = {} {}'.format(axis.Quantity, axis.SetPoint, axis.Units))
     
@@ -37,7 +39,7 @@ def print_position_status(pos):
     return
 
 def update_x_position(delta=0.001, verbose=False):
-
+    """ update position setpoint and busy-wait until the motion controller has finished. """
     # busy-wait on pos.m_commsLock instead?
     for idx, ax in enumerate(pos.Parameters):
         
@@ -60,6 +62,7 @@ def update_x_position(delta=0.001, verbose=False):
     return
 
 def step():
+    """ connect to the motion controller and take a step in x """
     pos = XCD()
     settings = XcdSettings()
 
