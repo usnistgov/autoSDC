@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """ versastat.position: pythonnet .NET interface to VersaSTAT motion controller """
 
 import os
@@ -27,59 +26,76 @@ clr.AddReference('System.Net')
 from System.Net import IPAddress
 from SolartronAnalytical.DeviceInterface.NanomotionXCD import XCD, XcdSettings
 
-def print_position_status(pos):
-    """ print motion controller status for each axis. """
-    for axis in pos.Parameters:
-        print('{} setpoint = {} {}'.format(axis.Quantity, axis.SetPoint, axis.Units))
+class Position():
+    """ Interface to the VersaSTAT motion controller library """
     
-        for idx in range(axis.ValueNames.Length):
-            print(axis.ValueNames[idx], axis.Values[idx], axis.Units)
-        print()
+    def __init__(self, ip='192.168.10.11', speed=0.0001):
+        self._ip = ip
+        self._speed = speed
 
-    return
+    def __enter__(self):
+        self.controller = XCD()
+        self.settings = XcdSettings()
 
-def update_x_position(delta=0.001, verbose=False):
-    """ update position setpoint and busy-wait until the motion controller has finished. """
-    # busy-wait on pos.m_commsLock instead?
-    for idx, ax in enumerate(pos.Parameters):
-        
-        if verbose:
-            print(ax.Quantity)
-            
-        ax.SetPoint = ax.Values[0] + delta
+        self.settings.Speed = self._speed
+        self.settings.IPAddress = IPAddress.Parse(self._ip)
 
+        self.controller.Connect()
 
+    def __exit__(self):
+        self.controller.Disconnect()
+
+    @property
+    def speed(self):
+        return self._speed
+
+    @speed.setter
+    def speed(self, speed):
+        self._speed = speed
+        self.settings.Speed = self._speed
+
+    def home(block_interval=1):
+        """ execute the homing operation, blocking for `block_interval` seconds.
+
+        Warning: this will cause the motion stage to return to it's origin.
+        This happens to be the maximum height for the stage...
+        """
+        if not self.controller.IsHomingDone:
+            self.controller.DoHoming()
+            time.sleep(block_interval)
+
+    def print_status(self):
+        """ print motion controller status for each axis. """
+        for axis in self.positioner.Parameters:
+            print('{} setpoint = {} {}'.format(axis.Quantity, axis.SetPoint, axis.Units))
+
+            for idx in range(axis.ValueNames.Length):
+                print(axis.ValueNames[idx], axis.Values[idx], axis.Units)
+                print()
+
+    def update_x(self, delta=0.001, verbose=False, poll_interval=0.1):
+        """ update position setpoint and busy-wait until the motion controller has finished.
+
+        poll_interval: busy-waiting polling interval (seconds)
+        """
+
+        # update the setpoint for the x axis
+        for idx, ax in enumerate(self.positioner.Parameters):
+
+            if verbose:
+                print(ax.Quantity)
+
+            ax.SetPoint = ax.Values[0] + delta
+
+            break
+
+        # busy-wait while the motion controller moves the stage
         while not ax.IsAtSetPoint:
-        
+
             if verbose:
                 print(ax.Values[0], ax.Units)
-            
-                # wait 100ms
-                time.sleep(0.1)
-                
-        break
-    
-    return
 
-def step():
-    """ connect to the motion controller and take a step in x """
-    pos = XCD()
-    settings = XcdSettings()
+            # wait 100ms
+            time.sleep(poll_interval)
 
-    settings.Speed = 0.0001
-    settings.IPAddress = IPAddress.Parse('192.168.10.11')
-
-    pos.Connect()
-
-    if not pos.IsHomingDone:
-        pos.DoHoming()
-        time.sleep(1)
-
-    print_position_status()
-
-    update_x_position(delta=0.001, verbose=True)
-
-    pos.Disconnect()
-    
-if __name__ == '__main__':
-    step()
+        return
