@@ -30,10 +30,12 @@ class Position():
     """ Interface to the VersaSTAT motion controller library """
     
     def __init__(self, ip='192.168.10.11', speed=0.0001):
+        """ instantiate a Position controller context manager """
         self._ip = ip
         self._speed = speed
 
     def __enter__(self):
+        """ Set up and connect to the position controller """
         self.controller = XCD()
         self.settings = XcdSettings()
 
@@ -43,6 +45,7 @@ class Position():
         self.controller.Connect()
 
     def __exit__(self):
+        """ gracefully shut down the position controller interface """
         self.controller.Disconnect()
 
     @property
