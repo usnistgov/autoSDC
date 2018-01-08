@@ -23,6 +23,8 @@ def line_scan(speed=0.0001, poll_interval=0.5):
             # collect data
             I = ctl.current()
             V = ctl.potential()
+
+            ctl.clear()
             
             # update position
             pos.update_x(delta=0.001, verbose=True)
