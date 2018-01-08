@@ -16,3 +16,5 @@ position
 
 .. automodule:: versastat.position
    :members:
+
+   .. automethod:: __init__
