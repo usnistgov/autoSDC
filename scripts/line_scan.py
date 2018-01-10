@@ -5,6 +5,7 @@ import versascan.control
 
 def line_scan(speed=0.0001, poll_interval=0.5):
 
+    delta = [0.001, 0.001, 0.0]
     with versascan.position.Position(ip='192.168.10.11', speed=speed) as pos:
         
         pos.print_status()
@@ -27,7 +28,7 @@ def line_scan(speed=0.0001, poll_interval=0.5):
             ctl.clear()
             
             # update position
-            pos.update_x(delta=0.001, verbose=True)
+            pos.update(delta=delta, verbose=True)
             pos.print_status()
     
 

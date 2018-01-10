@@ -76,6 +76,19 @@ class Position():
                 print(axis.ValueNames[idx], axis.Values[idx], axis.Units)
                 print()
 
+    def at_setpoint(self, verbose=False):
+        """ check that each axis of the position controller is at its setpoint """
+
+        for ax in self.positioner.Parameters:
+
+            if verbose:
+                print(ax.Values[0], ax.Units)
+
+            if not ax.IsAtSetPoint:
+                return False
+
+        return True
+
     def update_x(self, delta=0.001, verbose=False, poll_interval=0.1):
         """ update position setpoint and busy-wait until the motion controller has finished.
 
@@ -93,12 +106,32 @@ class Position():
             break
 
         # busy-wait while the motion controller moves the stage
-        while not ax.IsAtSetPoint:
-
-            if verbose:
-                print(ax.Values[0], ax.Units)
-
-            # wait 100ms
+        while not self.at_setpoint(verbose=verbose):
             time.sleep(poll_interval)
 
         return
+
+    def update(self, delta=[0.001, 0.001, 0.0], verbose=False, poll_interval=0.1, max_wait_time=25):
+        """ update position setpoint and busy-wait until the motion controller has finished.
+
+        delta: position update [dx, dy, dz]
+        poll_interval: busy-waiting polling interval (seconds)
+        """
+
+        for d, ax in zip(delta, self.positioner.Parameters):
+
+            if verbose:
+                print(ax.Quantity)
+
+            ax.SetPoint = ax.Values[0] + d
+
+        # busy-wait while the motion controller moves the stage
+        time_elapsed = 0
+        while not self.at_setpoint(verbose=verbose):
+
+            time.sleep(poll_interval)
+            time_elapsed += poll_interval
+
+            if time_elapsed > max_wait_time:
+                raise TimeoutError('Max position update time of {}s exceeded'.format(max_wait_time))
+
