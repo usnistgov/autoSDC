@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-import versascan.position
+import versastat.position
 
 def position_step(speed=0.0001):
 
-    with versascan.position.Position(ip='192.168.10.11', speed=speed) as pos:
+    with versastat.position.Position(ip='192.168.10.11', speed=speed) as pos:
         
         pos.print_status()
         pos.update_x(delta=0.001, verbose=True)

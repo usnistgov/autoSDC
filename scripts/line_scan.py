@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 
 import json
-import versascan.position
-import versascan.control
+import versastat.position
+import versastat.control
 
 def line_scan(speed=0.0001, poll_interval=0.5):
     """ perform a line scan with CV experiments, recording position, current, potential, and parameters in json log files """
 
     delta = [0.001, 0.001, 0.0]
 
-    with versascan.position.Position(ip='192.168.10.11', speed=speed) as pos:
+    with versastat.position.Position(ip='192.168.10.11', speed=speed) as pos:
         
         pos.print_status()
 
-        ctl = versascan.control.Control(start_idx=1300)
+        ctl = versastat.control.Control(start_idx=1300)
 
         for idx in range(10):
 
