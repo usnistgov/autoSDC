@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import time
 import versastat.position
 import versastat.control
 
@@ -22,7 +23,7 @@ def line_scan(speed=0.0001, poll_interval=0.5):
             ctl.start()
 
             while ctl.sequence_running():
-                sleep(poll_interval)
+                time.sleep(poll_interval)
                 
             # collect and log data
             scan_data = {
