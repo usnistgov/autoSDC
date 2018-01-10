@@ -76,6 +76,13 @@ class Position():
                 print(axis.ValueNames[idx], axis.Values[idx], axis.Units)
                 print()
 
+    def current_position(self):
+        """ return the current coordinates as a list
+
+        axis.Values holds (position, speed, error)
+        """
+        return [axis.Values[0] for axis in self.positioner.Parameters]
+
     def at_setpoint(self, verbose=False):
         """ check that each axis of the position controller is at its setpoint """
 

@@ -235,20 +235,29 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
     # TODO: code-generation for GetData* interface?
 
-    def potential(self, start=0, num_points=None):
+    def potential(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
             num_points = self.points_available()
 
-        return self.instrument.Experiment.GetDataPotential(start, num_points)
+        values = self.instrument.Experiment.GetDataPotential(start, num_points)
 
+        if as_list:
+            return [value for value in values]
 
-    def current(self, start=0, num_points=None):
+        return values
+
+    def current(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
             num_points = self.points_available()
 
-        return self.instrument.Experiment.GetDataCurrent(start, num_points)
+        values = self.instrument.Experiment.GetDataCurrent(start, num_points)
+
+        if as_list:
+            return [value for value in values]
+
+        return values
 
     def add_open_circuit(self, params):
         default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
