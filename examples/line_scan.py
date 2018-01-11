@@ -2,6 +2,7 @@
 
 import json
 import time
+import datetime
 import versastat.position
 import versastat.control
 
@@ -30,6 +31,7 @@ def line_scan(speed=0.0001, poll_interval=0.5):
                 'measurement': 'cyclic_voltammetry',
                 'parameters': params,
                 'index_in_sequence': idx,
+                'timestamp': datetime.datetime.now().isoformat(),
                 'current': ctl.current(),
                 'potential': ctl.potential(),
                 'position': pos.current_position()
