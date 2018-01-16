@@ -15,7 +15,7 @@ def line_scan(speed=0.0001, poll_interval=0.5):
         
         pos.print_status()
 
-        ctl = versastat.control.Control(start_idx=1300)
+        ctl = versastat.control.Control(start_idx=17109013)
 
         for idx in range(10):
 
