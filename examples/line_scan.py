@@ -4,6 +4,9 @@ import json
 import time
 from datetime import datetime
 
+import os
+import sys
+
 import versastat.position
 import versastat.control
 
@@ -14,6 +17,7 @@ def line_scan(speed=1e-5, poll_interval=0.5):
 
     delta = [1e-4, 1e-4, 0.0]
     initial_delta = [0.0, 0.0, -2.60e-4]
+    final_delta = [0.0, 0.0, 2.60e-4]
     n_steps = 10
 
     with versastat.position.Position(ip='192.168.10.11', speed=speed) as pos:
@@ -54,6 +58,10 @@ def line_scan(speed=1e-5, poll_interval=0.5):
             # update position
             pos.update(delta=delta, verbose=True)
             pos.print_status()
+
+        # bring the probe back up
+        pos.update(delta=final_delta, verbose=True)
+        pos.print_status()
 
 if __name__ == '__main__':
     line_scan()
