@@ -28,7 +28,8 @@ from System.Net import IPAddress
 from SolartronAnalytical.DeviceInterface.NanomotionXCD import XCD, XcdSettings
 
 @contextmanager
-def position(ip='192.168.10.11', speed=1e-4):
+def controller(ip='192.168.10.11', speed=1e-4):
+    """ context manager that wraps position controller class Position. """
     pos = Position(ip=ip, speed=speed)
     try:
         pos.controller.Connect()

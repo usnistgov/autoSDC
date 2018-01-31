@@ -20,7 +20,7 @@ def line_scan(speed=1e-5, poll_interval=0.5):
     final_delta = [0.0, 0.0, 2.60e-4]
     n_steps = 10
 
-    with versastat.position.position(ip='192.168.10.11', speed=speed) as pos:
+    with versastat.position.controller(ip='192.168.10.11', speed=speed) as pos:
 
         pos.print_status()
         pos.update(delta=initial_delta, verbose=True)
