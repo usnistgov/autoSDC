@@ -4,6 +4,7 @@ import os
 import clr
 import sys
 import time
+from contextlib import contextmanager
 
 # pythonnet checks PYTHONPATH for assemblies to load...
 # so add the VeraScan libraries to sys.path
@@ -26,6 +27,15 @@ clr.AddReference('System.Net')
 from System.Net import IPAddress
 from SolartronAnalytical.DeviceInterface.NanomotionXCD import XCD, XcdSettings
 
+@contextmanager
+def position(ip='192.168.10.11', speed=1e-4):
+    pos = Position(ip=ip, speed=speed)
+    try:
+        pos.controller.Connect()
+        yield pos
+    finally:
+        pos.controller.Disconnect()
+
 class Position():
     """ Interface to the VersaSTAT motion controller library """
     
@@ -34,8 +44,7 @@ class Position():
         self._ip = ip
         self._speed = speed
 
-    def __enter__(self):
-        """ Set up and connect to the position controller """
+        # Set up and connect to the position controller
         self.controller = XCD()
         self.settings = XcdSettings()
 
@@ -43,10 +52,6 @@ class Position():
         self.settings.IPAddress = IPAddress.Parse(self._ip)
 
         self.controller.Connect()
-
-    def __exit__(self):
-        """ gracefully shut down the position controller interface """
-        self.controller.Disconnect()
 
     @property
     def speed(self):
