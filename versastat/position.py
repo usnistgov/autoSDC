@@ -130,7 +130,8 @@ class Position():
             if verbose:
                 print(ax.Quantity)
 
-            ax.SetPoint = ax.Values[0] + d
+            if d != 0.0:
+                ax.SetPoint = ax.Values[0] + d
 
         # busy-wait while the motion controller moves the stage
         time_elapsed = 0
