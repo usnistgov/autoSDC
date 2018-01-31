@@ -74,7 +74,7 @@ class Position():
 
     def print_status(self):
         """ print motion controller status for each axis. """
-        for axis in self.positioner.Parameters:
+        for axis in self.controller.Parameters:
             print('{} setpoint = {} {}'.format(axis.Quantity, axis.SetPoint, axis.Units))
 
             for idx in range(axis.ValueNames.Length):
@@ -86,12 +86,12 @@ class Position():
 
         axis.Values holds (position, speed, error)
         """
-        return [axis.Values[0] for axis in self.positioner.Parameters]
+        return [axis.Values[0] for axis in self.controller.Parameters]
 
     def at_setpoint(self, verbose=False):
         """ check that each axis of the position controller is at its setpoint """
 
-        for ax in self.positioner.Parameters:
+        for ax in self.controller.Parameters:
 
             if verbose:
                 print(ax.Values[0], ax.Units)
@@ -108,7 +108,7 @@ class Position():
         """
 
         # update the setpoint for the x axis
-        for idx, ax in enumerate(self.positioner.Parameters):
+        for idx, ax in enumerate(self.controller.Parameters):
 
             if verbose:
                 print(ax.Quantity)
@@ -130,7 +130,7 @@ class Position():
         poll_interval: busy-waiting polling interval (seconds)
         """
 
-        for d, ax in zip(delta, self.positioner.Parameters):
+        for d, ax in zip(delta, self.controller.Parameters):
 
             if verbose:
                 print(ax.Quantity)
