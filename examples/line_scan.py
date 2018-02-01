@@ -26,7 +26,7 @@ def line_scan(speed=1e-5, poll_interval=5):
         pos.update(delta=initial_delta, verbose=True)
         pos.print_status()
 
-        ctl = versastat.control.Control(start_idx=17109013)
+        ctl = versastat.control.controller(start_idx=17109013)
 
         for idx in range(n_steps):
             # scan, log, take a position step
@@ -74,10 +74,6 @@ def line_scan(speed=1e-5, poll_interval=5):
         pos.update(delta=final_delta, verbose=True)
         pos.print_status()
 
-        # clean up
-        ctl.stop()
-        ctl.clear()
-        ctl.disconnect()
 
 if __name__ == '__main__':
     line_scan()

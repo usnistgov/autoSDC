@@ -4,6 +4,7 @@ import os
 import clr
 import sys
 import inspect
+from contextlib import contextmanager
 
 # pythonnet checks PYTHONPATH for assemblies to load...
 # so add the VeraScan libraries to sys.path
@@ -16,6 +17,17 @@ from VersaSTATControl import Instrument
 
 class VersaStatError(Exception):
     pass
+
+@contextmanager
+def controller(start_idx=17109013, initial_mode='potentiostat'):
+    """ context manager that wraps potentiostat controller class Control. """
+    ctl = Controller(start_idx=start_idx, initial_mode=initial_mode)
+    try:
+        yield ctl
+    finally:
+        ctl.stop()
+        ctl.clear()
+        ctl.disconnect()
 
 class Control():
     """ Interface to the VersaSTAT SDK library for instrument control 
