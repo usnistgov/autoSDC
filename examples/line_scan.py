@@ -32,7 +32,11 @@ def line_scan(speed=1e-5, poll_interval=5):
             # scan, log, take a position step
 
             # run a CV experiment
-            status, params = ctl.cyclic_voltammetry()
+            status, params = ctl.cyclic_voltammetry(
+                initial_potential=-0.25, vertex_potential=0.65, final_potential=0.0,
+                cell_to_use='EXTERNAL', e_filter='1Hz', i_filter='1Hz'
+            )
+
             ctl.start()
 
             # Note: ctl.start() can return before the sequence actually starts running,
