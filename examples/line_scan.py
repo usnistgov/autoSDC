@@ -56,7 +56,7 @@ def line_scan(speed=1e-5, poll_interval=5):
                 'position': pos.current_position()
             }
 
-            logfile = 'line_scan_{}.json'.format(idx)
+            logfile = 'line_scan_{:03d}.json'.format(idx)
             with open(logfile, 'w') as f:
                 json.dump(scan_data, f)
 
