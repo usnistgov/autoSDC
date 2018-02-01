@@ -10,7 +10,7 @@ import sys
 import versastat.position
 import versastat.control
 
-def line_scan(speed=1e-5, poll_interval=0.5):
+def line_scan(speed=1e-5, poll_interval=5):
     """ perform a line scan with CV experiments, recording position, current, potential, and parameters in json log files
     Position units are METERS!
     """
@@ -34,6 +34,13 @@ def line_scan(speed=1e-5, poll_interval=0.5):
             # run a CV experiment
             status, params = ctl.cyclic_voltammetry()
             ctl.start()
+
+            # Note: ctl.start() can return before the sequence actually starts running,
+            # so it's possible to skip right past the data collection spin-waiting loop
+            # which writes a data-less log file and pushes the next experiment onto the queue
+            # while the instrument is still going on with the current one.
+            # it appears that this is not safe....
+            time.sleep(2)
 
             while ctl.sequence_running():
                 time.sleep(poll_interval)
