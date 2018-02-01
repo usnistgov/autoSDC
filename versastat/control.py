@@ -30,7 +30,7 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
         ctl.disconnect()
 
 class Control():
-    """ Interface to the VersaSTAT SDK library for instrument control 
+    """ Interface to the VersaSTAT SDK library for instrument control
 
     methods are broken out into `Immediate` (direct instrument control) and `Experiment`.
     """
@@ -47,7 +47,7 @@ class Control():
         self.mode = initial_mode
         self.current_range = None
         return
-    
+
     def connect(self):
         self.index = self.instrument.FindNext(self.start_idx)
         self.connected = self.instrument.Connect(self.index)
@@ -60,50 +60,50 @@ class Control():
 
     def set_cell(self, status='on'):
         """ turn the cell on or off """
-        
+
         if status not in ('on', 'off'):
             raise ArgumentError('specify valid cell status in {on, off}')
 
         if status == 'on':
             self.instrument.Immediate.SetCellOn()
-            
+
         else:
             self.instrument.Immediate.SetCellOff()
 
     def choose_cell(self, choice='external'):
         """ choose between the internal and external cells. """
-        
+
         if choice not in ('internal', 'external'):
             raise ArgumentError('specify valid cell in {internal, external}')
 
         if choice == 'external':
             self.instrument.Immediate.SetCellExternal()
-            
+
         elif choice == 'internal':
             self.instrument.Immediate.SetCellExternal()
-            
+
     def set_mode(self, mode):
         """ choose between potentiostat and galvanostat modes. """
-        
+
         if mode not in ('potentiostat', 'galvanostat'):
             raise ArgumentError('set mode = {potentiostat, galvanostat}')
 
         if mode == 'potentiostat':
             self.instrument.Immediate.SetModePotentiostat()
-            
+
         elif mode == 'galvanostat':
             self.instrument.Immediate.SetModeGalvanostat()
-        
+
 
     def set_current_range(self, current_range):
-        
+
         valid_current_ranges = ['2A', '200mA', '20mA', '2mA', '200uA', '20uA', '2uA', '200nA', '20nA', '2nA']
-        
+
         if current_range not in valid_current_ranges:
             raise ArgumentError('specify valid current range ({})'.format(valid_current_ranges))
 
         self.current_range = current_range
-        
+
         # dispatch the right SetIRange_* function....
         current = 'SetIRange_{}'.format(current_range)
         set_current = getattr(self.instrument.Immediate, current)
@@ -112,13 +112,13 @@ class Control():
     def set_dc_potential(self, potential):
         """ Set the output DC potential (in Volts). This voltage must be within the instruments capability."""
         self.instrument.Immediate.SetDCPotential(potential)
-    
+
     def set_dc_current(self, current):
         """ Set the output DC current (in Amps). This current must be within the instruments capability.
 
-        Calling this method also changes to Galvanostat mode and sets the current range to the correct value. 
+        Calling this method also changes to Galvanostat mode and sets the current range to the correct value.
         WARNING: Once cell is enabled after setting the DC current, do not change to potentiostatic mode or change the current range.
-        These will affect the value being applied to the cell. 
+        These will affect the value being applied to the cell.
         """
         self.instrument.Immediate.SetDCCurrent(current)
 
@@ -132,7 +132,7 @@ class Control():
 
     def set_ac_waveform(self, mode='on'):
         waveform_modes = ['on', 'off']
-        
+
         if mode not in waveform_modes:
             raise ArgumentError('specify valid AC waveform mode {on, off}.')
 
@@ -148,12 +148,12 @@ class Control():
         Call this prior to calling the status methods below.
         """
 
-        self.instrument.Immediate.UpdateStatus()    
+        self.instrument.Immediate.UpdateStatus()
 
     def potential(self):
         """ get the latest stored E value. """
         return self.instrument.Immediate.GetE()
-    
+
     def current(self):
         """ get the latest stored I value. """
         return self.instrument.Immediate.GetI()
@@ -167,7 +167,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
             1: 'I (current) overload',
             2: 'E, Power Amp, or Thermal overload'
         }
-        
+
         overload_code = self.instrument.Immediate.GetOverload()
 
         if overload_code:
@@ -179,7 +179,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
     def booster_enabled(self):
         """ check status of the booster switch. """
         return self.instrument.Immediate.GetBoosterEnabled()
-    
+
     def cell_enabled(self):
         """ check status of the cell. """
         return self.instrument.Immediate.GetCellEnabled()
@@ -193,10 +193,10 @@ indicates E, Power Amp or Thermal Overload has occurred.
         else:
             self.instrument.Immediate.SetAutoIRangeOff()
 
-    
+
     # Experiment methods
     # Experiment actions apparently can be run asynchronously
-    
+
     def actions(self):
         """ get the current experiment action queue. """
         # Returns a list of comma delimited action names that are supported by the instrument that is currently connected
@@ -206,16 +206,33 @@ indicates E, Power Amp or Thermal Overload has occurred.
     def clear(self):
         """ clear the experiment action queue. """
         self.instrument.Experiment.Clear()
-        
 
-    def start(self):
-        """ Starts the sequence of actions in the instrument that is currently connected. """
+
+    def start(self, max_wait_time=10, poll_interval=2):
+        """ Starts the sequence of actions in the instrument that is currently connected.
+        Wait until the instrument starts the action to return control flow. """
         self.instrument.Experiment.Start()
+
+        # Note: ctl.start() can return before the sequence actually starts running,
+        # so it's possible to skip right past the data collection spin-waiting loop
+        # which writes a data-less log file and pushes the next experiment onto the queue
+        # while the instrument is still going on with the current one.
+        # it appears that this is not safe....
+        elapsed = 0
+
+        while not self.sequence_running():
+            time.sleep(poll_interval)
+            elapsed += poll_interval
+
+            if elapsed > max_wait_time:
+                break
+
+        return
 
     def stop(self):
         """ Stops the sequence of actions that is currently running in the instrument that is currently connected. """
         self.instrument.Experiment.Stop()
-        
+
     def skip(self):
         """ Skips the currently running action and immediately starts the next action.
         If there is no more actions to run, the sequence is simply stopped.
@@ -350,5 +367,3 @@ indicates E, Power Amp or Thermal Overload has occurred.
         status = self.instrument.Experiment.AddCyclicVoltammetry(params)
 
         return status, params
-   
-

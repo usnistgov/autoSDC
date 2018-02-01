@@ -39,13 +39,6 @@ def line_scan(speed=1e-5, poll_interval=5):
 
             ctl.start()
 
-            # Note: ctl.start() can return before the sequence actually starts running,
-            # so it's possible to skip right past the data collection spin-waiting loop
-            # which writes a data-less log file and pushes the next experiment onto the queue
-            # while the instrument is still going on with the current one.
-            # it appears that this is not safe....
-            time.sleep(2)
-
             while ctl.sequence_running():
                 time.sleep(poll_interval)
 
