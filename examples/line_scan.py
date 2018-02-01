@@ -74,5 +74,10 @@ def line_scan(speed=1e-5, poll_interval=5):
         pos.update(delta=final_delta, verbose=True)
         pos.print_status()
 
+        # clean up
+        ctl.stop()
+        ctl.clear()
+        ctl.disconnect()
+
 if __name__ == '__main__':
     line_scan()
