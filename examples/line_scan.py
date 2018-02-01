@@ -26,20 +26,20 @@ def line_scan(speed=1e-5, poll_interval=5):
         pos.update(delta=initial_delta, verbose=True)
         pos.print_status()
 
-        ctl = versastat.control.controller(start_idx=17109013)
+        pstat = versastat.control.controller(start_idx=17109013)
 
         for idx in range(n_steps):
             # scan, log, take a position step
 
             # run a CV experiment
-            status, params = ctl.cyclic_voltammetry(
+            status, params = pstat.cyclic_voltammetry(
                 initial_potential=-0.25, vertex_potential=0.65, final_potential=0.0,
                 cell_to_use='EXTERNAL', e_filter='1Hz', i_filter='1Hz'
             )
 
-            ctl.start()
+            pstat.start()
 
-            while ctl.sequence_running():
+            while pstat.sequence_running():
                 time.sleep(poll_interval)
 
             # collect and log data
@@ -48,8 +48,8 @@ def line_scan(speed=1e-5, poll_interval=5):
                 'parameters': params,
                 'index_in_sequence': idx,
                 'timestamp': datetime.now().isoformat(),
-                'current': ctl.current(),
-                'potential': ctl.potential(),
+                'current': pstat.current(),
+                'potential': pstat.potential(),
                 'position': pos.current_position()
             }
 
