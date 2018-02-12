@@ -367,3 +367,83 @@ indicates E, Power Amp or Thermal Overload has occurred.
         status = self.instrument.Experiment.AddCyclicVoltammetry(params)
 
         return status, params
+
+
+    def multi_cyclic_voltammetry(self,
+            initial_potential=0.0,
+            versus_initial='VS REF',
+            vertex_potential_1=1.0,
+            versus_vertex_1='VS REF',
+            vertex_hold_1=0.0,
+            acquire_data_during_vertex_hold_1=True,
+            vertex_potential_2=-1.0,
+            versus_vertex_2='VS REF',
+            vertex_hold_2=0.0,
+            acquire_data_during_vertex_hold_2=True,
+            scan_rate=0.1,
+            cycles=3,
+            limit_1_type=None,
+            limit_1_direction='<',
+            limit_1_value=0,
+            limit_2_type=None,
+            limit_2_direction='<',
+            limit_2_value=0,
+            current_range='AUTO',
+            electrometer='AUTO',
+            e_filter='AUTO',
+            i_filter='AUTO',
+            leave_cell_on='NO',
+            cell_to_use='INTERNAL',
+            enable_ir_compensation='DISABLED',
+            user_defined_the_amount_of_ir_comp=1,
+            use_previously_determined_ir_comp='YES',
+            bandwidth='AUTO',
+            final_potential=0.0,
+            versus_final='VS REF',
+            low_current_interface_bandwidth='AUTO'):
+        """ multi_cyclic_voltammetry
+
+        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        vertex_potential [Vertex Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Vertex Scan)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        vertex_hold [Vertex Hold] (s) {User value}
+        acquire_data_during_vertex_hold [Acquire data during Vertex Hold] {YES or NO}
+        vertex_potential [Vertex Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Vertex Scan)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        vertex_hold [Vertex Hold] (s) {User value}
+        acquire_data_during_vertex_hold [Acquire data during Vertex Hold] {YES or NO}
+        scan_rate [Scan Rate] (V/s) {User value}
+        cycles [Cycles] (#) {User value}
+        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_1_direction [Limit 1 Direction] {< or >}
+        limit_1_value [Limit 1 Value] {User value}
+        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_2_direction [Limit 2 Direction] {< or >}
+        limit_2_value [Limit 2 Value] {User value}
+        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
+        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
+        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
+        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
+        leave_cell_on [Leave Cell On] {YES or NO}
+        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
+        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
+        user_defined_the_amount_of_ir_comp [User defined the amount of iR Comp] (ohms) {User value}
+        use_previously_determined_ir_comp [Use previously determined iR Comp] {YES or NO}
+        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
+        final_potential [Final Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
+        """
+
+        # concatenate argument values in function signature order
+        args = inspect.getfullargspec(self.multi_cyclic_voltammetry).args
+
+        # get rid of 'self' argument
+        args = args[1:]
+
+        vals = locals()
+
+        params = ','.join([str(vals[arg]) for arg in args])
+        status = self.instrument.Experiment.AddMultiCyclicVoltammetry(params)
+        return status, params
