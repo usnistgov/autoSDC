@@ -26,46 +26,46 @@ def line_scan(speed=1e-5, poll_interval=5):
         pos.update(delta=initial_delta, verbose=True)
         pos.print_status()
 
-        pstat = versastat.control.controller(start_idx=17109013)
+        with versastat.control.controller(start_idx=17109013) as pstat:
 
-        for idx in range(n_steps):
-            # scan, log, take a position step
+            for idx in range(n_steps):
+                # scan, log, take a position step
 
-            # run a CV experiment
-            status, params = pstat.cyclic_voltammetry(
-                initial_potential=-0.25, vertex_potential=0.65, final_potential=0.0,
-                cell_to_use='EXTERNAL', e_filter='1Hz', i_filter='1Hz'
-            )
+                # run a CV experiment
+                status, params = pstat.cyclic_voltammetry(
+                    initial_potential=-0.25, vertex_potential=0.65, final_potential=0.0,
+                    cell_to_use='EXTERNAL', e_filter='1Hz', i_filter='1Hz'
+                )
 
-            pstat.start()
+                pstat.start()
 
-            while pstat.sequence_running():
-                time.sleep(poll_interval)
+                while pstat.sequence_running():
+                    time.sleep(poll_interval)
 
-            # collect and log data
-            scan_data = {
-                'measurement': 'cyclic_voltammetry',
-                'parameters': params,
-                'index_in_sequence': idx,
-                'timestamp': datetime.now().isoformat(),
-                'current': pstat.current(),
-                'potential': pstat.potential(),
-                'position': pos.current_position()
-            }
+                # collect and log data
+                scan_data = {
+                    'measurement': 'cyclic_voltammetry',
+                    'parameters': params,
+                    'index_in_sequence': idx,
+                    'timestamp': datetime.now().isoformat(),
+                    'current': pstat.current(),
+                    'potential': pstat.potential(),
+                    'position': pos.current_position()
+                }
 
-            logfile = 'line_scan_{:03d}.json'.format(idx)
-            with open(logfile, 'w') as f:
-                json.dump(scan_data, f)
+                logfile = 'line_scan_{:03d}.json'.format(idx)
+                with open(logfile, 'w') as f:
+                    json.dump(scan_data, f)
 
-            ctl.clear()
+                pstat.clear()
 
-            # update position
-            pos.update(delta=delta, verbose=True)
+                # update position
+                pos.update(delta=delta, verbose=True)
+                pos.print_status()
+
+            # bring the probe back up
+            pos.update(delta=final_delta, verbose=True)
             pos.print_status()
-
-        # bring the probe back up
-        pos.update(delta=final_delta, verbose=True)
-        pos.print_status()
 
 
 if __name__ == '__main__':
