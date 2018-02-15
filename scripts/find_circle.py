@@ -34,15 +34,15 @@ os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(FIG_DIR, exist_ok=True)
 
 def acquire_cv_data(pstat, pos, idx):
-    
+
     # run a CV experiment
     status, params = pstat.multi_cyclic_voltammetry(
         initial_potential=0.0, vertex_potential_1=1.0, vertex_potential_2=-1.0, final_potential=0.0, scan_rate=0.2,
         cell_to_use='EXTERNAL', e_filter='1Hz', i_filter='1Hz'
     )
-    
+
     pstat.start()
-    
+
     while pstat.sequence_running():
         time.sleep(poll_interval)
 
@@ -56,15 +56,15 @@ def acquire_cv_data(pstat, pos, idx):
         'potential': pstat.potential(),
         'position': pos.current_position()
     }
-    
+
     pstat.clear()
-    
+
     return scan_data
 
 def update_position(pos, new_xy):
     current_position = pos.current_position()
     z = current_position[-1]
-    
+
     new_x, new_y = new_xy
     target_position = np.array([new_x, new_y, z])
 
@@ -75,11 +75,11 @@ def evaluate_CV_curves(potential, current, potential_threshold=POTENTIAL_THRESHO
     """ make a polymer/metal decision by thresholding the current at the low end of the potenial curve """
 
     avg_current = np.mean(current[potential < potential_threshold])
-    
+
     return  avg_current < current_threshold
 
 def fit_gp(X, y, observed):
-    
+
     m = GPy.models.GPClassification(
         X[observed],
         y[observed,None],
@@ -100,13 +100,13 @@ def fit_gp(X, y, observed):
     query_id = np.argmax(vv)
 
     return m, p, v, query_id
-    
+
 def plot_predictions(X, p, var, query_id, idx):
     fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 6))
     n_points, dim = X.shape
     s = int(np.sqrt(n_points))
-    
-    ax1.imshow(p.reshape((s,s)), 
+
+    ax1.imshow(p.reshape((s,s)),
                origin='lower', aspect='equal', alpha=0.5, extent=extent, interpolation='bilinear', cmap='Reds')
 
     ax2.imshow(var.reshape((s,s)),
@@ -121,13 +121,13 @@ def plot_predictions(X, p, var, query_id, idx):
     plt.savefig(os.path.join(FIG_DIR, 'gp_predictions_{:03d}.png'.format(idx)))
     plt.clf()
     plt.close()
-    
+
 def plot_CV(potential, current, idx):
     plt.plot(potential, current, alpha=0.8)
     plt.savefig(os.path.join(FIG_DIR, 'CV_curve_{:03d}.png'.format(idx)))
     plt.clf()
     plt.close()
-                
+
 def write_logfile(scan_data, idx):
     """ serialize scan data to json """
     logfile = os.path.join(LOG_DIR, 'line_scan_{:03d}.json'.format(idx))
@@ -154,7 +154,7 @@ def find_circle(speed=1e-5, poll_interval=5):
         X = np.c_[xx.ravel(), yy.ravel()]
         y = np.zeros(X.shape[0])
         observed = np.zeros_like(y, dtype=bool)
-        
+
         with versastat.control.controller(start_idx=17109013) as pstat:
 
             for idx in range(n_steps):
@@ -187,7 +187,7 @@ def find_circle(speed=1e-5, poll_interval=5):
                     plot_predictions(X, p, var, query_id, idx)
 
                 plot_CV(scan_data['potential'], scan_data['current'], idx)
-                
+
                 observed[query_id] = True
 
             # bring the probe back up
