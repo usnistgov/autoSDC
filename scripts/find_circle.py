@@ -15,18 +15,18 @@ import versastat.position
 import versastat.control
 
 # step size 100 microns
-grid_step_size = 100 * 1e-6
-grid_extent = 1e-3
+grid_step_size = 80 * 1e-6
+grid_extent = 0.008 # 8 mm
 
-INITIAL_Z_DELTA = 4.90e-4
+INITIAL_Z_DELTA = 2.0e-4
 
-n_measurements = 60
-n_initial = 5
+n_measurements = 100
+n_initial = 10
 
-POTENTIAL_THRESHOLD = -0.8
-CURRENT_THRESHOLD = '?'
+POTENTIAL_THRESHOLD = -0.2
+CURRENT_THRESHOLD = -3.75 * 1e-9
 
-KERNEL_LENGTHSCALE_CONSTRAINTS = (1e-4, 2e-3)
+KERNEL_LENGTHSCALE_CONSTRAINTS = (5e-4, 5e-3)
 
 LOG_DIR = 'logs'
 FIG_DIR = 'figures'
@@ -69,6 +69,10 @@ def update_position(pos, new_xy):
     target_position = np.array([new_x, new_y, z])
 
     delta = target_position - current_position
+
+    # make really sure delta_z is zero
+    delta[-1] = 0
+
     pos.update(delta, verbose=False)
 
 def evaluate_CV_curves(potential, current, potential_threshold=POTENTIAL_THRESHOLD, current_threshold=CURRENT_THRESHOLD):
@@ -154,7 +158,13 @@ def find_circle(speed=1e-5, poll_interval=5):
         # define a square measurement grid
         start_position = pos.current_position()
         xx, yy = np.meshgrid(np.arange(0,grid_extent,grid_step_size), np.arange(0,grid_extent,grid_step_size))
+
+        # add the grid offset positions to the start position
+        xx += start_position[0]
+        yy += start_position[1]
+
         X = np.c_[xx.ravel(), yy.ravel()]
+
         y = np.zeros(X.shape[0])
         observed = np.zeros_like(y, dtype=bool)
 
