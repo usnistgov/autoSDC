@@ -18,7 +18,7 @@ import versastat.control
 grid_step_size = 100 * 1e-6
 grid_extent = 1e-3
 
-INITIAL_Z_DELTA = 2.60e-4
+INITIAL_Z_DELTA = 4.90e-4
 
 n_measurements = 60
 n_initial = 5
@@ -37,7 +37,7 @@ def acquire_cv_data(pstat, pos, idx):
 
     # run a CV experiment
     status, params = pstat.multi_cyclic_voltammetry(
-        initial_potential=0.0, vertex_potential_1=1.0, vertex_potential_2=-1.0, final_potential=0.0, scan_rate=0.2,
+        initial_potential=0.0, vertex_potential_1=-0.25, vertex_potential_2=0.65, final_potential=0.0, scan_rate=0.2,
         cell_to_use='EXTERNAL', e_filter='1Hz', i_filter='1Hz'
     )
 
@@ -76,7 +76,10 @@ def evaluate_CV_curves(potential, current, potential_threshold=POTENTIAL_THRESHO
 
     avg_current = np.mean(current[potential < potential_threshold])
 
-    return  avg_current < current_threshold
+    if avg_current < current_threshold:
+        return 1
+    else:
+        return 0
 
 def fit_gp(X, y, observed):
 
@@ -101,7 +104,7 @@ def fit_gp(X, y, observed):
 
     return m, p, v, query_id
 
-def plot_predictions(X, p, var, query_id, idx):
+def plot_predictions(X, y, p, var, query_id, idx):
     fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 6))
     n_points, dim = X.shape
     s = int(np.sqrt(n_points))
@@ -115,7 +118,7 @@ def plot_predictions(X, p, var, query_id, idx):
     for ax in (ax1, ax2):
         ax.scatter(X[observed,0], X[observed,1], c=y[observed], edgecolors='k')
         ax.scatter(X[query_id,0], X[query_id,1], c='r', edgecolors='k')
-        ax.contour(xx, yy, p.reshape((s,s), levels=[0.5], colors='k', alpha=0.5, linestyles='dashed')
+        ax.contour(xx, yy, p.reshape((s,s)), levels=[0.5], colors='k', alpha=0.5, linestyles='dashed')
         ax.axis('off')
 
     plt.savefig(os.path.join(FIG_DIR, 'gp_predictions_{:03d}.png'.format(idx)))
@@ -156,11 +159,26 @@ def find_circle(speed=1e-5, poll_interval=5):
         observed = np.zeros_like(y, dtype=bool)
 
         with versastat.control.controller(start_idx=17109013) as pstat:
+            pstat.set_current_range('20nA')
 
+            # start in the lower left corner...
+            query_id = 0
             for idx in range(n_steps):
                 # train model, update position, scan, log,
 
-                # select a point to measure
+                # run the experiment
+                scan_data = acquire_cv_data(pstat, pos, idx)
+
+                # make a decision
+                label = evaluate_CV_curves(scan_data['potential'], scan_data['current'])
+                scan_data['label'] = label
+                y[query_id] = label
+                observed[query_id] = True
+
+                # save metadata
+                write_logfile(scan_data, idx)
+
+                # select the next point to measure
                 if idx < n_initial:
                     # randomly select a point to query
                     query_id = np.random.choice(X.shape[0])
@@ -173,15 +191,6 @@ def find_circle(speed=1e-5, poll_interval=5):
                 # move the probe
                 update_position(pos, new_xy)
 
-                # do the experiment
-                scan_data = acquire_cv_data(pstat, pos, idx)
-
-                # make a decision
-                label = evaluate_CV_curves(scan_data['potential'], scan_data['current'])
-                scan_data['label'] = label
-
-                # save metadata
-                write_logfile(scan_data, idx)
 
                 if idx < n_initial:
                     plot_predictions(X, p, var, query_id, idx)
