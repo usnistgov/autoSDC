@@ -21,7 +21,7 @@ class VersaStatError(Exception):
 @contextmanager
 def controller(start_idx=17109013, initial_mode='potentiostat'):
     """ context manager that wraps potentiostat controller class Control. """
-    ctl = Controller(start_idx=start_idx, initial_mode=initial_mode)
+    ctl = Control(start_idx=start_idx, initial_mode=initial_mode)
     try:
         yield ctl
     finally:
