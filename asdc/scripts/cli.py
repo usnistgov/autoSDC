@@ -26,6 +26,15 @@ def cli():
     pass
 
 @cli.command()
+@click.option('--verbose/--no-verbose', default=False)
+def reset(verbose):
+    """ try to reset the potentiostat controller... """
+    with asdc.control.controller(start_idx=17109013) as pstat:
+        pstat.stop()
+        pstat.clear()
+        pstat.disconnect()
+
+@cli.command()
 @click.option('-d', '--direction', default='x', type=click.Choice(['x', 'y', '+x', '-x', '+y', '-y']))
 @click.option('--delta', default=5e-3, type=float, help='x step in meters')
 @click.option('--delta-z', default=5e-5, type=float, help='z step in meters')
