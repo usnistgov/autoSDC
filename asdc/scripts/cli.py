@@ -105,6 +105,7 @@ def cv(data_dir, verbose):
 
             print('starting.')
             pstat.start()
+            print('started.')
 
             while pstat.sequence_running():
                 time.sleep(poll_interval)
