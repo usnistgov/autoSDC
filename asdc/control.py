@@ -43,16 +43,12 @@ class Control():
     methods are broken out into `Immediate` (direct instrument control) and `Experiment`.
     """
     def __init__(self, start_idx=0, initial_mode='potentiostat'):
-        print('init')
+
         self.instrument = Instrument()
-        print('instrument')
         self.start_idx = start_idx
-        print(start_idx)
         self.connect()
-        print('connecting')
 
         self.serial_number = self.instrument.GetSerialNumber()
-        print(self.serial_number)
         self.model = self.instrument.GetModel()
         self.options = self.instrument.GetOptions()
         self.low_current_interface = self.instrument.GetIsLowCurrentInterfacePresent()
@@ -60,7 +56,6 @@ class Control():
         self.mode = initial_mode
         self.current_range = None
 
-        print('maybe')
         return
 
     def connect(self):
