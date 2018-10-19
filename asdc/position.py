@@ -1,4 +1,4 @@
-""" versastat.position: pythonnet .NET interface to VersaSTAT motion controller """
+""" asdc.position: pythonnet .NET interface to VersaSTAT motion controller """
 
 import os
 import clr
@@ -35,7 +35,7 @@ def controller(ip='192.168.10.11', speed=1e-4):
         pos.controller.Connect()
         yield pos
     except Exception as exc:
-        print('unwinding position controller due to exception.') 
+        print('unwinding position controller due to exception.')
         pos.controller.Disconnect()
         raise exc
     finally:
@@ -43,7 +43,7 @@ def controller(ip='192.168.10.11', speed=1e-4):
 
 class Position():
     """ Interface to the VersaSTAT motion controller library """
-    
+
     def __init__(self, ip='192.168.10.11', speed=0.0001):
         """ instantiate a Position controller context manager """
         self._ip = ip
@@ -152,4 +152,3 @@ class Position():
 
             if time_elapsed > max_wait_time:
                 raise TimeoutError('Max position update time of {}s exceeded'.format(max_wait_time))
-

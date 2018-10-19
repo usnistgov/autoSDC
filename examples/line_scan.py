@@ -7,8 +7,8 @@ from datetime import datetime
 import os
 import sys
 
-import versastat.position
-import versastat.control
+import asdc.position
+import asdc.control
 
 def line_scan(speed=1e-5, poll_interval=5):
     """ perform a line scan with CV experiments, recording position, current, potential, and parameters in json log files
@@ -20,13 +20,13 @@ def line_scan(speed=1e-5, poll_interval=5):
     final_delta = [0.0, 0.0, 4.90e-4]
     n_steps = 10
 
-    with versastat.position.controller(ip='192.168.10.11', speed=speed) as pos:
+    with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
 
         pos.print_status()
         pos.update(delta=initial_delta, verbose=True)
         pos.print_status()
 
-        with versastat.control.controller(start_idx=17109013) as pstat:
+        with asdc.control.controller(start_idx=17109013) as pstat:
             pstat.set_current_range('20nA')
 
             for idx in range(n_steps):
