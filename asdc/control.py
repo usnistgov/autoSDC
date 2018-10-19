@@ -45,8 +45,10 @@ class Control():
     def __init__(self, start_idx=0, initial_mode='potentiostat'):
 
         self.instrument = Instrument()
+        time.sleep(5)
         self.start_idx = start_idx
         self.connect()
+        print('connected?', self.connected)
 
         self.serial_number = self.instrument.GetSerialNumber()
         self.model = self.instrument.GetModel()
@@ -55,7 +57,7 @@ class Control():
 
         self.mode = initial_mode
         self.current_range = None
-
+        time.sleep(5)
         return
 
     def connect(self):
