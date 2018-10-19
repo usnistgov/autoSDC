@@ -106,7 +106,7 @@ class Position():
 
         return True
 
-    def update_x(self, delta=0.001, verbose=False, poll_interval=0.1):
+    def update_single_axis(self, axis=0, delta=0.001, verbose=False, poll_interval=0.1):
         """ update position setpoint and busy-wait until the motion controller has finished.
 
         poll_interval: busy-waiting polling interval (seconds)
@@ -114,19 +114,28 @@ class Position():
 
         # update the setpoint for the x axis
         for idx, ax in enumerate(self.controller.Parameters):
+            if idx == axis:
+                if verbose:
+                    print(ax.Quantity)
 
-            if verbose:
-                print(ax.Quantity)
+                ax.SetPoint = ax.Values[0] + delta
 
-            ax.SetPoint = ax.Values[0] + delta
-
-            break
+                break
 
         # busy-wait while the motion controller moves the stage
         while not self.at_setpoint(verbose=verbose):
             time.sleep(poll_interval)
 
         return
+
+    def update_x(self, delta=0.001, verbose=False, poll_interval=0.1):
+        return update_single_axis(axis=0, delta=delta, verbose=verbose, poll_interval=poll_interval)
+
+    def update_y(self, delta=0.001, verbose=False, poll_interval=0.1):
+        return update_single_axis(axis=1, delta=delta, verbose=verbose, poll_interval=poll_interval)
+
+    def update_z(self, delta=0.001, verbose=False, poll_interval=0.1):
+        return update_single_axis(axis=2, delta=delta, verbose=verbose, poll_interval=poll_interval)
 
     def update(self, delta=[0.001, 0.001, 0.0], verbose=False, poll_interval=0.1, max_wait_time=25):
         """ update position setpoint and busy-wait until the motion controller has finished.
