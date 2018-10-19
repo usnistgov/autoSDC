@@ -78,7 +78,7 @@ def cv(data_dir, verbose):
     # load previous datasets just to get current index...
     datafiles = glob.glob(os.path.join(data_dir, '*.json'))
     scan_idx = len(datafiles)
-    with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
+    with asdc.position.controller(ip='192.168.10.11') as pos:
 
         if verbose: pos.print_status()
 
