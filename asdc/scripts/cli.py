@@ -97,7 +97,7 @@ def cv(data_dir, verbose):
                 time.sleep(1)
                 print('.', end='')
             print()
-            run an open-circuit followed by a CV experiment
+            # run an open-circuit followed by a CV experiment
             status, oc_params = pstat.open_circuit(
                 time_per_point=1, duration=60, current_range='AUTO', e_filter='1Hz', i_filter='1Hz'
             )
