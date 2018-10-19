@@ -25,7 +25,14 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
     ctl = Control(start_idx=start_idx, initial_mode=initial_mode)
     try:
         yield ctl
+    except Exception as exc:
+        print('unwind potentiostat controller from exception.')
+        ctl.stop()
+        ctl.clear()
+        ctl.disconnect()
+        raise exc
     finally:
+        print('unwind potentiostat controller.')
         ctl.stop()
         ctl.clear()
         ctl.disconnect()
@@ -226,6 +233,8 @@ indicates E, Power Amp or Thermal Overload has occurred.
             elapsed += poll_interval
 
             if elapsed > max_wait_time:
+                raise VersastatError("could not start experiment")
+                raise KeyboardInterrupt("could not start.")
                 break
 
         return
@@ -376,17 +385,17 @@ indicates E, Power Amp or Thermal Overload has occurred.
             vertex_potential_1=1.0,
             versus_vertex_1='VS REF',
             vertex_hold_1=0.0,
-            acquire_data_during_vertex_hold_1=True,
+            acquire_data_during_vertex_hold_1='NO',
             vertex_potential_2=-1.0,
             versus_vertex_2='VS REF',
             vertex_hold_2=0.0,
-            acquire_data_during_vertex_hold_2=True,
+            acquire_data_during_vertex_hold_2='NO',
             scan_rate=0.1,
             cycles=3,
-            limit_1_type=None,
+            limit_1_type='NONE',
             limit_1_direction='<',
             limit_1_value=0,
-            limit_2_type=None,
+            limit_2_type='NONE',
             limit_2_direction='<',
             limit_2_value=0,
             current_range='AUTO',

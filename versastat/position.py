@@ -34,6 +34,10 @@ def controller(ip='192.168.10.11', speed=1e-4):
     try:
         pos.controller.Connect()
         yield pos
+    except Exception as exc:
+        print('unwinding position controller due to exception.') 
+        pos.controller.Disconnect()
+        raise exc
     finally:
         pos.controller.Disconnect()
 
