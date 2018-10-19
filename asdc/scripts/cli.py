@@ -75,6 +75,8 @@ def step(direction, delta, delta_z, speed, verbose):
 def cv(data_dir, verbose):
     """ run a CV experiment """
 
+    poll_interval = 1
+
     # load previous datasets just to get current index...
     datafiles = glob.glob(os.path.join(data_dir, '*.json'))
     scan_idx = len(datafiles)
@@ -109,6 +111,7 @@ def cv(data_dir, verbose):
             print('started.')
 
             while pstat.sequence_running():
+                print('ping')
                 time.sleep(poll_interval)
 
             print('saving data')
