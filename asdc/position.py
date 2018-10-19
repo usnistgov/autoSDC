@@ -129,13 +129,13 @@ class Position():
         return
 
     def update_x(self, delta=0.001, verbose=False, poll_interval=0.1):
-        return update_single_axis(axis=0, delta=delta, verbose=verbose, poll_interval=poll_interval)
+        return self.update_single_axis(axis=0, delta=delta, verbose=verbose, poll_interval=poll_interval)
 
     def update_y(self, delta=0.001, verbose=False, poll_interval=0.1):
-        return update_single_axis(axis=1, delta=delta, verbose=verbose, poll_interval=poll_interval)
+        return self.update_single_axis(axis=1, delta=delta, verbose=verbose, poll_interval=poll_interval)
 
     def update_z(self, delta=0.001, verbose=False, poll_interval=0.1):
-        return update_single_axis(axis=2, delta=delta, verbose=verbose, poll_interval=poll_interval)
+        return self.update_single_axis(axis=2, delta=delta, verbose=verbose, poll_interval=poll_interval)
 
     def update(self, delta=[0.001, 0.001, 0.0], verbose=False, poll_interval=0.1, max_wait_time=25):
         """ update position setpoint and busy-wait until the motion controller has finished.
