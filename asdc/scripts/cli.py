@@ -104,6 +104,7 @@ def cv(data_dir, verbose):
                 print(params)
 
             print('starting.')
+            time.sleep(5)
             pstat.start()
             print('started.')
 
