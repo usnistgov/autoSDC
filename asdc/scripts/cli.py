@@ -69,6 +69,16 @@ def step(direction, delta, delta_z, speed, verbose):
         if verbose:
             pos.print_status()
 
+
+@cli.command()
+@click.option('--verbose/--no-verbose', default=False)
+def reset(verbose):
+    """ try to reset the potentiostat controller... """
+    with asdc.control.controller(start_idx=17109013) as pstat:
+        pstat.stop()
+        pstat.clear()
+        pstat.disconnect()
+
 @cli.command()
 @click.option('--data-dir', default='data', type=click.Path())
 @click.option('--verbose/--no-verbose', default=False)
@@ -89,13 +99,13 @@ def cv(data_dir, verbose):
                 print('.', end='')
             print()
             # run an open-circuit followed by a CV experiment
-            status, oc_params = pstat.open_circuit(
-                time_per_point=1, duration=60, current_range='AUTO', e_filter='1Hz', i_filter='1Hz'
-            )
-            print('OC added.')
-            if verbose:
-                print(status)
-                print(oc_params)
+            # status, oc_params = pstat.open_circuit(
+            #     time_per_point=1, duration=60, current_range='AUTO', e_filter='1Hz', i_filter='1Hz'
+            # )
+            # print('OC added.')
+            # if verbose:
+            #     print(status)
+            #     print(oc_params)
             status, params = pstat.multi_cyclic_voltammetry(
                 initial_potential=0.0, vertex_potential_1=-1.0, vertex_potential_2=1.0, final_potential=0.0, scan_rate=0.075,
                 cell_to_use='INTERNAL', e_filter='1Hz', i_filter='1Hz', cycles=1
