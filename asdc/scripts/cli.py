@@ -14,7 +14,6 @@ import asdc.position
 
 
 def plot_iv(I, V, idx):
-    plt.plot(I, V)
     plt.plot(np.log10(np.abs(I)), V)
     plt.xlabel('log current')
     plt.ylabel('voltage')
