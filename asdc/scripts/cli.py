@@ -93,6 +93,9 @@ def step(direction, delta, delta_z, speed, lift, press, verbose):
 def cv(data_dir, cell, verbose):
     """ run a CV experiment """
 
+    # check on experiment status periodically:
+    poll_interval = 1
+
     # load previous datasets just to get current index...
     datafiles = glob.glob(os.path.join(data_dir, '*.json'))
     scan_idx = len(datafiles)
