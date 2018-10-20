@@ -88,8 +88,9 @@ def step(direction, delta, delta_z, speed, lift, press, verbose):
 
 @cli.command()
 @click.option('--data-dir', default='data', type=click.Path())
+@click.option('-c', '--cell', default='INTERNAL', type=click.Choice(['INTERNAL', 'EXTERNAL']))
 @click.option('--verbose/--no-verbose', default=False)
-def cv(data_dir, verbose):
+def cv(data_dir, cell, verbose):
     """ run a CV experiment """
 
     # load previous datasets just to get current index...
@@ -111,7 +112,7 @@ def cv(data_dir, verbose):
                 print(oc_params)
             status, params = pstat.multi_cyclic_voltammetry(
                 initial_potential=0.0, vertex_potential_1=-1.0, vertex_potential_2=1.0, final_potential=0.0, scan_rate=0.075,
-                cell_to_use='INTERNAL', e_filter='1Hz', i_filter='1Hz', cycles=1
+                cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=1
             )
             print('CV added.')
             if verbose:
