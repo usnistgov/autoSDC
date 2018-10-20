@@ -351,7 +351,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         params = ','.join([str(vals[arg]).upper() for arg in args])
         status = self.instrument.Experiment.AddOpenCircuit(params)
-        return status, default_params
+        return status, params
 
     # NOTE: use enum for options?
     def cyclic_voltammetry(self,
