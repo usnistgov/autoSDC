@@ -38,10 +38,14 @@ def reset(verbose):
 @click.option('--delta', default=5e-3, type=float, help='x step in meters')
 @click.option('--delta-z', default=5e-5, type=float, help='z step in meters')
 @click.option('--speed', default=1e-3, type=float, help='speed in meters/s')
+@click.option('--lift/--no-lift', default=False, help='ease off vertically before horizontal motion.')
+@click.option('--press/--no-press', default=True, help='press down below vertical setpoint to reseat probe after horizontal motion')
 @click.option('--verbose/--no-verbose', default=False)
-def step(direction, delta, delta_z, speed, verbose):
+def step(direction, delta, delta_z, speed, lift, press, verbose):
     """ 1mm per second scan speed.
     up. over. down. down. up
+    lift: up, over, down.
+    press: after horizontal step, press down and release by delta_z
     """
 
     # constrain absolute delta_z to avoid crashing....
@@ -50,7 +54,8 @@ def step(direction, delta, delta_z, speed, verbose):
     with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
 
         # vertical step
-        pos.update_z(delta=delta_z, verbose=verbose)
+        if lift:
+            pos.update_z(delta=delta_z, verbose=verbose)
 
         # take the position step
         if verbose:
@@ -69,10 +74,14 @@ def step(direction, delta, delta_z, speed, verbose):
         if verbose:
             pos.print_status()
 
-        # vertical step back down:
-        # compress, then release
-        pos.update_z(delta=-2*delta_z, verbose=verbose)
-        pos.update_z(delta=delta_z, verbose=verbose)
+        if lift:
+            # vertical step back down:
+            pos.update_z(delta=-delta_z, verbose=verbose)
+
+        if press:
+            # compress, then release
+            pos.update_z(delta=-delta_z, verbose=verbose)
+            pos.update_z(delta=delta_z, verbose=verbose)
 
         if verbose:
             pos.print_status()
