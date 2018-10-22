@@ -70,7 +70,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             'timestamp': datetime.now().isoformat(),
             'current': pstat.current(),
             'potential': pstat.potential(),
-            'error_codes': error_codes
+            'error_codes': list(error_codes)
         }
 
         pstat.clear()
