@@ -18,8 +18,8 @@ def run_cv_scan():
 @click.option('-c', '--cell', default='INTERNAL', type=click.Choice(['INTERNAL', 'EXTERNAL']))
 @click.option('--verbose/--no-verbose', default=False)
 def run_combi_scan(target_file, data_dir, delta_z, speed, cell, verbose):
-    """ keep in mind that sample frame and versastat frame have y flipped:
-    x_combi is y_versastat
+    """ keep in mind that sample frame and versastat frame have x and y flipped:
+    x_combi is -y_versastat
     y_combi is -x_versastat
     Also, combi wafer frame is in mm, versastat frame is in meters.
     Assume we start at the standard combi layout spot 1 (-9.04, -31.64)
@@ -36,7 +36,7 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, verbose):
 
         # update position: convert from mm to m
         # x_vs is -y_c, y_vs is x
-        dy = (target.x - current_spot.x) * 1e-3
+        dy = -(target.x - current_spot.x) * 1e-3
         dx = -(target.y - current_spot.y) * 1e-3
         print(current_spot)
         print(target)
