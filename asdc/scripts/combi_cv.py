@@ -6,8 +6,9 @@ import pandas as pd
 import asdc.position
 
 def run_cv_scan():
+    """ run a CV scan for each point """
     print('collect CV data here...')
-    time.sleep(2)
+    time.sleep(3)
     return
 
 @click.command()
