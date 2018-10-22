@@ -40,7 +40,7 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, verbose):
         dx = -(target.y - current_spot.y) * 1e-3
         print(current_spot)
         print(sample)
-        current_spot = sample
+        current_spot = target
 
         print(dx, dy)
         break
