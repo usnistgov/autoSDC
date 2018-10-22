@@ -70,7 +70,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             'timestamp': datetime.now().isoformat(),
             'current': pstat.current(),
             'potential': pstat.potential(),
-            'error_codes': list(error_codes)
+            'error_codes': list(map(int, error_codes))
         }
 
         pstat.clear()
@@ -118,9 +118,10 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, initial_delay, v
 
         # run CV scan
         cv_data = run_cv_scan(cell, verbose=verbose, initial_delay=initial_delay)
-        cv_data['index_in_sequence'] = idx
+        cv_data['index_in_sequence'] = int(idx)
         cv_data['position_versa'] = current_v_position
-        cv_data['position_combi'] = current_spot.to_dict()
+        _spot = current_spot.to_dict()
+        cv_data['position_combi'] = [float(_spot['x']), float(_spot['y'])]
 
         # log data
         logfile = 'grid_scan_{:03d}.json'.format(idx)
