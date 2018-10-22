@@ -43,7 +43,6 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, verbose):
         current_spot = target
 
         print(dx, dy)
-        break
 
         with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
             delta = [dx, dy, 0.0]
