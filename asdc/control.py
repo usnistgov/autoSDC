@@ -168,7 +168,7 @@ class Control():
         """ get the latest stored I value. """
         return self.instrument.Immediate.GetI()
 
-    def overload_status(self):
+    def overload_status(self, raise_exception=False):
         """ check for overloading.
         0 indicates no overload, 1 indicates I (current) Overload, 2
 indicates E, Power Amp or Thermal Overload has occurred.
@@ -180,7 +180,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         overload_code = self.instrument.Immediate.GetOverload()
 
-        if overload_code:
+        if overload_code and raise_exception:
             msg = 'A ' + overload_cause[overload_code] + ' has occurred.'
             raise VersaStatError(msg)
 
