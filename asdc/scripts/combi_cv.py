@@ -29,6 +29,9 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, verbose):
 
     current_spot = pd.Series(dict(x=-9.04, y=-31.64))
 
+    with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
+        initial_versastat_position = pos.current_position()
+
     for idx, target in df.iterrows():
 
         # update position: convert from mm to m
@@ -43,7 +46,6 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, verbose):
         break
 
         with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
-            initial_versastat_position = pos.current_position()
             delta = [dx, dy, 0.0]
             pos.update(delta=delta)
 
