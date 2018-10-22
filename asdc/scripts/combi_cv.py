@@ -19,7 +19,7 @@ def plot_iv(I, V, idx, data_dir='data'):
     plt.savefig(os.path.join(data_dir, 'iv_{}.png'.format(idx)))
     return
 
-def run_cv_scan(cell='INTERNAL', data_dir='data', verbose=False, initial_delay=30):
+def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
     """ run a CV scan for each point """
 
     # check on experiment status periodically:
@@ -115,7 +115,7 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, verbose):
             current_v_position = pos.current_position()
 
         # run CV scan
-        cv_data = run_cv_scan(cell, data_dir=data_dir, verbose=verbose, initial_delay=30)
+        cv_data = run_cv_scan(cell, verbose=verbose, initial_delay=30)
         cv_data['index_in_sequence'] = idx
         cv_data['position_versa'] = current_v_position
         cv_data['position_combi'] = current_spot.to_dict()
