@@ -24,6 +24,8 @@ def run_cv_scan(cell='INTERNAL', data_dir='data', verbose=False, initial_delay=3
 
     # check on experiment status periodically:
     poll_interval = 1
+    if verbose:
+        print('initial delay', initial_delay)
     time.sleep(initial_delay)
 
     with asdc.control.controller(start_idx=17109013) as pstat:
@@ -56,6 +58,7 @@ def run_cv_scan(cell='INTERNAL', data_dir='data', verbose=False, initial_delay=3
             time.sleep(poll_interval)
             overload_status = pstat.overload_status()
             if overload_status != 0:
+                print('OVERLOAD:', overload_status)
                 error_codes.add(overload_status)
 
         # collect and log data
