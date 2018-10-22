@@ -83,8 +83,9 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
 @click.option('--delta-z', default=5e-5, type=float, help='z step in meters')
 @click.option('--speed', default=1e-3, type=float, help='speed in meters/s')
 @click.option('-c', '--cell', default='INTERNAL', type=click.Choice(['INTERNAL', 'EXTERNAL']))
+@click.option('--initial-delay', default=0, type=float, help='initial delay in s before running CV scan.')
 @click.option('--verbose/--no-verbose', default=False)
-def run_combi_scan(target_file, data_dir, delta_z, speed, cell, verbose):
+def run_combi_scan(target_file, data_dir, delta_z, speed, cell, initial_delay, verbose):
     """ keep in mind that sample frame and versastat frame have x and y flipped:
     x_combi is -y_versastat
     y_combi is -x_versastat
@@ -116,7 +117,7 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, verbose):
             current_v_position = pos.current_position()
 
         # run CV scan
-        cv_data = run_cv_scan(cell, verbose=verbose, initial_delay=30)
+        cv_data = run_cv_scan(cell, verbose=verbose, initial_delay=initial_delay)
         cv_data['index_in_sequence'] = idx
         cv_data['position_versa'] = current_v_position
         cv_data['position_combi'] = current_spot.to_dict()
