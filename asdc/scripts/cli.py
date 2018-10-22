@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import asdc.control
 import asdc.position
 
-
 def plot_iv(I, V, idx):
     plt.plot(np.log10(np.abs(I)), V)
     plt.xlabel('log current')
