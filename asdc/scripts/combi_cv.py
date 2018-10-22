@@ -18,6 +18,7 @@ def plot_iv(I, V, idx, data_dir='data'):
     plt.xlabel('log current')
     plt.ylabel('voltage')
     plt.savefig(os.path.join(data_dir, 'iv_{}.png'.format(idx)))
+    plt.clf()
     return
 
 def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
