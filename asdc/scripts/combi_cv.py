@@ -44,8 +44,8 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             print(oc_params)
 
         status, params = pstat.multi_cyclic_voltammetry(
-            initial_potential=0.0, vertex_potential_1=-1.0, vertex_potential_2=1.0, final_potential=0.0, scan_rate=0.075,
-            cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=1
+            initial_potential=0.0, vertex_potential_1=-1.0, vertex_potential_2=1.2, final_potential=0.0, scan_rate=0.075,
+            cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=2
         )
 
         if verbose:
