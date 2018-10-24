@@ -35,7 +35,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
 
         # run an open-circuit followed by a CV experiment
         status, oc_params = pstat.open_circuit(
-            time_per_point=1, duration=60, current_range='AUTO', e_filter='1Hz', i_filter='1Hz'
+            time_per_point=1, duration=120, current_range='AUTO', e_filter='1Hz', i_filter='1Hz'
         )
 
         if verbose:
