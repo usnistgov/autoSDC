@@ -341,16 +341,16 @@ indicates E, Power Amp or Thermal Overload has occurred.
         bandwidth='AUTO',
         low_current_interface_bandwidth='AUTO'):
     """ linear_scan_voltammetry """
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.linear_scan_voltammetry).args
+    # concatenate argument values in function signature order
+    args = inspect.getfullargspec(self.linear_scan_voltammetry).args
 
-        # get rid of self
-        args = args[1:]
-        vals = locals()
+    # get rid of self
+    args = args[1:]
+    vals = locals()
 
-        params = ','.join([str(vals[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddLinearScanVoltammetry(params)
-        return status, params
+    params = ','.join([str(vals[arg]).upper() for arg in args])
+    status = self.instrument.Experiment.AddLinearScanVoltammetry(params)
+    return status, params
 
     def open_circuit(self,
             time_per_point=1,
