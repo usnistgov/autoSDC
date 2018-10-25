@@ -22,6 +22,15 @@ def plot_iv(I, V, idx, data_dir='data'):
     plt.close()
     return
 
+def plot_v(V, data_dir='data'):
+    plt.plot(V)
+    plt.xlabel('time')
+    plt.ylabel('voltage')
+    plt.savefig(os.path.join(data_dir, 'v_{}.png'.format(idx)))
+    plt.clf()
+    plt.close()
+    return
+
 def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
     """ run a CV scan for each point """
 
@@ -45,13 +54,20 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
 
         status, params = pstat.multi_cyclic_voltammetry(
             initial_potential=0.0, vertex_potential_1=-1.0, vertex_potential_2=1.2, final_potential=0.0, scan_rate=0.075,
-            cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=2
+            cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=1
         )
 
         if verbose:
             print('CV added.')
             print(status)
             print(params)
+
+        status, lsv_params = pstat.linear_scan_voltammetry(
+            initial_potential=1.2, final_potential=0.0, scan_rate=0.075,
+            cell_to_use=cell, e_filter='1Hz', i_filter='1Hz'
+        )
+
+
 
         timestamp_start = datetime.now().isoformat(),
         pstat.start()
@@ -72,6 +88,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             'timestamp': datetime.now().isoformat(),
             'current': pstat.current(),
             'potential': pstat.potential(),
+            'elapsed_time': pstat.elapsed_time(),
             'error_codes': list(map(int, error_codes))
         }
 
