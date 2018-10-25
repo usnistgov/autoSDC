@@ -73,6 +73,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
         error_codes = set()
         while pstat.sequence_running():
             time.sleep(poll_interval)
+            pstat.update_status()
             overload_status = pstat.overload_status()
             if overload_status != 0:
                 print('OVERLOAD:', overload_status)
