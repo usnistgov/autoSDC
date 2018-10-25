@@ -219,9 +219,13 @@ indicates E, Power Amp or Thermal Overload has occurred.
         self.instrument.Experiment.Clear()
 
 
-    def start(self, max_wait_time=10, poll_interval=2):
+    def start(self, max_wait_time=30, poll_interval=2):
         """ Starts the sequence of actions in the instrument that is currently connected.
         Wait until the instrument starts the action to return control flow. """
+        self.instrument.Experiment.Stop()
+        self.instrument.Experiment.Clear()
+
+
         self.instrument.Experiment.Start()
 
         # Note: ctl.start() can return before the sequence actually starts running,
