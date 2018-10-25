@@ -26,6 +26,7 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
     try:
         yield ctl
     except Exception as exc:
+        print(exc)
         print('unwind potentiostat controller from exception.')
         ctl.stop()
         ctl.clear()
