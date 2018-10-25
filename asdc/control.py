@@ -305,9 +305,40 @@ indicates E, Power Amp or Thermal Overload has occurred.
         status = self.instrument.Experiment.AddOpenCircuit(default_params)
         return status, default_params
 
-    def linear_scan_voltammetry(self, params):
+    def linear_scan_voltammetry(self,
+        initial_potential=0.0,
+        versus_initial='VS REF',
+        final_potential=0.65,
+        versus_final='VS REF',
+        scan_rate=1.0,
+        limit_1_type='NONE',
+        limit_1_direction='<',
+        limit_1_value=0,
+        limit_2_type=None,
+        limit_2_direction='<',
+        limit_2_value=0,
+        current_range='AUTO',
+        electrometer='AUTO',
+        e_filter='AUTO',
+        i_filter='AUTO',
+        leave_cell_on='NO',
+        cell_to_use='INTERNAL',
+        enable_ir_compensation='DISABLED',
+        user_defined_the_amount_of_ir_comp=1,
+        use_previously_determined_ir_comp='YES',
+        bandwidth='AUTO',
+        low_current_interface_bandwidth='AUTO'):
+    """ linear_scan_voltammetry """
+        # concatenate argument values in function signature order
+        args = inspect.getfullargspec(self.linear_scan_voltammetry).args
+
+        # get rid of self
+        args = args[1:]
+        vals = locals()
+
+        params = ','.join([str(vals[arg]).upper() for arg in args])
         status = self.instrument.Experiment.AddLinearScanVoltammetry(params)
-        return status
+        return status, params
 
     def open_circuit(self,
             time_per_point=1,
