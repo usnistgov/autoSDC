@@ -26,7 +26,7 @@ def plot_v(V, data_dir='data'):
     plt.plot(V)
     plt.xlabel('time')
     plt.ylabel('voltage')
-    plt.savefig(os.path.join(data_dir, 'v_{}.png'.format(idx)))
+    plt.savefig(os.path.join(data_dir, 'v.png'))
     plt.clf()
     plt.close()
     return
