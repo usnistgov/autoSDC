@@ -160,11 +160,11 @@ class Control():
 
         self.instrument.Immediate.UpdateStatus()
 
-    def potential(self):
+    def latest_potential(self):
         """ get the latest stored E value. """
         return self.instrument.Immediate.GetE()
 
-    def current(self):
+    def latest_current(self):
         """ get the latest stored I value. """
         return self.instrument.Immediate.GetI()
 
