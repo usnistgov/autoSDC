@@ -27,13 +27,13 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
         yield ctl
     except Exception as exc:
         print(exc)
-        print('unwind potentiostat controller from exception.')
+        print('Exception: unwind potentiostat controller...')
         ctl.stop()
         ctl.clear()
         ctl.disconnect()
-        raise exc
+        raise
     finally:
-        print('unwind potentiostat controller.')
+        print('disconnect from potentiostat controller.')
         ctl.stop()
         ctl.clear()
         ctl.disconnect()
