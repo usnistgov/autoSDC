@@ -235,7 +235,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
             elapsed += poll_interval
 
             if elapsed > max_wait_time:
-                raise VersastatError("could not start experiment")
+                raise VersaStatError("could not start experiment")
                 raise KeyboardInterrupt("could not start.")
                 break
 
