@@ -67,8 +67,6 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             cell_to_use=cell, e_filter='1Hz', i_filter='1Hz'
         )
 
-
-
         timestamp_start = datetime.now().isoformat(),
         pstat.start()
 
@@ -148,6 +146,7 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, initial_delay, v
             json.dump(cv_data, f)
 
         plot_iv(cv_data['current'], cv_data['potential'], idx, data_dir)
+        plot_v(cv_data['current'], cv_data['potential'], idx, data_dir)
 
     # go back to the original position....
     with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
