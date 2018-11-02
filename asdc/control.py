@@ -328,7 +328,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         final_potential=0.65,
         versus_final='VS REF',
         scan_rate=1.0,
-        limit_1_type='NONE',
+        limit_1_type=None,
         limit_1_direction='<',
         limit_1_value=0,
         limit_2_type=None,
@@ -345,7 +345,9 @@ indicates E, Power Amp or Thermal Overload has occurred.
         use_previously_determined_ir_comp='YES',
         bandwidth='AUTO',
         low_current_interface_bandwidth='AUTO'):
-        """ linear_scan_voltammetry """
+        """ linear_scan_voltammetry
+        IP Vs FP Vs SR L1T L1D L1V L2T L2D L2V IR EM EF IF LCO CTU iRC UD UP BW LBW
+        """
         # concatenate argument values in function signature order
         args = inspect.getfullargspec(self.linear_scan_voltammetry).args
 
