@@ -100,8 +100,11 @@ def cv(data_dir, cell, verbose):
         with open(os.path.join(data_dir, logfile), 'w') as f:
             json.dump(cv_data, f)
 
-        asdc.visualization.plot_iv(cv_data['current'], cv_data['potential'], scan_idx, data_dir)
+        print('plotting...')
         asdc.visualization.plot_v(cv_data['potential'], data_dir)
+        print('first plot done')
+        asdc.visualization.plot_iv(cv_data['current'], cv_data['potential'], scan_idx, data_dir)
+        print('second plot done')
 
     return
 
