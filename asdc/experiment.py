@@ -13,6 +13,8 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
     time.sleep(initial_delay)
 
     with asdc.control.controller(start_idx=17109013) as pstat:
+        pstat.stop()
+        pstat.clear()
 
         # run an open-circuit followed by a CV experiment
         status, oc_params = pstat.open_circuit(
@@ -39,7 +41,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             cell_to_use=cell, e_filter='1Hz', i_filter='1Hz'
         )
 
-        timestamp_start = datetime.now().isoformat(),
+        timestamp_start = datetime.now().isoformat()
         pstat.start()
 
         error_codes = set()
