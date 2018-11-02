@@ -95,7 +95,7 @@ def cv(data_dir, cell, verbose):
     scan_idx = len(datafiles)
     with asdc.position.controller(ip='192.168.10.11') as pos:
 
-        cv_data = asdc.experiment.run_cv_scan(cell, verbose=verbose, initial_delay=initial_delay)
+        cv_data = asdc.experiment.run_cv_scan(cell, verbose=verbose, initial_delay=1)
 
         logfile = 'cv_{:03d}.json'.format(scan_idx)
         with open(os.path.join(data_dir, logfile), 'w') as f:
