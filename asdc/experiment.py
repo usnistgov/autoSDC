@@ -20,7 +20,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
         pstat.clear()
 
         # register event handler...
-        pstat.ExperimentComplete += handler
+        pstat.instrument.Experiment.ExperimentComplete += handler
 
         # # run an open-circuit followed by a CV experiment
         # status, oc_params = pstat.corrosion_open_circuit(
