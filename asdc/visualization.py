@@ -17,7 +17,7 @@ def plot_iv(I, V, idx, data_dir='data'):
     return
 
 def plot_v(t, V, idx, data_dir='data'):
-    plt.plot(t, V)
+    plt.plot(np.arange(len(V)), V)
     plt.xlabel('time')
     plt.ylabel('voltage')
     plt.savefig(os.path.join(data_dir, 'v_{}.png'.format(idx)))
