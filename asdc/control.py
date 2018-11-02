@@ -241,6 +241,8 @@ indicates E, Power Amp or Thermal Overload has occurred.
                 raise KeyboardInterrupt("could not start.")
                 break
 
+        print('started experiment sequence successfully.')
+
         return
 
     def stop(self):
