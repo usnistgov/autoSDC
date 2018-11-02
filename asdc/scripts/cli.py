@@ -11,13 +11,8 @@ import matplotlib.pyplot as plt
 
 import asdc.control
 import asdc.position
-
-def plot_iv(I, V, idx):
-    plt.plot(np.log10(np.abs(I)), V)
-    plt.xlabel('log current')
-    plt.ylabel('voltage')
-    plt.savefig('iv_{}.png'.format(idx))
-    return
+import asdc.experiment
+import asdc.visualization
 
 @click.group()
 def cli():
@@ -100,53 +95,14 @@ def cv(data_dir, cell, verbose):
     scan_idx = len(datafiles)
     with asdc.position.controller(ip='192.168.10.11') as pos:
 
-        if verbose: pos.print_status()
+        cv_data = asdc.experiment.run_cv_scan(cell, verbose=verbose, initial_delay=initial_delay)
 
-        with asdc.control.controller(start_idx=17109013) as pstat:
-            print('connected.')
-            # run an open-circuit followed by a CV experiment
-            status, oc_params = pstat.open_circuit(
-                time_per_point=1, duration=60, current_range='AUTO', e_filter='1Hz', i_filter='1Hz'
-            )
-            print('OC added.')
-            if verbose:
-                print(status)
-                print(oc_params)
-            status, params = pstat.multi_cyclic_voltammetry(
-                initial_potential=0.0, vertex_potential_1=-1.0, vertex_potential_2=1.0, final_potential=0.0, scan_rate=0.075,
-                cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=1
-            )
-            print('CV added.')
-            if verbose:
-                print(status)
-                print(params)
+        logfile = 'cv_{:03d}.json'.format(scan_idx)
+        with open(os.path.join(data_dir, logfile), 'w') as f:
+            json.dump(scan_data, f)
 
-            print('starting.')
-            pstat.start()
-
-            while pstat.sequence_running():
-                time.sleep(poll_interval)
-
-            print('saving data')
-
-            # collect and log data
-            scan_data = {
-                'measurement': 'cyclic_voltammetry',
-                'parameters': params,
-                'index_in_sequence': scan_idx,
-                'timestamp': datetime.now().isoformat(),
-                'current': pstat.current(),
-                'potential': pstat.potential(),
-                'position': pos.current_position()
-            }
-
-            logfile = 'grid_scan_{:03d}.json'.format(scan_idx)
-            with open(os.path.join(data_dir, logfile), 'w') as f:
-                json.dump(scan_data, f)
-
-            plot_iv(scan_data['current'], scan_data['potential'], scan_idx)
-
-            pstat.clear()
+        asdc.visualization.plot_iv(cv_data['current'], cv_data['potential'], scan_idx, data_dir)
+        asdc.visualization.plot_v(cv_data['potential'], data_dir)
 
     return
 
