@@ -12,24 +12,7 @@ import matplotlib.pyplot as plt
 
 import asdc.control
 import asdc.position
-
-def plot_iv(I, V, idx, data_dir='data'):
-    plt.plot(np.log10(np.abs(I)), V)
-    plt.xlabel('log current')
-    plt.ylabel('voltage')
-    plt.savefig(os.path.join(data_dir, 'iv_{}.png'.format(idx)))
-    plt.clf()
-    plt.close()
-    return
-
-def plot_v(V, data_dir='data'):
-    plt.plot(V)
-    plt.xlabel('time')
-    plt.ylabel('voltage')
-    plt.savefig(os.path.join(data_dir, 'v.png'))
-    plt.clf()
-    plt.close()
-    return
+import asdc.visualization
 
 def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
     """ run a CV scan for each point """
@@ -146,8 +129,8 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, initial_delay, v
         with open(os.path.join(data_dir, logfile), 'w') as f:
             json.dump(cv_data, f)
 
-        plot_iv(cv_data['current'], cv_data['potential'], idx, data_dir)
-        plot_v(cv_data['potential'], data_dir)
+        asdc.visualization.plot_iv(cv_data['current'], cv_data['potential'], idx, data_dir)
+        asdc.visualization.plot_v(cv_data['potential'], data_dir)
         break
 
     # go back to the original position....
