@@ -3,6 +3,9 @@ from datetime import datetime
 
 import asdc.control
 
+def handler(source, args):
+    print('event handler got called!')
+
 def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
     """ run a CV scan for each point """
 
@@ -15,6 +18,9 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
     with asdc.control.controller(start_idx=17109013) as pstat:
         pstat.stop()
         pstat.clear()
+
+        # register event handler...
+        pstat.ExperimentComplete += handler
 
         # # run an open-circuit followed by a CV experiment
         # status, oc_params = pstat.corrosion_open_circuit(
