@@ -41,7 +41,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             print(params)
 
         status, lsv_params = pstat.linear_scan_voltammetry(
-            initial_potential=1.2, final_potential=0.0, scan_rate=0.075,
+            initial_potential=1.2, final_potential=-1.0, scan_rate=0.075,
             cell_to_use=cell, e_filter='1Hz', i_filter='1Hz'
         )
 
