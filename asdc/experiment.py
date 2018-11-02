@@ -3,9 +3,6 @@ from datetime import datetime
 
 import asdc.control
 
-def handler(source, args):
-    print('event handler got called!')
-
 def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
     """ run a CV scan for each point """
 
@@ -19,42 +16,25 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
         pstat.stop()
         pstat.clear()
 
-        # register event handler...
-        pstat.instrument.Experiment.ExperimentComplete += handler
+        # run an open-circuit followed by a CV experiment
+        status, oc_params = pstat.corrosion_open_circuit(
+            time_per_point=1, duration=120, current_range='AUTO', e_filter='1Hz', i_filter='1Hz'
+        )
 
-        # # run an open-circuit followed by a CV experiment
-        # status, oc_params = pstat.corrosion_open_circuit(
-        #     time_per_point=1, duration=15, current_range='AUTO', e_filter='1Hz', i_filter='1Hz'
-        # )
-
-        # if verbose:
-        #     print('OC added.')
-        #     print(status)
-        #     print(oc_params)
+        if verbose:
+            print('OC added.')
+            print(status)
+            print(oc_params)
 
         status, params = pstat.multi_cyclic_voltammetry(
-            initial_potential=0.0, vertex_potential_1=-1.0, vertex_potential_2=1.2, final_potential=1.2, scan_rate=0.075,
-            cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=1
+            initial_potential=0.0, vertex_potential_1=-1.0, vertex_potential_2=1.2, final_potential=0.0, scan_rate=0.075,
+            cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=2
         )
-        # status, params = pstat.cyclic_voltammetry(
-        #     initial_potential=0.0, vertex_potential=-1.0, final_potential=1.2, scan_rate=0.075,
-        #     cell_to_use=cell, e_filter='1Hz', i_filter='1Hz'
-        # )
 
         if verbose:
             print('CV added.')
             print(status)
             print(params)
-
-        status, lsv_params = pstat.linear_scan_voltammetry(
-            initial_potential=1.2, final_potential=-1.0, scan_rate=0.075,
-            cell_to_use=cell, e_filter='1Hz', i_filter='1Hz'
-        )
-
-        if verbose:
-            print('LSV added.')
-            print(status)
-            print(lsv_params)
 
         timestamp_start = datetime.now().isoformat()
         pstat.start()
