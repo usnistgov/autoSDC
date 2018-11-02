@@ -41,6 +41,10 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             cell_to_use=cell, e_filter='1Hz', i_filter='1Hz'
         )
 
+        if verbose:
+            print('LSV added.')
+            print(lsv_params)
+
         timestamp_start = datetime.now().isoformat()
         pstat.start()
 
@@ -52,6 +56,11 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             if overload_status != 0:
                 print('OVERLOAD:', overload_status)
                 error_codes.add(overload_status)
+
+            # if you think you're done, sleep some more...
+            if not pstat.sequence_running():
+                print('sleeping extra time')
+                time.sleep(10)
 
         # collect and log data
         scan_data = {
