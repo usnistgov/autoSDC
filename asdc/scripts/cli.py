@@ -25,7 +25,6 @@ def reset(verbose):
     with asdc.control.controller(start_idx=17109013) as pstat:
         pstat.stop()
         pstat.clear()
-        pstat.disconnect()
 
 @cli.command()
 @click.option('-d', '--direction', default='x', type=click.Choice(['x', 'y', '+x', '-x', '+y', '-y']))
