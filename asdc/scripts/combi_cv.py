@@ -15,15 +15,18 @@ import asdc.position
 import asdc.experiment
 import asdc.visualization
 
+# 5mm up, 50 microns down
 @click.command()
 @click.argument('target-file', type=click.Path())
 @click.option('--data-dir', default='data', type=click.Path())
-@click.option('--delta-z', default=5e-5, type=float, help='z step in meters')
+@click.option('--delta-z', default=5e-3, type=float, help='z step in meters')
 @click.option('--speed', default=1e-3, type=float, help='speed in meters/s')
 @click.option('-c', '--cell', default='INTERNAL', type=click.Choice(['INTERNAL', 'EXTERNAL']))
 @click.option('--initial-delay', default=0, type=float, help='initial delay in s before running CV scan.')
+@click.option('--lift/--no-lift', default=True, help='ease off vertically before horizontal motion.')
+@click.option('--compress/--no-compress', default=True, help='press down below vertical setpoint to reseat probe after horizontal motion')
 @click.option('--verbose/--no-verbose', default=False)
-def run_combi_scan(target_file, data_dir, delta_z, speed, cell, initial_delay, verbose):
+def run_combi_scan(target_file, data_dir, delta_z, speed, cell, initial_delay, lift, compress, verbose):
     """ keep in mind that sample frame and versastat frame have x and y flipped:
     x_combi is -y_versastat
     y_combi is -x_versastat
@@ -50,9 +53,23 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, initial_delay, v
             print('position update:', dx, dy)
 
         with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
+            # vertical step
+            if lift:
+                pos.update_z(delta=delta_z, verbose=verbose)
+
             delta = [dx, dy, 0.0]
             pos.update(delta=delta)
             current_v_position = pos.current_position()
+
+            if lift:
+                # vertical step back down:
+                pos.update_z(delta=-delta_z, verbose=verbose)
+
+            if compress:
+                # compress 50 microns, then release
+                compress_dz = 5e-5
+                pos.update_z(delta=-compress_dz, verbose=verbose)
+                pos.update_z(delta=compress_dz, verbose=verbose)
 
         # run CV scan
         cv_data = asdc.experiment.run_cv_scan(cell, verbose=verbose, initial_delay=initial_delay)
