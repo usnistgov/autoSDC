@@ -91,7 +91,23 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, initial_delay, l
         x_initial, y_initial, z_initial = initial_versastat_position
         x_current, y_current, z_current = pos.current_position()
         delta = [x_initial - x_current, y_initial - y_current, 0.0]
+
+        # vertical step
+        if lift:
+            pos.update_z(delta=delta_z, verbose=verbose)
+
         pos.update(delta=delta)
+
+        if lift:
+            # vertical step back down:
+            pos.update_z(delta=-delta_z, verbose=verbose)
+
+        if compress:
+            # compress 50 microns, then release
+            compress_dz = 5e-5
+            pos.update_z(delta=-compress_dz, verbose=verbose)
+            pos.update_z(delta=compress_dz, verbose=verbose)
+
 
 if __name__ == '__main__':
     run_combi_scan()
