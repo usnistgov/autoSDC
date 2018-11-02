@@ -43,6 +43,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
 
         if verbose:
             print('LSV added.')
+            print(status)
             print(lsv_params)
 
         timestamp_start = datetime.now().isoformat()
