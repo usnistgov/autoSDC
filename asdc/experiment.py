@@ -31,7 +31,7 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
         #     cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=1
         # )
         status, params = pstat.cyclic_voltammetry(
-            initial_potential=0.0, vertex_potential_1=-1.0, final_potential_2=1.2, scan_rate=0.075,
+            initial_potential=0.0, vertex_potential=-1.0, final_potential=1.2, scan_rate=0.075,
             cell_to_use=cell, e_filter='1Hz', i_filter='1Hz'
         )
 
