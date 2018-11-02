@@ -84,8 +84,7 @@ def run_combi_scan(target_file, data_dir, delta_z, speed, cell, initial_delay, l
             json.dump(cv_data, f)
 
         asdc.visualization.plot_iv(cv_data['current'], cv_data['potential'], idx, data_dir)
-        asdc.visualization.plot_v(cv_data['potential'], data_dir)
-        break
+        asdc.visualization.plot_v(cv_data['elapsed_time'], cv_data['potential'], idx, data_dir=data_dir)
 
     # go back to the original position....
     with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
