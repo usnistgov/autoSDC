@@ -401,6 +401,49 @@ indicates E, Power Amp or Thermal Overload has occurred.
         status = self.instrument.Experiment.AddOpenCircuit(params)
         return status, params
 
+    def corrosion_open_circuit(self,
+            time_per_point=1,
+            duration=10,
+            limit_1_type='NONE',
+            limit_1_direction='<',
+            limit_1_value=0,
+            limit_2_type=None,
+            limit_2_direction='<',
+            limit_2_value=0,
+            current_range='2MA',
+            electrometer='AUTO',
+            e_filter='AUTO',
+            i_filter='AUTO',
+            cell_to_use='INTERNAL',
+            bandwidth='AUTO',
+            low_current_interface_bandwidth='AUTO',
+            e_resolution='AUTO'):
+        """ corrosion_open_circuit
+        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_1_direction [Limit 1 Direction] {< or >}
+        limit_1_value [Limit 1 Value] {User value}
+        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_2_direction [Limit 2 Direction] {< or >}
+        limit_2_value [Limit 2 Value] {User value}
+        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
+        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
+        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
+        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
+        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
+
+        """
+
+        # concatenate argument values in function signature order
+        args = inspect.getfullargspec(self.corrosion_open_circuit).args
+
+        # get rid of self
+        args = args[1:]
+        vals = locals()
+
+        params = ','.join([str(vals[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddCorrosionOpenCircuit(params)
+        return status, params
+
     # NOTE: use enum for options?
     def cyclic_voltammetry(self,
             initial_potential=0.0,
