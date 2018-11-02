@@ -98,7 +98,7 @@ def cv(data_dir, cell, verbose):
 
         logfile = 'cv_{:03d}.json'.format(scan_idx)
         with open(os.path.join(data_dir, logfile), 'w') as f:
-            json.dump(scan_data, f)
+            json.dump(cv_data, f)
 
         asdc.visualization.plot_iv(cv_data['current'], cv_data['potential'], scan_idx, data_dir)
         asdc.visualization.plot_v(cv_data['potential'], data_dir)
