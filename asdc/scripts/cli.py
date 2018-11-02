@@ -101,7 +101,7 @@ def cv(data_dir, cell, verbose):
             json.dump(cv_data, f)
 
         print('plotting...')
-        asdc.visualization.plot_v(cv_data['potential'], data_dir)
+        asdc.visualization.plot_v(cv_data['elapsed_time'], cv_data['potential'], scan_idx, data_dir=data_dir)
         print('first plot done')
         asdc.visualization.plot_iv(cv_data['current'], cv_data['potential'], scan_idx, data_dir)
         print('second plot done')
