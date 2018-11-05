@@ -315,6 +315,42 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         return values
 
+    def applied_potential(self, start=0, num_points=None, as_list=True):
+
+        if num_points is None:
+            num_points = self.points_available()
+
+        values = self.instrument.Experiment.GetDataAppliedPotential(start, num_points)
+
+        if as_list:
+            return [value for value in values]
+
+        return values
+
+    def segment(self, start=0, num_points=None, as_list=True):
+
+        if num_points is None:
+            num_points = self.points_available()
+
+        values = self.instrument.Experiment.GetDataSegment(start, num_points)
+
+        if as_list:
+            return [value for value in values]
+
+        return values
+
+    def current_range_history(self, start=0, num_points=None, as_list=True):
+
+        if num_points is None:
+            num_points = self.points_available()
+
+        values = self.instrument.Experiment.GetDataCurrentRange(start, num_points)
+
+        if as_list:
+            return [value for value in values]
+
+        return values
+
     def add_open_circuit(self, params):
         default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
         status = self.instrument.Experiment.AddOpenCircuit(default_params)
