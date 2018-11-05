@@ -57,7 +57,10 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             'current': pstat.current(),
             'potential': pstat.potential(),
             'elapsed_time': pstat.elapsed_time(),
-            'error_codes': list(map(int, error_codes))
+            'error_codes': list(map(int, error_codes)),
+            'applied_potential': pstat.applied_potential(),
+            'current_range': pstat.current_range_history(),
+            'segment': pstat.segment()
         }
 
         pstat.clear()
