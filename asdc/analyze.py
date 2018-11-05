@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 
-def model_autorange_defects(V, I, threshold=0.5, tau_increasing=10, tau_decreasing=3.8):
-    """ autorange defects occur when the potentiostat switches current ranges
+def model_autorange_artifacts(V, I, threshold=0.5, tau_increasing=10, tau_decreasing=3.8):
+    """ autorange artifacts occur when the potentiostat switches current ranges
     The effect is an apparent spike in measured current by about an order of magnitude...
     This function attempts to detect and model these artifacts as step functions with exponential decay
     """
