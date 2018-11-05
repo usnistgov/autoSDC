@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 
-def model_autorange_defects(V, I, threshold=0.5):
+def model_autorange_defects(V, I, threshold=0.5, tau_increasing=10, tau_decreasing=3.8):
     """ autorange defects occur when the potentiostat switches current ranges
     The effect is an apparent spike in measured current by about an order of magnitude...
     This function attempts to detect and model these artifacts as step functions with exponential decay
@@ -22,9 +22,9 @@ def model_autorange_defects(V, I, threshold=0.5):
 
         # different relaxation times depending on current direction (and voltage ramp direction...)
         if step_magnitude > 0:
-            tau = 10
+            tau = tau_increasing
         elif step_magnitude < 0:
-            tau = 3.8
+            tau = tau_decreasing
 
         # offset the index of the step by 1 (due numpy.diff using a right-handed difference)
         pulse =  signal.exponential(artifact_model.size, center=idx+1, tau=tau, sym=False)
