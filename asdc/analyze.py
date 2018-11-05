@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
+from scipy import stats
 from scipy import signal
+
+import lmfit
+from lmfit import models
 
 def model_autorange_artifacts(V, I, threshold=0.5, tau_increasing=10, tau_decreasing=3.8):
     """ autorange artifacts occur when the potentiostat switches current ranges
@@ -36,6 +40,28 @@ def model_autorange_artifacts(V, I, threshold=0.5, tau_increasing=10, tau_decrea
 
     return artifact_model
 
+def guess_open_circuit_potential(V, log_I):
+    open_circuit = V[np.argmin(log_I)]
+    return open_circuit
+
+def model_open_circuit_potential(V, log_I):
+    """ extract open circuit potential by modeling log(I)-V curve an laplace peak with a polynomial background """
+    y = -log_I
+
+    def laplace(x, loc, scale, amplitude):
+        return amplitude * stats.laplace.pdf(x, loc=loc, scale=scale)
+
+    peak = lmfit.Model(laplace, prefix='peak_')
+    bg = models.PolynomialModel(3, prefix='bg_')
+
+    loc = np.argmax(y)
+    pars = bg.guess(y, x=V)
+    pars += peak.make_params(peak_loc=V[loc], peak_scale=0.01, peak_amplitude=0.1)
+
+    model = peak + bg
+    fitted_model = model.fit(y, x=V, params=pars, nan_policy='omit')
+
+    return fitted_model
 
 def voltage_turning_points(V):
     dV = np.diff(signal.savgol_filter(V, 11, 4))
