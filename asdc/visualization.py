@@ -24,3 +24,18 @@ def plot_v(t, V, idx, data_dir='data'):
     plt.clf()
     plt.close()
     return
+
+def make_circle(r):
+    t = np.arange(0, np.pi * 2.0, 0.01)
+    t = t.reshape((len(t), 1))
+    x = r * np.cos(t)
+    y = r * np.sin(t)
+    return np.hstack((x, y))
+
+def combi_plot():
+    """ scatter plot visualizations on a 3-inch combi wafer.
+    coordinate system is specified in mm
+    """
+    R = 76.2 / 2
+    c = make_circle(R) # 3 inch wafer --> 76.2 mm diameter
+    plt.plot(c[:,0], c[:,1], color='k')
