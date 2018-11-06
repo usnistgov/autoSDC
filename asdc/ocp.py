@@ -27,7 +27,7 @@ def load_dataset(data_dir):
     df = df.reset_index(drop=True)
     return df
 
-def gp_select(data_dir, plot_model=True):
+def gp_select(data_dir, plot_model=True, idx=0):
     df = load_dataset(data_dir)
     ocp = [
         analyze.extract_open_circuit_potential(row.current, row.potential, row.segment)
@@ -74,7 +74,7 @@ def gp_select(data_dir, plot_model=True):
     query_position = gridpoints[query_id]
 
     # plot the model...
-    figure_path = os.path.join(data_dir, 'ocp_predictions_{}.png'.format(df.shape[0]))
+    figure_path = os.path.join(data_dir, 'ocp_predictions_{}.png'.format(idx))
     visualization.plot_ocp_model(x, y, ocp, gridpoints, m, query_position, figure_path)
 
     # convert query position to pd.Series format...

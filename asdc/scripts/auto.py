@@ -88,7 +88,11 @@ def run_auto_scan(target_file, n_acquisitions, data_dir, delta_z, speed, cell, i
     n_total = n_initial + n_acquisitions
 
     pre_collected_data = glob.glob(os.path.join(data_dir, '*.json'))
-    start_idx = len(pre_collected_data)
+    # start_idx = len(pre_collected_data)
+    most_recent_file = sorted(pre_collected_data)[-1]
+    bn, _ = os.path.splitext(os.path.basename(most_recent_file))
+    _, _, start_idx = bn.split('_')
+    start_idx = int(start_idx)
 
     for idx in range(start_idx, n_total):
 
@@ -97,7 +101,7 @@ def run_auto_scan(target_file, n_acquisitions, data_dir, delta_z, speed, cell, i
             target = df.iloc[idx]
         else:
             asdc.slack.post_message('acquiring GP spot {}'.format(idx))
-            target = asdc.ocp.gp_select(data_dir, plot_model=True)
+            target = asdc.ocp.gp_select(data_dir, plot_model=True, idx=idx)
             asdc.slack.post_image(os.path.join(data_dir, 'ocp_predictions_{}.png'.format(idx)), title='OCP map {}'.format(idx))
 
         # update position
