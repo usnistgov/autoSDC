@@ -124,7 +124,9 @@ def run_auto_scan(target_file, n_acquisitions, data_dir, delta_z, speed, cell, i
         # asdc.visualization.plot_v(cv_data['elapsed_time'], cv_data['potential'], idx, data_dir=data_dir)
 
     # re-fit the GP after the final measurement
+    asdc.slack.post_message('fitting final GP model.')
     target = asdc.ocp.gp_select(data_dir, plot_model=True)
+    asdc.slack.post_image(os.path.join(data_dir, 'ocp_predictions_final.png'), title='OCP map')
 
     # go back to the original position....
     with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
