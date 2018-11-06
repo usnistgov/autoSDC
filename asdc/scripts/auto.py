@@ -84,12 +84,13 @@ def run_auto_scan(target_file, n_acquisitions, data_dir, delta_z, speed, cell, i
 
     # kickstart with a few pre-determined scans...
     df = pd.read_csv(target_file, index_col=0)
+    n_initial, _ = df.shape
+    n_total = n_initial + n_acquisitions
 
     pre_collected_data = glob.glob(os.path.join(data_dir, '*.json'))
-    offset = len(pre_collected_data)
+    start_idx = len(pre_collected_data)
 
-    n_initial, _ = df.shape
-    for idx in range(offset, offset + n_initial + n_acquisitions):
+    for idx in range(start_idx, n_total):
 
         if idx < n_initial:
             asdc.slack.post_message('acquiring predetermined spot {}'.format(idx))
