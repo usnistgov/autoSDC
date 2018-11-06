@@ -27,7 +27,7 @@ def load_dataset(data_dir):
     df = df.reset_index(drop=True)
     return df
 
-def model_ocp(data_dir, plot_model=True):
+def gp_select(data_dir, plot_model=True):
     df = load_dataset(data_dir)
     ocp = [
         analyze.extract_open_circuit_potential(row.current, row.potential, row.segment)
