@@ -1,11 +1,14 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 
 import sys
 import warnings
 warnings.simplefilter("ignore", UserWarning)
 sys.coinit_flags = 2
+
+import asdc.analyze
 
 def plot_iv(I, V, idx, data_dir='data'):
     plt.plot(np.log10(np.abs(I)), V)
@@ -39,3 +42,46 @@ def combi_plot():
     R = 76.2 / 2
     c = make_circle(R) # 3 inch wafer --> 76.2 mm diameter
     plt.plot(c[:,0], c[:,1], color='k')
+
+def plot_open_circuit(current, potential, segment, figpath='open_circuit.png'):
+    plt.figure(figsize=(4,5))
+
+    model = asdc.analyze.extract_open_circuit_potential(current, potential, segment, return_model=True)
+    plt.plot(-model.data, model.userkws['x'], color='b')
+    plt.plot(-model.best_fit, model.userkws['x'], c='r', linestyle='--', alpha=0.5)
+    plt.axhline(model.best_values['peak_loc'], c='k', linestyle='--', alpha=0.5)
+
+    plt.xlabel('log current (log (A)')
+    plt.ylabel('potential (V)')
+    plt.savefig(figpath, bbox_inches=True)
+    plt.clf()
+    plt.close()
+    return
+
+def plot_ocp_model(x, y, ocp, gridpoints, model, query_position, figure_path=None):
+
+    mu_y, var_y = model.predict(gridpoints)
+
+    plt.figure(figsize=(5,4))
+    combi_plot()
+
+    plt.scatter(x,y, c=ocp, edgecolors='k')
+    plt.axis('equal')
+
+    cmap = plt.cm.viridis
+    colors = Normalize(mu_y.min(), mu_y.max(), clip=True)(mu_y.flatten())
+    c = cmap(colors)
+    a = Normalize(var_y.min(), var_y.max(), clip=True)(var_y.flatten())
+    c[...,-1] = 1-a
+
+    c = c.reshape((w,w,4))
+    c[np.sqrt(np.square(gridpoints).sum(axis=1)) > 76.2 / 2, -1] = 0
+
+    extent = (np.min(gridpoints), np.max(gridpoints), np.min(gridpoints), np.max(gridpoints))
+    plt.imshow(c, extent=extent, origin='lower');
+
+    plt.scatter(query_position[0], query_position[1], c='r')
+
+    if figure_path is not None:
+        plt.savefig(figure_path, bbox_inches='tight')
+        plt.clf()
