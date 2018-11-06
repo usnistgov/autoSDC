@@ -63,6 +63,27 @@ def model_open_circuit_potential(V, log_I):
 
     return fitted_model
 
+def extract_open_circuit_potential(current, potential, segment, return_model=False):
+
+    # use the first CV cycle...
+    sel = np.array(segment) == 2
+    I = np.array(current)[sel]
+    V = np.array(potential)[sel]
+
+    # hack: use just the increasing ramp...
+    # this works for 75 mV/s scan from -1V to 1.2V...
+    I = I[:1000]
+    V = V[:1000]
+
+    # now correct for autorange artifacts
+    a = model_autorange_artifacts(V, I, tau_increasing=10)
+    model = model_open_circuit_potential(V, np.log10(np.abs(I)) - a)
+
+    if return_model:
+        return model
+
+    return model.best_values['peak_loc']
+
 def voltage_turning_points(V):
     dV = np.diff(signal.savgol_filter(V, 11, 4))
 
