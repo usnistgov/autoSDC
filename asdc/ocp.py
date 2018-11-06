@@ -66,7 +66,6 @@ def gp_select(data_dir, plot_model=True):
     mu_y, var_y = m.predict_y(gridpoints)
 
     # no queries closer than 11mm to the edge of the wafer...
-    var_y = var_y.copy()
     R_max = (76.2 / 2) - 11
     sel = np.sqrt(np.square(xx)+np.square(yy)) > R_max
     var_y[sel] = 0
