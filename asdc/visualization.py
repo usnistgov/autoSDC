@@ -53,7 +53,7 @@ def plot_open_circuit(current, potential, segment, figpath='open_circuit.png'):
 
     plt.xlabel('log current (log (A)')
     plt.ylabel('potential (V)')
-    plt.savefig(figpath, bbox_inches=True)
+    plt.savefig(figpath, bbox_inches='tight')
     plt.clf()
     plt.close()
     return
