@@ -60,27 +60,34 @@ def plot_open_circuit(current, potential, segment, figpath='open_circuit.png'):
 
 def plot_ocp_model(x, y, ocp, gridpoints, model, query_position, figure_path=None):
 
-    mu_y, var_y = model.predict(gridpoints)
+    N, _ = gridpoints.shape
+    w = int(np.sqrt(N))
+    mu_y, var_y = model.predict_y(gridpoints)
+
 
     plt.figure(figsize=(5,4))
     combi_plot()
 
-    plt.scatter(x,y, c=ocp, edgecolors='k')
+    plt.scatter(x,y, c=ocp, edgecolors='k', cmap='Blues')
     plt.axis('equal')
 
-    cmap = plt.cm.viridis
-    colors = Normalize(mu_y.min(), mu_y.max(), clip=True)(mu_y.flatten())
+    cmap = plt.cm.Blues
+    colors = Normalize(vmin=mu_y.min(), vmax=mu_y.max(), clip=True)(mu_y.flatten())
+    # colors = mu_y.flatten()
     c = cmap(colors)
     a = Normalize(var_y.min(), var_y.max(), clip=True)(var_y.flatten())
-    c[...,-1] = 1-a
+    # c[...,-1] = 1-a
 
-    c = c.reshape((w,w,4))
     c[np.sqrt(np.square(gridpoints).sum(axis=1)) > 76.2 / 2, -1] = 0
+    c = c.reshape((w,w,4))
 
     extent = (np.min(gridpoints), np.max(gridpoints), np.min(gridpoints), np.max(gridpoints))
-    plt.imshow(c, extent=extent, origin='lower');
+    im = plt.imshow(c, extent=extent, origin='lower', cmap=cmap);
+    cbar = plt.colorbar(im, extend='both')
+    plt.clim(mu_y.min(), mu_y.max())
 
-    plt.scatter(query_position[0], query_position[1], c='r')
+    plt.scatter(query_position[0], query_position[1], c='none', edgecolors='r')
+    plt.axis('equal')
 
     if figure_path is not None:
         plt.savefig(figure_path, bbox_inches='tight')

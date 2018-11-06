@@ -38,16 +38,16 @@ def gp_select(data_dir, plot_model=True):
 
     # fit a GP regression model
     X  = np.vstack((x.values, y.values)).T
-    y = np.array(ocp)[:,None]
+    ocp = np.array(ocp)
 
     with gpflow.defer_build():
         m = gpflow.models.GPR(
-            X, y,
+            X, ocp[:,None],
             kern=gpflow.kernels.RBF(2, ARD=True, variance=1.0) + gpflow.kernels.White(2),
             mean_function=gpflow.mean_functions.Constant()
         )
 
-    m.kern.kernels[0].lengthscales.prior = gpflow.priors.LogNormal([np.log(10),np.log(10)], [1.0, 1.0])
+    m.kern.kernels[0].lengthscales.prior = gpflow.priors.LogNormal([np.log(30),np.log(30)], [1.0, 1.0])
     m.compile()
     opt = gpflow.train.ScipyOptimizer()
     opt.minimize(m)
@@ -68,9 +68,9 @@ def gp_select(data_dir, plot_model=True):
     # no queries closer than 11mm to the edge of the wafer...
     R_max = (76.2 / 2) - 11
     sel = np.sqrt(np.square(xx)+np.square(yy)) > R_max
-    var_y[sel] = 0
+    var_y[sel.flatten()] = 0
 
-    query_id = np.argmax(_var_y)
+    query_id = np.argmax(var_y)
     query_position = gridpoints[query_id]
 
     # plot the model...
