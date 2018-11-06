@@ -97,7 +97,7 @@ def run_auto_scan(target_file, n_acquisitions, data_dir, delta_z, speed, cell, i
         else:
             asdc.slack.post_message('acquiring GP spot {}'.format(idx))
             target = asdc.ocp.gp_select(data_dir, plot_model=True)
-            asdc.slack.post_image(os.path.join(data_dir, 'ocp_predictions_{}.png'.format(idx)), title='OCP map {}'.format(idx))
+            asdc.slack.post_image(os.path.join(data_dir, 'ocp_predictions_{}.png'.format(idx-1)), title='OCP map {}'.format(idx-1))
 
         # update position
         # specify target position in combi sample coordinates
