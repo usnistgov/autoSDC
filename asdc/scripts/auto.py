@@ -18,7 +18,7 @@ import asdc.analyze
 import asdc.ocp
 import asdc.slack
 
-def update_position_combi(target, speed=1e-3, delta_z=5e-3, compress=True, verbose=False):
+def update_position_combi(target, current_spot, speed=1e-3, delta_z=5e-3, compress=True, verbose=False):
     # update position: convert from mm to m
     # x_vs is -y_c, y_vs is x
     dy = -(target.x - current_spot.x) * 1e-3
