@@ -1,7 +1,7 @@
 import os
 import slackclient
 
-with open('../slacktoken.txt', 'r') as f:
+with open('slacktoken.txt', 'r') as f:
     SLACK_TOKEN = f.read()
 
 sc = slackclient.SlackClient(SLACK_TOKEN)
