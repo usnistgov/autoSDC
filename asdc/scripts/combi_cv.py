@@ -16,8 +16,6 @@ import asdc.position
 import asdc.experiment
 import asdc.visualization
 
-compress_dz = 5e-5
-
 # 5mm up, 50 microns down
 @click.command()
 @click.argument('config-file', type=click.Path())
@@ -36,10 +34,8 @@ def run_combi_scan(config_file, verbose):
             config['data_dir'] = os.path.split(config_file)[0]
 
 
-    if config['lift'] and config['delta_z'] is not None:
+    if config['delta_z'] is not None:
         config['delta_z'] = abs(config['delta_z'])
-    else:
-        config['delta_z'] = None
 
     df = pd.read_csv(config['target_file'], index_col=0)
 
@@ -61,13 +57,7 @@ def run_combi_scan(config_file, verbose):
             print('position update:', dx, dy)
 
         with asdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
-
-            pos.update(delta=delta, step_height=config['delta_z'])
-
-            if config['compress']:
-                pos.update_z(delta=-compress_dz, verbose=verbose)
-                pos.update_z(delta=compress_dz, verbose=verbose)
-
+            pos.update(delta=delta, step_height=config['delta_z'], compress=config['compress_dz'])
             current_v_position = pos.current_position()
 
         # run CV scan
@@ -91,12 +81,7 @@ def run_combi_scan(config_file, verbose):
         x_current, y_current, z_current = pos.current_position()
         delta = [x_initial - x_current, y_initial - y_current, 0.0]
 
-        pos.update(delta=delta, step_height=config['delta_z'])
-
-        if config['compress']:
-            pos.update_z(delta=-compress_dz, verbose=verbose)
-            pos.update_z(delta=compress_dz, verbose=verbose)
-
+        pos.update(delta=delta, step_height=config['delta_z'], compress=config['compress_dz'])
 
 if __name__ == '__main__':
     run_combi_scan()

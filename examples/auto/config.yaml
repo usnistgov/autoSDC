@@ -1,5 +1,8 @@
-target_file: data/map.halfcombi.csv
+target_file: data/map.initactive.csv
 data_dir:
+
+# number of GP-driven measurements to collect
+n_acquisitions: 20
 
 # motion controller speed in m/s
 speed: 1e-3

@@ -4,6 +4,7 @@ import os
 import clr
 import sys
 import time
+import numpy as np
 from contextlib import contextmanager
 
 # pythonnet checks PYTHONPATH for assemblies to load...
@@ -137,7 +138,7 @@ class Position():
     def update_z(self, delta=0.001, verbose=False, poll_interval=0.1):
         return self.update_single_axis(axis=2, delta=delta, verbose=verbose, poll_interval=poll_interval)
 
-    def update(self, delta=[0.001, 0.001, 0.0], step_height=None, verbose=False, poll_interval=0.1, max_wait_time=25):
+    def update(self, delta=[0.001, 0.001, 0.0], step_height=None, compress=None, verbose=False, poll_interval=0.1, max_wait_time=25):
         """ update position setpoint and busy-wait until the motion controller has finished.
 
         delta: position update [dx, dy, dz]
@@ -145,7 +146,7 @@ class Position():
         poll_interval: busy-waiting polling interval (seconds)
         """
 
-        if step_height is not None:
+        if step_height is not None and step_height > 0:
             step_height = abs(step_height)
             self.update_z(delta=step_height, verbose=verbose)
 
@@ -167,5 +168,11 @@ class Position():
             if time_elapsed > max_wait_time:
                 raise TimeoutError('Max position update time of {}s exceeded'.format(max_wait_time))
 
-        if step_height is not None:
+        if step_height is not None and step_height > 0:
             self.update_z(delta=-step_height, verbose=verbose)
+
+        if compress is not None and abs(compress) > 0:
+            compress = np.clip(abs(compress), 0, 5e-5)
+
+            self.update_z(delta=-compress)
+            self.update_z(delta=compress)
