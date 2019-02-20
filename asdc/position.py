@@ -137,12 +137,17 @@ class Position():
     def update_z(self, delta=0.001, verbose=False, poll_interval=0.1):
         return self.update_single_axis(axis=2, delta=delta, verbose=verbose, poll_interval=poll_interval)
 
-    def update(self, delta=[0.001, 0.001, 0.0], verbose=False, poll_interval=0.1, max_wait_time=25):
+    def update(self, delta=[0.001, 0.001, 0.0], step_height=None, verbose=False, poll_interval=0.1, max_wait_time=25):
         """ update position setpoint and busy-wait until the motion controller has finished.
 
         delta: position update [dx, dy, dz]
+        step_height: ease off vertically before updating position
         poll_interval: busy-waiting polling interval (seconds)
         """
+
+        if step_height is not None:
+            step_height = abs(step_height)
+            self.update_z(delta=step_height, verbose=verbose)
 
         for d, ax in zip(delta, self.controller.Parameters):
 
@@ -161,3 +166,6 @@ class Position():
 
             if time_elapsed > max_wait_time:
                 raise TimeoutError('Max position update time of {}s exceeded'.format(max_wait_time))
+
+        if step_height is not None:
+            self.update_z(delta=-step_height, verbose=verbose)

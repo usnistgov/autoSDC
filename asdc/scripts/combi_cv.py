@@ -35,6 +35,12 @@ def run_combi_scan(config_file, verbose):
         if config['data_dir'] is None:
             config['data_dir'] = os.path.split(config_file)[0]
 
+
+    if config['lift'] and config['delta_z'] is not None:
+        config['delta_z'] = abs(config['delta_z'])
+    else:
+        config['delta_z'] = None
+
     df = pd.read_csv(config['target_file'], index_col=0)
 
     current_spot = pd.Series(dict(x=-9.04, y=-31.64))
@@ -56,13 +62,7 @@ def run_combi_scan(config_file, verbose):
 
         with asdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
 
-            if config['lift']:
-                pos.update_z(delta=config['delta_z'], verbose=verbose)
-
-            pos.update(delta=delta)
-
-            if config['lift']:
-                pos.update_z(delta=-config['delta_z'], verbose=verbose)
+            pos.update(delta=delta, step_height=config['delta_z'])
 
             if config['compress']:
                 pos.update_z(delta=-compress_dz, verbose=verbose)
@@ -91,17 +91,9 @@ def run_combi_scan(config_file, verbose):
         x_current, y_current, z_current = pos.current_position()
         delta = [x_initial - x_current, y_initial - y_current, 0.0]
 
-        if config['lift']:
-            pos.update_z(delta=config['delta_z'], verbose=verbose)
-
-        pos.update(delta=delta)
-
-        if config['lift']:
-            pos.update_z(delta=-config['delta_z'], verbose=verbose)
+        pos.update(delta=delta, step_height=config['delta_z'])
 
         if config['compress']:
-            # compress 50 microns, then release
-            compress_dz = 5e-5
             pos.update_z(delta=-compress_dz, verbose=verbose)
             pos.update_z(delta=compress_dz, verbose=verbose)
 
