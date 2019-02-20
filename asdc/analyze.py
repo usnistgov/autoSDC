@@ -31,7 +31,7 @@ def model_autorange_artifacts(V, I, threshold=0.5, tau_increasing=10, tau_decrea
             tau = tau_decreasing
 
         # offset the index of the step by 1 (due numpy.diff using a right-handed difference)
-        pulse =  signal.exponential(artifact_model.size, center=idx+1, tau=tau, sym=False)
+        pulse = signal.exponential(artifact_model.size, center=idx+1, tau=tau, sym=False)
 
         # signal.exponential generates a symmetric window... zero out the left half
         pulse[:idx+1] = 0
