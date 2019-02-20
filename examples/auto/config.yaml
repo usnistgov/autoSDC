@@ -1,4 +1,4 @@
-target_file: data/map.initactive.csv
+target_file: data/map.initialize3.csv
 data_dir:
 
 # number of GP-driven measurements to collect
