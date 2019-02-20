@@ -16,6 +16,8 @@ import asdc.position
 import asdc.experiment
 import asdc.visualization
 
+compress_dz = 5e-5
+
 # 5mm up, 50 microns down
 @click.command()
 @click.argument('config-file', type=click.Path())
@@ -46,29 +48,27 @@ def run_combi_scan(config_file, verbose):
         # x_vs is -y_c, y_vs is x
         dy = -(target.x - current_spot.x) * 1e-3
         dx = -(target.y - current_spot.y) * 1e-3
+        delta = [dx, dy, 0.0]
         current_spot = target
 
         if verbose:
             print('position update:', dx, dy)
 
         with asdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
-            # vertical step
+
             if config['lift']:
                 pos.update_z(delta=config['delta_z'], verbose=verbose)
 
-            delta = [dx, dy, 0.0]
             pos.update(delta=delta)
-            current_v_position = pos.current_position()
 
             if config['lift']:
-                # vertical step back down:
                 pos.update_z(delta=-config['delta_z'], verbose=verbose)
 
             if config['compress']:
-                # compress 50 microns, then release
-                compress_dz = 5e-5
                 pos.update_z(delta=-compress_dz, verbose=verbose)
                 pos.update_z(delta=compress_dz, verbose=verbose)
+
+            current_v_position = pos.current_position()
 
         # run CV scan
         cv_data = asdc.experiment.run_cv_scan(cell, verbose=verbose, initial_delay=config['initial_delay'])
@@ -91,14 +91,12 @@ def run_combi_scan(config_file, verbose):
         x_current, y_current, z_current = pos.current_position()
         delta = [x_initial - x_current, y_initial - y_current, 0.0]
 
-        # vertical step
         if config['lift']:
             pos.update_z(delta=config['delta_z'], verbose=verbose)
 
         pos.update(delta=delta)
 
         if config['lift']:
-            # vertical step back down:
             pos.update_z(delta=-config['delta_z'], verbose=verbose)
 
         if config['compress']:
