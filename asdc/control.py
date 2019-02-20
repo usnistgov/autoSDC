@@ -630,3 +630,62 @@ indicates E, Power Amp or Thermal Overload has occurred.
         params = ','.join([str(vals[arg]) for arg in args])
         status = self.instrument.Experiment.AddMultiCyclicVoltammetry(params)
         return status, params
+
+
+    def potentiostatic(self,
+            initial_potential=0.0,
+            versus_initial='VS REF',
+            time_per_point=0.00001,
+            duration=10,
+            limit_1_type=None,
+            limit_1_direction='<',
+            limit_1_value=0,
+            limit_2_type=None,
+            limit_2_direction='<',
+            limit_2_value=0,
+            current_range='AUTO',
+            acquisition_mode='AUTO',
+            electrometer='AUTO',
+            e_filter='AUTO',
+            i_filter='AUTO',
+            leave_cell_on='NO',
+            cell_to_use='INTERNAL',
+            enable_ir_compensation='DISABLED',
+            bandwidth='AUTO',
+            low_current_interface_bandwidth='AUTO'):
+        """ potentiostatic
+
+        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        time_per_point [TPP] (s) {float 0.00001  to ...}
+        duration [Dur] (s) {float 0.00001 to ...}
+        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_1_direction [Limit 1 Direction] {< or >}
+        limit_1_value [Limit 1 Value] {User value}
+        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_2_direction [Limit 2 Direction] {< or >}
+        limit_2_value [Limit 2 Value] {User value}
+        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
+        acquisition_mode [AM] {AUTO, NONE, 4/4, AVERAGE}
+        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
+        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
+        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
+        leave_cell_on [Leave Cell On] {YES or NO}
+        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
+        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
+        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
+        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
+        """
+
+        # concatenate argument values in function signature order
+        args = inspect.getfullargspec(self.potentiostatic).args
+
+        # get rid of self
+        args = args[1:]
+
+        vals = locals()
+
+        params = ','.join([str(vals[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddPotentiostatic(params)
+
+        return status, params
