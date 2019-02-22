@@ -33,7 +33,6 @@ def run_combi_scan(config_file, verbose):
         if config['data_dir'] is None:
             config['data_dir'] = os.path.split(config_file)[0]
 
-
     if config['delta_z'] is not None:
         config['delta_z'] = abs(config['delta_z'])
 
