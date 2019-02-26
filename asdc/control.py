@@ -24,6 +24,8 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
     """ context manager that wraps potentiostat controller class Control. """
     ctl = Control(start_idx=start_idx, initial_mode=initial_mode)
     try:
+        ctl.stop()
+        ctl.clear()
         yield ctl
     except Exception as exc:
         print(exc)

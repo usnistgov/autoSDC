@@ -48,8 +48,6 @@ def run_potentiostatic(cell='INTERNAL', potential, duration, verbose=False, init
         time.sleep(initial_delay)
 
     with asdc.control.controller(start_idx=17109013) as pstat:
-        pstat.stop()
-        pstat.clear()
 
         # run an open-circuit followed by a CV experiment
         status, params = pstat.potentiostatic(
@@ -61,8 +59,6 @@ def run_potentiostatic(cell='INTERNAL', potential, duration, verbose=False, init
         scan_data['parameters'] = params
         scan_data['measurement'] = 'potentiostatic'
 
-        pstat.clear()
-
     return scan_data
 
 def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
@@ -73,8 +69,6 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
     time.sleep(initial_delay)
 
     with asdc.control.controller(start_idx=17109013) as pstat:
-        pstat.stop()
-        pstat.clear()
 
         # run an open-circuit followed by a CV experiment
         status, oc_params = pstat.corrosion_open_circuit(
@@ -94,7 +88,5 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
         scan_data = run_experiment(pstat)
         scan_data['parameters'] = params
         scan_data['measurement'] = 'cyclic_voltammetry'
-
-        pstat.clear()
 
     return scan_data
