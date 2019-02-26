@@ -68,8 +68,6 @@ def run_potentiostatic(cell='INTERNAL', potential, duration, verbose=False, init
 def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
     """ run a CV scan for each point """
 
-    # check on experiment status periodically:
-    poll_interval = 1
     if verbose:
         print('initial delay', initial_delay)
     time.sleep(initial_delay)
@@ -83,20 +81,15 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             time_per_point=1, duration=120, current_range='AUTO', e_filter='1Hz', i_filter='1Hz', cell_to_use=cell
         )
 
-        if verbose:
-            print('OC added.')
-            print(status)
-            print(oc_params)
-
         status, params = pstat.multi_cyclic_voltammetry(
             initial_potential=0.0, vertex_potential_1=-1.0, vertex_potential_2=1.2, final_potential=0.0, scan_rate=0.075,
             cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=2
         )
 
         if verbose:
-            print('CV added.')
+            print('OC added:', oc_params)
+            print('CV added:', params)
             print(status)
-            print(params)
 
         scan_data = run_experiment(pstat)
         scan_data['parameters'] = params
