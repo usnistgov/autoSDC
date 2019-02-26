@@ -3,16 +3,49 @@ from datetime import datetime
 
 import asdc.control
 
+def run_experiment(pstat):
+
+    # check on experiment status periodically:
+    poll_interval = 1
+
+    timestamp_start = datetime.now().isoformat()
+    pstat.start()
+
+    error_codes = set()
+    while pstat.sequence_running():
+        time.sleep(poll_interval)
+        pstat.update_status()
+        overload_status = pstat.overload_status()
+        if overload_status != 0:
+            print('OVERLOAD:', overload_status)
+            error_codes.add(overload_status)
+
+    # collect and log data
+    scan_data = {
+        'timestamp_start': timestamp_start,
+        'timestamp': datetime.now().isoformat(),
+        'current': pstat.current(),
+        'potential': pstat.potential(),
+        'elapsed_time': pstat.elapsed_time(),
+        'error_codes': list(map(int, error_codes)),
+        'applied_potential': pstat.applied_potential(),
+        'current_range': pstat.current_range_history(),
+        'segment': pstat.segment()
+    }
+
+    return scan_data
+
 def run_potentiostatic(cell='INTERNAL', potential, duration, verbose=False, initial_delay=0):
     """ run a constant potential
     potential (V)
     duration (s)
     """
-    # check on experiment status periodically:
-    poll_interval = 1
+
     if verbose:
         print('initial delay', initial_delay)
-    time.sleep(initial_delay)
+
+    if initial_delay > 0:
+        time.sleep(initial_delay)
 
     with asdc.control.controller(start_idx=17109013) as pstat:
         pstat.stop()
@@ -24,32 +57,9 @@ def run_potentiostatic(cell='INTERNAL', potential, duration, verbose=False, init
             cell_to_use=cell
         )
 
-        timestamp_start = datetime.now().isoformat()
-        pstat.start()
-
-        error_codes = set()
-        while pstat.sequence_running():
-            time.sleep(poll_interval)
-            pstat.update_status()
-            overload_status = pstat.overload_status()
-            if overload_status != 0:
-                print('OVERLOAD:', overload_status)
-                error_codes.add(overload_status)
-
-        # collect and log data
-        scan_data = {
-            'measurement': 'potentiostatic',
-            'parameters': params,
-            'timestamp_start': timestamp_start,
-            'timestamp': datetime.now().isoformat(),
-            'current': pstat.current(),
-            'potential': pstat.potential(),
-            'elapsed_time': pstat.elapsed_time(),
-            'error_codes': list(map(int, error_codes)),
-            'applied_potential': pstat.applied_potential(),
-            'current_range': pstat.current_range_history(),
-            'segment': pstat.segment()
-        }
+        scan_data = run_experiment(pstat)
+        scan_data['parameters'] = params
+        scan_data['measurement'] = 'potentiostatic'
 
         pstat.clear()
 
@@ -88,32 +98,9 @@ def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
             print(status)
             print(params)
 
-        timestamp_start = datetime.now().isoformat()
-        pstat.start()
-
-        error_codes = set()
-        while pstat.sequence_running():
-            time.sleep(poll_interval)
-            pstat.update_status()
-            overload_status = pstat.overload_status()
-            if overload_status != 0:
-                print('OVERLOAD:', overload_status)
-                error_codes.add(overload_status)
-
-        # collect and log data
-        scan_data = {
-            'measurement': 'cyclic_voltammetry',
-            'parameters': params,
-            'timestamp_start': timestamp_start,
-            'timestamp': datetime.now().isoformat(),
-            'current': pstat.current(),
-            'potential': pstat.potential(),
-            'elapsed_time': pstat.elapsed_time(),
-            'error_codes': list(map(int, error_codes)),
-            'applied_potential': pstat.applied_potential(),
-            'current_range': pstat.current_range_history(),
-            'segment': pstat.segment()
-        }
+        scan_data = run_experiment(pstat)
+        scan_data['parameters'] = params
+        scan_data['measurement'] = 'cyclic_voltammetry'
 
         pstat.clear()
 
