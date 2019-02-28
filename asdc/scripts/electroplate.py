@@ -96,9 +96,9 @@ def electroplate(config_file, verbose):
 
         else:
             potential = C['V']
-            duration = int(C['t_100nm']) # time in seconds
+            duration = C['t_100nm'] # time in seconds
             print('plate', C['f_Co'], 'Co')
-            print('x={}, y={}, V={}, t={}'.format(current_spot.x, current_spot.y, potential, time))
+            print('x={}, y={}, V={}, t={}'.format(current_spot.x, current_spot.y, potential, duration))
             the_data = asdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose, initial_delay=config['initial_delay'])
             the_data.update(C.to_dict())
 
