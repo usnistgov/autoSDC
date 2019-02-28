@@ -11,6 +11,7 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
+import asdc.slack
 import asdc.control
 import asdc.position
 import asdc.experiment
@@ -87,6 +88,12 @@ def electroplate(config_file, verbose):
             print('CV', current_spot.x, current_spot.y)
             the_data = asdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose, initial_delay=config['initial_delay'])
             run_cv = False
+
+            figpath = os.path.join(config['data_dir'], 'CV_{}.png'.format(idx))
+            asdc.visualization.plot_iv(the_data['current'], the_data['potential'], figpath=figpath)
+            asdc.slack.post_image(figpath, title='CV {}'.format(idx))
+
+
         else:
             potential = C['V']
             duration = int(C['t_100nm']) # time in seconds
@@ -94,6 +101,11 @@ def electroplate(config_file, verbose):
             print('x={}, y={}, V={}, t={}'.format(current_spot.x, current_spot.y, potential, time))
             the_data = asdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose, initial_delay=config['initial_delay'])
             the_data.update(C.to_dict())
+
+            figpath = os.path.join(config['data_dir'], 'current_plot_{}.png'.format(idx))
+            asdc.visualization.plot_v(the_data['elapsed_time'], the_data['current'], figpath=figpath)
+            asdc.slack.post_image(figpath, title='current vs time {}'.format(idx))
+
 
         the_data['index_in_sequence'] = int(idx)
         the_data['position_versa'] = current_v_position
