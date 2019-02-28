@@ -90,7 +90,7 @@ def electroplate(config_file, verbose):
             run_cv = False
 
             figpath = os.path.join(config['data_dir'], 'CV_{}.png'.format(idx))
-            asdc.visualization.plot_iv(the_data['current'], the_data['potential'], figpath=figpath)
+            asdc.visualization.plot_vi(the_data['current'], the_data['potential'], figpath=figpath)
             asdc.slack.post_image(figpath, title='CV {}'.format(idx))
 
 

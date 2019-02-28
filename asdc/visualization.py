@@ -19,6 +19,16 @@ def plot_iv(I, V, figpath='iv.png'):
     plt.close()
     return
 
+def plot_vi(I, V, figpath='iv.png'):
+    plt.plot(V, np.log10(np.abs(I)))
+    plt.ylabel('log current')
+    plt.xlabel('voltage')
+    plt.savefig(figpath)
+    plt.clf()
+    plt.close()
+    return
+
+
 def plot_v(t, V, figpath='v.png'):
     plt.plot(np.arange(len(V)), V)
     plt.xlabel('time')
