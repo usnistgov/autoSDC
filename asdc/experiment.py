@@ -50,7 +50,7 @@ def run_potentiostatic(potential=0.0, duration=10, cell='INTERNAL', verbose=Fals
 
     with asdc.control.controller(start_idx=17109013) as pstat:
         n_points = 1000
-        time_per_point = np.max(duration / n_points, 1e-5)
+        time_per_point = np.maximum(duration / n_points, 1.0e-5)
         # run an open-circuit followed by a CV experiment
         status, params = pstat.potentiostatic(
             initial_potential=potential, time_per_point=time_per_point, duration=duration, current_range='AUTO', e_filter='1Hz', i_filter='1Hz',
