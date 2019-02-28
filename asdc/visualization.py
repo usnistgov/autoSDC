@@ -10,20 +10,20 @@ sys.coinit_flags = 2
 
 import asdc.analyze
 
-def plot_iv(I, V, idx, data_dir='data'):
+def plot_iv(I, V, figpath='iv.png'):
     plt.plot(np.log10(np.abs(I)), V)
     plt.xlabel('log current')
     plt.ylabel('voltage')
-    plt.savefig(os.path.join(data_dir, 'iv_{}.png'.format(idx)))
+    plt.savefig(figpath)
     plt.clf()
     plt.close()
     return
 
-def plot_v(t, V, idx, data_dir='data'):
+def plot_v(t, V, figpath='v.png'):
     plt.plot(np.arange(len(V)), V)
     plt.xlabel('time')
     plt.ylabel('voltage')
-    plt.savefig(os.path.join(data_dir, 'v_{}.png'.format(idx)))
+    plt.savefig(figpath)
     plt.clf()
     plt.close()
     return
