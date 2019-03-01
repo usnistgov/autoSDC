@@ -68,6 +68,9 @@ def electroplate(config_file, verbose):
     if len(current_solution_datafiles) > 0:
         n_current = len(current_solution_datafiles)
         comp = comp.iloc[n_current:]
+        run_cv = False
+    else:
+        run_cv = True
 
     print('start: ', current_spot.x, current_spot.y)
 
@@ -78,7 +81,7 @@ def electroplate(config_file, verbose):
     with asdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
         initial_versastat_position = pos.current_position()
 
-    run_cv = True
+
     for (idx, target), (_, C) in zip(df.iterrows(), comp.iterrows()):
 
         # update position: convert from mm to m
@@ -96,13 +99,13 @@ def electroplate(config_file, verbose):
             pos.update(delta=delta, step_height=config['delta_z'], compress=config['compress_dz'])
             current_v_position = pos.current_position()
 
-        if config['confirm']:
-            # wait for user input to actually run
-            input('press enter to run experiment')
-
         # run CV scan
         if run_cv:
             print('CV', current_spot.x, current_spot.y)
+
+            if config['confirm']:
+                input('press enter to run experiment')
+
             asdc.slack.post_message('Running a CV for {}.'.format(config['target_file']))
             the_data = asdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose, initial_delay=config['initial_delay'])
             run_cv = False
@@ -116,6 +119,10 @@ def electroplate(config_file, verbose):
             duration = C['t_100nm'] # time in seconds
             print('plate', C['f_Co'], 'Co')
             print('x={}, y={}, V={}, t={}'.format(current_spot.x, current_spot.y, potential, duration))
+
+            if config['confirm']:
+                input('press enter to run experiment')
+
             asdc.slack.post_message('Running electrodeposition targeting {} Co. ({}V for {}s)'.format(C['f_Co'], potential, duration))
             the_data = asdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose, initial_delay=config['initial_delay'])
             the_data.update(C.to_dict())
