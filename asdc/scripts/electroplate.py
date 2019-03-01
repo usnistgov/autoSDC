@@ -94,6 +94,7 @@ def electroplate(config_file, verbose):
         # run CV scan
         if run_cv:
             print('CV', current_spot.x, current_spot.y)
+            asdc.slack.post_message('Running a CV for {}.'.format(config['target_file']))
             the_data = asdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose, initial_delay=config['initial_delay'])
             run_cv = False
 
@@ -107,6 +108,7 @@ def electroplate(config_file, verbose):
             duration = C['t_100nm'] # time in seconds
             print('plate', C['f_Co'], 'Co')
             print('x={}, y={}, V={}, t={}'.format(current_spot.x, current_spot.y, potential, duration))
+            asdc.slack.post_message('Running electrodeposition targeting {} Co. ({}V for {}s)'.format(C['f_Co'], potential, duration))
             the_data = asdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose, initial_delay=config['initial_delay'])
             the_data.update(C.to_dict())
 
