@@ -60,6 +60,15 @@ def electroplate(config_file, verbose):
         current_spot = df.iloc[len(data_files)-1]
         df = df.iloc[len(data_files):]
 
+    # check to see if we're starting in the middle of a composition...
+    current_solution_datafiles = [
+        data_file for data_file in data_files
+        if stem in data_file
+    ]
+    if len(current_solution_datafiles) > 0:
+        n_current = len(current_solution_datafiles)
+        comp = comp.iloc[n_current:]
+
     print('start: ', current_spot.x, current_spot.y)
 
     if config['confirm']:
@@ -101,7 +110,6 @@ def electroplate(config_file, verbose):
             figpath = os.path.join(config['data_dir'], 'CV_{}.png'.format(idx))
             asdc.visualization.plot_vi(the_data['current'], the_data['potential'], figpath=figpath)
             asdc.slack.post_image(figpath, title='CV {}'.format(idx))
-
 
         else:
             potential = C['V']
