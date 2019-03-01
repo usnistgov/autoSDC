@@ -62,6 +62,10 @@ def electroplate(config_file, verbose):
 
     print('start: ', current_spot.x, current_spot.y)
 
+    if config['confirm']:
+        # wait for user input to actually run
+        input('press enter to run experiment')
+
     with asdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
         initial_versastat_position = pos.current_position()
 
