@@ -83,6 +83,10 @@ def electroplate(config_file, verbose):
             pos.update(delta=delta, step_height=config['delta_z'], compress=config['compress_dz'])
             current_v_position = pos.current_position()
 
+        if config['confirm']:
+            # wait for user input to actually run
+            input('press enter to run experiment')
+
         # run CV scan
         if run_cv:
             print('CV', current_spot.x, current_spot.y)
