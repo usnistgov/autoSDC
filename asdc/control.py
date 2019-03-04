@@ -384,16 +384,18 @@ indicates E, Power Amp or Thermal Overload has occurred.
         """ linear_scan_voltammetry
         IP Vs FP Vs SR L1T L1D L1V L2T L2D L2V IR EM EF IF LCO CTU iRC UD UP BW LBW
         """
+        parameters = locals().copy()
+
         # concatenate argument values in function signature order
         args = inspect.getfullargspec(self.linear_scan_voltammetry).args
 
-        # get rid of self
+        # remove reference to controller object
         args = args[1:]
-        vals = locals()
+        del parameters['self']
 
-        params = ','.join([str(vals[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddLinearScanVoltammetry(params)
-        return status, params
+        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddLinearScanVoltammetry(paramstring)
+        return status, parameters
 
     def open_circuit(self,
             time_per_point=1,
@@ -427,17 +429,18 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
         """
+        parameters = locals().copy()
 
         # concatenate argument values in function signature order
         args = inspect.getfullargspec(self.open_circuit).args
 
-        # get rid of self
+        # remove reference to controller object
         args = args[1:]
-        vals = locals()
+        del parameters['self']
 
-        params = ','.join([str(vals[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddOpenCircuit(params)
-        return status, params
+        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddOpenCircuit(paramstring)
+        return status, parameters
 
     def corrosion_open_circuit(self,
             time_per_point=1,
@@ -470,17 +473,18 @@ indicates E, Power Amp or Thermal Overload has occurred.
         cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
 
         """
+        parameters = locals().copy()
 
         # concatenate argument values in function signature order
         args = inspect.getfullargspec(self.corrosion_open_circuit).args
 
-        # get rid of self
+        # remove reference to controller object
         args = args[1:]
-        vals = locals()
+        del parameters['self']
 
-        params = ','.join([str(vals[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddCorrosionOpenCircuit(params)
-        return status, params
+        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddCorrosionOpenCircuit(paramstring)
+        return status, parameters
 
     # NOTE: use enum for options?
     def cyclic_voltammetry(self,
@@ -539,20 +543,18 @@ indicates E, Power Amp or Thermal Overload has occurred.
         bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
         low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
         """
+        parameters = locals().copy()
 
         # concatenate argument values in function signature order
         args = inspect.getfullargspec(self.cyclic_voltammetry).args
 
-        # get rid of self
+        # remove reference to controller object
         args = args[1:]
+        del parameters['self']
 
-        vals = locals()
-
-        params = ','.join([str(vals[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddCyclicVoltammetry(params)
-
-        return status, params
-
+        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddCyclicVoltammetry(paramstring)
+        return status, parameters
 
     def multi_cyclic_voltammetry(self,
             initial_potential=0.0,
@@ -620,19 +622,18 @@ indicates E, Power Amp or Thermal Overload has occurred.
         versus [Versus] {VS OC, VS REF or VS PREVIOUS}
         low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
         """
+        parameters = locals().copy()
 
         # concatenate argument values in function signature order
         args = inspect.getfullargspec(self.multi_cyclic_voltammetry).args
 
-        # get rid of 'self' argument
+        # remove reference to controller object
         args = args[1:]
+        del parameters['self']
 
-        vals = locals()
-
-        params = ','.join([str(vals[arg]) for arg in args])
-        status = self.instrument.Experiment.AddMultiCyclicVoltammetry(params)
-        return status, params
-
+        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddMultiCyclicVoltammetry(paramstring)
+        return status, parameters
 
     def potentiostatic(self,
             initial_potential=0.0,
@@ -678,16 +679,15 @@ indicates E, Power Amp or Thermal Overload has occurred.
         bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
         low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
         """
+        parameters = locals().copy()
 
         # concatenate argument values in function signature order
         args = inspect.getfullargspec(self.potentiostatic).args
 
-        # get rid of self
+        # remove reference to controller object
         args = args[1:]
+        del parameters['self']
 
-        vals = locals()
-
-        params = ','.join([str(vals[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddPotentiostatic(params)
-
-        return status, params
+        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddPotentiostatic(paramstring)
+        return status, parameters
