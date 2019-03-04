@@ -260,7 +260,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         if num_points is None:
             num_points = self.points_available()
 
-        values = np.random.random()
+        values = np.random.random(100)
 
         if as_list:
             return [value for value in values]
