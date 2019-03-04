@@ -9,10 +9,8 @@ import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-import asdc.control
-import asdc.position
-import asdc.experiment
-import asdc.visualization
+from asdc import sdc
+from asdc import visualization
 
 @click.group()
 def cli():
@@ -22,7 +20,7 @@ def cli():
 @click.option('--verbose/--no-verbose', default=False)
 def reset(verbose):
     """ try to reset the potentiostat controller... """
-    with asdc.control.controller(start_idx=17109013) as pstat:
+    with sdc.potentiostat.controller(start_idx=17109013) as pstat:
         pstat.stop()
         pstat.clear()
 
@@ -44,7 +42,7 @@ def step(direction, delta, delta_z, speed, lift, press, verbose):
     # constrain absolute delta_z to avoid crashing....
     delta_z = np.clip(delta_z, -5e-5, 5e-5)
 
-    with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
+    with sdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
 
         # vertical step
         if lift:
@@ -92,18 +90,18 @@ def cv(data_dir, cell, verbose):
     # load previous datasets just to get current index...
     datafiles = glob.glob(os.path.join(data_dir, '*.json'))
     scan_idx = len(datafiles)
-    with asdc.position.controller(ip='192.168.10.11') as pos:
+    with sdc.position.controller(ip='192.168.10.11') as pos:
 
-        cv_data = asdc.experiment.run_cv_scan(cell, verbose=verbose, initial_delay=1)
+        cv_data = sdc.experiment.run_cv_scan(cell=cell, verbose=verbose)
 
         logfile = 'cv_{:03d}.json'.format(scan_idx)
         with open(os.path.join(data_dir, logfile), 'w') as f:
             json.dump(cv_data, f)
 
         print('plotting...')
-        asdc.visualization.plot_v(cv_data['elapsed_time'], cv_data['potential'], scan_idx, data_dir=data_dir)
+        visualization.plot_v(cv_data['elapsed_time'], cv_data['potential'], scan_idx, data_dir=data_dir)
         print('first plot done')
-        asdc.visualization.plot_iv(cv_data['current'], cv_data['potential'], scan_idx, data_dir)
+        visualization.plot_iv(cv_data['current'], cv_data['potential'], scan_idx, data_dir)
         print('second plot done')
 
     return

@@ -11,10 +11,7 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-from asdc.sdc import position
-from asdc.sdc import experiment
-from asdc.sdc import potentiostat
-
+from asdc import sdc
 from asdc import slack
 from asdc import visualization
 
@@ -79,7 +76,7 @@ def electroplate(config_file, verbose):
         # wait for user input to actually run
         input('press enter to run experiment')
 
-    with position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
+    with sdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
         initial_versastat_position = pos.current_position()
 
 
@@ -96,7 +93,7 @@ def electroplate(config_file, verbose):
             print(current_spot.x, current_spot.y)
             # print('position update:', dx, dy)
 
-        with position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
+        with sdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
             pos.update(delta=delta, step_height=config['delta_z'], compress=config['compress_dz'])
             current_v_position = pos.current_position()
 
@@ -111,7 +108,7 @@ def electroplate(config_file, verbose):
                 time.sleep(config['initial_delay']
 
             slack.post_message('Running a CV for {}.'.format(config['target_file']))
-            the_data = experiment.run_cv_scan(cell=config['cell'], verbose=verbose)
+            the_data = sdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose)
             run_cv = False
 
             figpath = os.path.join(config['data_dir'], 'CV_{}.png'.format(idx))
@@ -131,7 +128,7 @@ def electroplate(config_file, verbose):
                 time.sleep(config['initial_delay']
 
             slack.post_message('Running electrodeposition targeting {} Co. ({}V for {}s)'.format(C['f_Co'], potential, duration))
-            the_data = experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose)
+            the_data = sdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose)
             the_data.update(C.to_dict())
 
             figpath = os.path.join(config['data_dir'], 'current_plot_{}.png'.format(idx))
