@@ -97,7 +97,9 @@ def run_auto_scan(config_file, verbose):
         current_spot = target
 
         # run CV scan
-        cv_data = asdc.experiment.run_cv_scan(cell, verbose=verbose, initial_delay=config['initial_delay'])
+        if config['initial_delay']:
+            time.sleep(config['initial_delay'])
+        cv_data = asdc.experiment.run_cv_scan(cell, verbose=verbose)
         cv_data['index_in_sequence'] = int(idx)
         cv_data['position_versa'] = current_v_position
         _spot = current_spot.to_dict()

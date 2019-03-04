@@ -36,17 +36,11 @@ def run_experiment(pstat):
 
     return scan_data
 
-def run_potentiostatic(potential=0.0, duration=10, cell='INTERNAL', verbose=False, initial_delay=0):
+def run_potentiostatic(potential=0.0, duration=10, cell='INTERNAL', verbose=False):
     """ run a constant potential
     potential (V)
     duration (s)
     """
-
-    if verbose:
-        print('initial delay', initial_delay)
-
-    if initial_delay > 0:
-        time.sleep(initial_delay)
 
     with asdc.control.controller(start_idx=17109013) as pstat:
         n_points = 1000
@@ -63,12 +57,8 @@ def run_potentiostatic(potential=0.0, duration=10, cell='INTERNAL', verbose=Fals
 
     return scan_data
 
-def run_cv_scan(cell='INTERNAL', verbose=False, initial_delay=30):
+def run_cv_scan(cell='INTERNAL', verbose=False):
     """ run a CV scan for each point """
-
-    if verbose:
-        print('initial delay', initial_delay)
-    time.sleep(initial_delay)
 
     with asdc.control.controller(start_idx=17109013) as pstat:
 

@@ -106,8 +106,11 @@ def electroplate(config_file, verbose):
             if config['confirm']:
                 input('press enter to run experiment')
 
+            if config['initial_delay'] > 0:
+                time.sleep(config['initial_delay']
+
             asdc.slack.post_message('Running a CV for {}.'.format(config['target_file']))
-            the_data = asdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose, initial_delay=config['initial_delay'])
+            the_data = asdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose)
             run_cv = False
 
             figpath = os.path.join(config['data_dir'], 'CV_{}.png'.format(idx))
@@ -123,8 +126,11 @@ def electroplate(config_file, verbose):
             if config['confirm']:
                 input('press enter to run experiment')
 
+            if config['initial_delay'] > 0:
+                time.sleep(config['initial_delay']
+
             asdc.slack.post_message('Running electrodeposition targeting {} Co. ({}V for {}s)'.format(C['f_Co'], potential, duration))
-            the_data = asdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose, initial_delay=config['initial_delay'])
+            the_data = asdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose)
             the_data.update(C.to_dict())
 
             figpath = os.path.join(config['data_dir'], 'current_plot_{}.png'.format(idx))
