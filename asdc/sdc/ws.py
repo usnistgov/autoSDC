@@ -6,6 +6,21 @@ import asyncio
 import websockets
 from datetime import datetime
 
+from asdc import sdc
+
+def potentiostatic(params):
+    del params['x']
+    del params['y']
+    results = sdc.experiment.run_potentiostatic(**params)
+    return results
+
+def cv(params):
+    del params['x']
+    del params['y']
+    results = sdc.experiment.run_cv_scan(**params)
+    return results
+
+
 async def sdc_transaction(websocket):
     """ await command, send ack, send data, await ack """
 
@@ -22,12 +37,18 @@ async def sdc_transaction(websocket):
     }
     await websocket.send(json.dumps(response))
 
+    if command['type'] == 'potentiostatic':
+        results = potentiostatic(command['params'])
+    elif command['type'] == 'cv':
+        results = cv(command['params'])
+    elif command['type'] == 'stop':
+        results = {}
+
     # send data
     data = {
         'type': 'results',
         'id': command['id'],
-        'api': '0.1',
-        'results': [1,2,3],
+        'results': results,
         'ts': datetime.now().isoformat()
     }
     await websocket.send(json.dumps(data))

@@ -7,6 +7,8 @@ import inspect
 import numpy as np
 from contextlib import contextmanager
 
+n_data = 5
+
 class VersaStatError(Exception):
     pass
 
@@ -224,7 +226,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         if num_points is None:
             num_points = self.points_available()
 
-        values = np.random.random(100)
+        values = np.random.random(n_data)
 
         if as_list:
             return [value for value in values]
@@ -236,7 +238,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         if num_points is None:
             num_points = self.points_available()
 
-        values = np.random.random(100)
+        values = np.random.random(n_data)
 
         if as_list:
             return [value for value in values]
@@ -248,7 +250,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         if num_points is None:
             num_points = self.points_available()
 
-        values = np.random.random(100)
+        values = np.random.random(n_data)
 
         if as_list:
             return [value for value in values]
@@ -260,7 +262,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         if num_points is None:
             num_points = self.points_available()
 
-        values = np.random.random(100)
+        values = np.random.random(n_data)
 
         if as_list:
             return [value for value in values]
@@ -272,7 +274,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         if num_points is None:
             num_points = self.points_available()
 
-        values = np.random.random(100)
+        values = np.random.random(n_data)
 
         if as_list:
             return [value for value in values]
@@ -284,7 +286,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         if num_points is None:
             num_points = self.points_available()
 
-        values = np.random.random(100)
+        values = np.random.random(n_data)
 
         if as_list:
             return [value for value in values]

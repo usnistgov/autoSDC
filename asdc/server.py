@@ -32,6 +32,8 @@ async def instrument_transaction(websocket, command):
 
     # await data
     data = json.loads(await websocket.recv())
+    print(data)
+    print()
 
     # send ack
     response = {
