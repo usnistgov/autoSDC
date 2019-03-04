@@ -353,7 +353,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         return values
 
-    def add_open_circuit(self, params):
+    def hardcoded_open_circuit(self, params):
         default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
         status = self.instrument.Experiment.AddOpenCircuit(default_params)
         return status, default_params
