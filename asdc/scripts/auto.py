@@ -11,13 +11,14 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-import asdc.control
-import asdc.position
-import asdc.experiment
-import asdc.visualization
-import asdc.analyze
-import asdc.ocp
-import asdc.slack
+from asdc.sdc import position
+from asdc.sdc import experiment
+from asdc.sdc import potentiostat
+
+from asdc import ocp
+from asdc import slack
+from asdc import analyze
+from asdc import visualization
 
 def update_position_combi(target, current_spot, speed=1e-3, delta_z=5e-3, compress_dz=5e-5, verbose=False):
     # update position: convert from mm to m
@@ -30,7 +31,7 @@ def update_position_combi(target, current_spot, speed=1e-3, delta_z=5e-3, compre
     if verbose:
         print('position update:', dx, dy)
 
-    with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
+    with position.controller(ip='192.168.10.11', speed=speed) as pos:
 
         pos.update(delta=delta, step_height=delta_z, compress=compress_dz)
         current_v_position = pos.current_position()
@@ -63,7 +64,7 @@ def run_auto_scan(config_file, verbose):
     current_spot = pd.Series(dict(x=-9.04, y=-31.64))
 
     # get the corresponding versastat reference coordinates
-    with asdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
+    with position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
         initial_versastat_position = pos.current_position()
 
     # kickstart with a few pre-determined scans...
@@ -81,13 +82,13 @@ def run_auto_scan(config_file, verbose):
     for idx in range(start_idx, n_total):
 
         if idx < n_initial:
-            asdc.slack.post_message('acquiring predetermined spot {}'.format(idx))
+            slack.post_message('acquiring predetermined spot {}'.format(idx))
             target = df.iloc[idx]
         else:
-            asdc.slack.post_message('acquiring GP spot {}'.format(idx))
-            target = asdc.ocp.gp_select(config['data_dir'], plot_model=True, idx=idx)
+            slack.post_message('acquiring GP spot {}'.format(idx))
+            target = ocp.gp_select(config['data_dir'], plot_model=True, idx=idx)
             figpath = os.path.join(config['data_dir'], 'ocp_predictions_{}.png'.format(idx))
-            asdc.slack.post_image(figpath, title='OCP map {}'.format(idx))
+            slack.post_image(figpath, title='OCP map {}'.format(idx))
 
         # update position
         # specify target position in combi sample coordinates
@@ -99,7 +100,7 @@ def run_auto_scan(config_file, verbose):
         # run CV scan
         if config['initial_delay']:
             time.sleep(config['initial_delay'])
-        cv_data = asdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose)
+        cv_data = experiment.run_cv_scan(cell=config['cell'], verbose=verbose)
         cv_data['index_in_sequence'] = int(idx)
         cv_data['position_versa'] = current_v_position
         _spot = current_spot.to_dict()
@@ -111,19 +112,19 @@ def run_auto_scan(config_file, verbose):
             json.dump(cv_data, f)
 
         figpath = os.path.join(config['data_dir'], 'open_circuit_{}.png'.format(idx))
-        asdc.visualization.plot_open_circuit(cv_data['current'], cv_data['potential'], cv_data['segment'], figpath=figpath)
-        asdc.slack.post_image(figpath, title='open circuit {}'.format(idx))
+        visualization.plot_open_circuit(cv_data['current'], cv_data['potential'], cv_data['segment'], figpath=figpath)
+        slack.post_image(figpath, title='open circuit {}'.format(idx))
 
-        # asdc.visualization.plot_iv(cv_data['current'], cv_data['potential'], idx, data_dir)
-        # asdc.visualization.plot_v(cv_data['elapsed_time'], cv_data['potential'], idx, data_dir=data_dir)
+        # visualization.plot_iv(cv_data['current'], cv_data['potential'], idx, data_dir)
+        # visualization.plot_v(cv_data['elapsed_time'], cv_data['potential'], idx, data_dir=data_dir)
 
     # re-fit the GP after the final measurement
-    asdc.slack.post_message('fitting final GP model.')
-    target = asdc.ocp.gp_select(config['data_dir'], plot_model=True)
-    asdc.slack.post_image(os.path.join(config['data_dir'], 'ocp_predictions_final.png'), title='OCP map')
+    slack.post_message('fitting final GP model.')
+    target = ocp.gp_select(config['data_dir'], plot_model=True)
+    slack.post_image(os.path.join(config['data_dir'], 'ocp_predictions_final.png'), title='OCP map')
 
     # go back to the original position....
-    with asdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
+    with position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
         x_initial, y_initial, z_initial = initial_versastat_position
         x_current, y_current, z_current = pos.current_position()
         delta = [x_initial - x_current, y_initial - y_current, 0.0]

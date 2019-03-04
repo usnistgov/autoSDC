@@ -17,8 +17,8 @@ vs_path = os.path.expanduser(
 print(vs_path)
 sys.path.append(vs_path)
 
-import asdc.position
-import asdc.control
+from asdc.sdc import position
+from asdc.sdc import potentiostat
 
 # step size 100 microns
 grid_step_size = 80 * 1e-6
@@ -173,7 +173,7 @@ def find_circle(speed=1e-5, poll_interval=5):
     initial_delta = [0.0, 0.0, -INITIAL_Z_DELTA]
     final_delta = [0.0, 0.0, INITIAL_Z_DELTA]
 
-    with asdc.position.controller(ip='192.168.10.11', speed=speed) as pos:
+    with position.controller(ip='192.168.10.11', speed=speed) as pos:
         pos.print_status()
         pos.update(delta=initial_delta, verbose=True)
         pos.print_status()
@@ -199,7 +199,7 @@ def find_circle(speed=1e-5, poll_interval=5):
         y = np.zeros(X.shape[0])
         observed = np.zeros_like(y, dtype=bool)
 
-        with asdc.control.controller(start_idx=17109013) as pstat:
+        with potentiostat.controller(start_idx=17109013) as pstat:
             pstat.set_current_range('20nA')
             pstat.stop()
             pstat.clear()

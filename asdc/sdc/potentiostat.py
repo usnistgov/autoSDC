@@ -22,7 +22,7 @@ class VersaStatError(Exception):
 @contextmanager
 def controller(start_idx=17109013, initial_mode='potentiostat'):
     """ context manager that wraps potentiostat controller class Control. """
-    ctl = Control(start_idx=start_idx, initial_mode=initial_mode)
+    ctl = Potentiostat(start_idx=start_idx, initial_mode=initial_mode)
     try:
         ctl.stop()
         ctl.clear()
@@ -40,7 +40,7 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
         ctl.clear()
         ctl.disconnect()
 
-class Control():
+class Potentiostat():
     """ Interface to the VersaSTAT SDK library for instrument control
 
     methods are broken out into `Immediate` (direct instrument control) and `Experiment`.

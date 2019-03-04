@@ -2,7 +2,7 @@ import time
 import numpy as np
 from datetime import datetime
 
-import asdc.control
+from . import potentiostat
 
 def run_experiment(pstat):
 
@@ -42,7 +42,7 @@ def run_potentiostatic(potential=0.0, duration=10, n_points=1000, cell='INTERNAL
     duration (s)
     """
 
-    with asdc.control.controller(start_idx=17109013) as pstat:
+    with potentiostat.controller(start_idx=17109013) as pstat:
 
         time_per_point = np.maximum(duration / n_points, 1.0e-5)
 
@@ -68,7 +68,7 @@ def run_cv_scan(
         verbose=False):
     """ run a CV scan for each point """
 
-    with asdc.control.controller(start_idx=17109013) as pstat:
+    with potentiostat.controller(start_idx=17109013) as pstat:
 
         # # run an open-circuit followed by a CV experiment
         # status, oc_params = pstat.corrosion_open_circuit(

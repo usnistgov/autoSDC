@@ -11,11 +11,12 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-import asdc.slack
-import asdc.control
-import asdc.position
-import asdc.experiment
-import asdc.visualization
+from asdc.sdc import position
+from asdc.sdc import experiment
+from asdc.sdc import potentiostat
+
+from asdc import slack
+from asdc import visualization
 
 @click.command()
 @click.argument('config-file', type=click.Path())
@@ -78,7 +79,7 @@ def electroplate(config_file, verbose):
         # wait for user input to actually run
         input('press enter to run experiment')
 
-    with asdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
+    with position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
         initial_versastat_position = pos.current_position()
 
 
@@ -95,7 +96,7 @@ def electroplate(config_file, verbose):
             print(current_spot.x, current_spot.y)
             # print('position update:', dx, dy)
 
-        with asdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
+        with position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
             pos.update(delta=delta, step_height=config['delta_z'], compress=config['compress_dz'])
             current_v_position = pos.current_position()
 
@@ -109,13 +110,13 @@ def electroplate(config_file, verbose):
             if config['initial_delay'] > 0:
                 time.sleep(config['initial_delay']
 
-            asdc.slack.post_message('Running a CV for {}.'.format(config['target_file']))
-            the_data = asdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose)
+            slack.post_message('Running a CV for {}.'.format(config['target_file']))
+            the_data = experiment.run_cv_scan(cell=config['cell'], verbose=verbose)
             run_cv = False
 
             figpath = os.path.join(config['data_dir'], 'CV_{}.png'.format(idx))
-            asdc.visualization.plot_vi(the_data['current'], the_data['potential'], figpath=figpath)
-            asdc.slack.post_image(figpath, title='CV {}'.format(idx))
+            visualization.plot_vi(the_data['current'], the_data['potential'], figpath=figpath)
+            slack.post_image(figpath, title='CV {}'.format(idx))
 
         else:
             potential = C['V']
@@ -129,13 +130,13 @@ def electroplate(config_file, verbose):
             if config['initial_delay'] > 0:
                 time.sleep(config['initial_delay']
 
-            asdc.slack.post_message('Running electrodeposition targeting {} Co. ({}V for {}s)'.format(C['f_Co'], potential, duration))
-            the_data = asdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose)
+            slack.post_message('Running electrodeposition targeting {} Co. ({}V for {}s)'.format(C['f_Co'], potential, duration))
+            the_data = experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose)
             the_data.update(C.to_dict())
 
             figpath = os.path.join(config['data_dir'], 'current_plot_{}.png'.format(idx))
-            asdc.visualization.plot_v(the_data['elapsed_time'], the_data['current'], figpath=figpath)
-            asdc.slack.post_image(figpath, title='current vs time {}'.format(idx))
+            visualization.plot_v(the_data['elapsed_time'], the_data['current'], figpath=figpath)
+            slack.post_image(figpath, title='current vs time {}'.format(idx))
 
 
         the_data['index_in_sequence'] = int(idx)
