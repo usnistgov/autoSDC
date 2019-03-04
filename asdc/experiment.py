@@ -36,16 +36,16 @@ def run_experiment(pstat):
 
     return scan_data
 
-def run_potentiostatic(potential=0.0, duration=10, cell='INTERNAL', verbose=False):
+def run_potentiostatic(potential=0.0, duration=10, n_points=1000, cell='INTERNAL', verbose=False):
     """ run a constant potential
     potential (V)
     duration (s)
     """
 
     with asdc.control.controller(start_idx=17109013) as pstat:
-        n_points = 1000
+
         time_per_point = np.maximum(duration / n_points, 1.0e-5)
-        # run an open-circuit followed by a CV experiment
+
         status, params = pstat.potentiostatic(
             initial_potential=potential, time_per_point=time_per_point, duration=duration, current_range='AUTO', e_filter='1Hz', i_filter='1Hz',
             cell_to_use=cell
@@ -57,7 +57,15 @@ def run_potentiostatic(potential=0.0, duration=10, cell='INTERNAL', verbose=Fals
 
     return scan_data
 
-def run_cv_scan(cell='INTERNAL', verbose=False):
+def run_cv_scan(
+        initial_potential=-0.5,
+        vertex_potential_1=-1.2,
+        vertex_potential_2=-0.5,
+        final_potential=-0.5,
+        scan_rate=0.02,
+        cycles=2,
+        cell='INTERNAL',
+        verbose=False):
     """ run a CV scan for each point """
 
     with asdc.control.controller(start_idx=17109013) as pstat:
@@ -68,8 +76,9 @@ def run_cv_scan(cell='INTERNAL', verbose=False):
         # )
 
         status, params = pstat.multi_cyclic_voltammetry(
-            initial_potential=-0.5, vertex_potential_1=-1.2, vertex_potential_2=-0.5, final_potential=-0.5, scan_rate=0.02,
-            cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=2
+            initial_potential=initial_potential, vertex_potential_1=vertex_potential_1,
+            vertex_potential_2=vertex_potential_2, final_potential=final_potential,
+            scan_rate=scan_rate, cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=cycles
         )
 
         if verbose:

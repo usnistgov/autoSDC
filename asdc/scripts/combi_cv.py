@@ -62,7 +62,7 @@ def run_combi_scan(config_file, verbose):
         # run CV scan
         if config['initial_delay']:
             time.sleep(config['initial_delay'])
-        cv_data = asdc.experiment.run_cv_scan(cell, verbose=verbose)
+        cv_data = asdc.experiment.run_cv_scan(cell=config['cell'], verbose=config['verbose'])
         cv_data['index_in_sequence'] = int(idx)
         cv_data['position_versa'] = current_v_position
         _spot = current_spot.to_dict()
