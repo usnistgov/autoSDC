@@ -1,0 +1,55 @@
+{
+    "cyclic_voltammetry": {
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "cyclic_voltammetry",
+	"description": "schema for cyclic_voltammetry experiment.",
+	"type": "object",
+	"required": ["initial_potential", "vertex_potential_1", "vertex_potential_2", "final_potential", "cycles"],
+
+	"properties": {
+	    "initial_potential": {"type": "number", "description": "initial potential (V)"},
+	    "vertex_potential_1": {"type": "number", "description": "first vertex potential (V)"},
+	    "vertex_potential_2": {"type": "number"},
+	    "scan_rate": {"type": "number", "minimum": 0},
+	    "cycles": {"type": "integer", "minimum": 0},
+	    "current_range": {"$ref": "sdc_args.json#/current_range"},
+	    "electrometer": {"$ref": "sdc_args.json#/electrometer"},
+	    "e_filter": {"$ref": "sdc_args.json#/filter_settings"},
+	    "i_filter": {"$ref": "sdc_args.json#/filter_settings"},
+	    "cell_to_use": {"$ref": "sdc_args.json#/cell_settings"},
+	    "bandwidth": {"$ref": "sdc_args.json#/bw_settings"},
+	    "final_potential": {"type": "number"},
+	    "low_current_interface_bandwidth": {"$ref": "sdc_args.json#/iface_bw_settings"}
+	}
+    },
+
+    "potentiostatic": {
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "potentiostatic",
+	"description": "schema for potentiostatic experiment parameters.",
+	"type": "object",
+
+	"properties": {
+	    "initial_potential": {"type": "number"},
+	    "versus_initial": {"$ref": "sdc_args.json#/electrode_reference"},
+	    "time_per_point": {"type": "number", "minimum": 0.00001},
+	    "duration": {"type": "number", "minimum": 0.00001},
+	    "limit_1_type": {"$ref": "sdc_args.json#/limit_type"},
+	    "limit_1_direction": {"$ref": "sdc_args.json#/comparison"},
+	    "limit_1_value": {"type": "number"},
+	    "limit_2_type": {"$ref": "sdc_args.json#/limit_type"},
+	    "limit_2_direction": {"$ref": "sdc_args.json#/comparison"},
+	    "limit_2_value": {"type": "number"},
+	    "current_range": {"$ref": "sdc_args.json#/current_range"},
+	    "acquisition_mode": {"$ref": "sdc_args.json#/acquisition"},
+	    "electrometer": {"$ref": "sdc_args.json#/electrometer"},
+	    "e_filter": {"$ref": "sdc_args.json#/filter_settings"},
+	    "i_filter": {"$ref": "sdc_args.json#/filter_settings"},
+	    "leave_cell_on": {"$ref": "sdc_args.json#/flag"},
+	    "cell_to_use": {"$ref": "sdc_args.json#/cell_settings"},
+	    "enable_ir_compensation": {"$ref": "sdc_args.json#/enabled"},
+	    "bandwidth": {"$ref": "sdc_args.json#/bw_settings"},
+	    "low_current_interface_bandwidth": {"$ref": "sdc_args.json#/iface_bw_settings"}
+	}
+    }
+}

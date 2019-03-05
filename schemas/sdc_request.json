@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "sdc request",
+    "type": "object",
+
+    "properties": {
+
+	"id": {"type": "integer", "description": "transaction id"},
+	"type": {"enum": ["cyclic_voltammetry", "potentiostatic"], "description": "SDC action"},
+	"parameters": {
+	    "anyOf":
+	    [
+		{"$ref": "parameters.json#/cyclic_voltammetry"},
+		{"$ref": "parameters.json#/potentiostatic"}
+	    ],
+	    "description": "SDC parameters."
+	}
+    }
+}

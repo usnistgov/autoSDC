@@ -1,0 +1,11 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "title": "experiment",
+    "description": "SDC experiment parameters schema",
+
+    "anyOf": [
+	{"$ref": "parameters.json#/cyclic_voltammetry"},
+	{"$ref": "parameters.json#/potentiostatic"}
+    ]
+}

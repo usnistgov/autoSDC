@@ -1,0 +1,35 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "result",
+
+    "title": "sdc response",
+
+    "type": "object",
+    "properties": {
+
+	"type": {"enum": ["cyclic_voltammetry", "potentiostatic"], "description": "SDC action"},
+	"id": {"type": "integer"},
+	"results": {
+	    "type": "object",
+	    "properties": {
+		"parameters": {"anyOf":
+			       [
+				   {"$ref": "parameters.json#/cyclic_voltammetry"},
+				   {"$ref": "parameters.json#/potentiostatic"}
+			       ],
+			       "description": "SDC results -- result type should match type property."
+			      },
+		"timestamp_start": {"type": "string", "description": "ISO timestamp at start of acqusition", "examples": ["2019-03-04T15:42:34.028760"]},
+		"timestamp": {"type": "string", "description": "ISO timestamp on completion", "examples": ["2019-03-04T15:43:35.019463"]},
+		"current": {"type": "array", "items": {"type": "number"}},
+		"potential": {"type": "array", "items": {"type": "number"}},
+		"elapsed_time": {"type": "array", "items": {"type": "number"}},
+		"error_codes": {"type": "array", "items": {"type": "number"}},
+		"applied_potential": {"type": "array", "items": {"type": "number"}},
+		"current_range": {"type": "array", "items": {"type": "number"}},
+		"segment": {"type": "array", "items": {"type": "integer"}}
+	    }
+	},
+	"ts": {"type": "string", "description": "ISO timestamp for response", "examples": ["2019-03-04T15:42:34.028760"]}
+    }
+}

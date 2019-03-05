@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "sdc settings",
+
+    "electrode_reference": {
+	"$id": "#electrode_reference",
+	"enum": ["VS OC", "VS REF", "VS PREVIOUS"]
+    },
+    "comparison": {
+	"$id": "#comparison",
+	"enum": ["<", ">"]
+    },
+    "limit_type": {
+	"$id": "#limit_type",
+	"enum": [null, "CURRENT", "POTENTIAL", "CHARGE"]
+    },
+    "current_range": {
+	"$id": "#current_range",
+	"enum": ["AUTO", "2A", "200MA", "20MA", "2MA", "200UA", "20UA", "2UA", "200NA", "20NA", "4NA"]
+    },
+    "acquisition": {
+	"$id": "#acquisition",
+	"enum": ["AUTO", null, "4/4", "AVERAGE"]
+    },
+    "electrometer": {
+	"$id": "#electrometer",
+	"enum": ["AUTO", "SINGLE ENDED", "DIFFERENTIAL"]
+    },
+    "filter_settings": {
+	"$id": "#filter_settings",
+	"enum": ["AUTO", null, "200KHZ", "1KHZ", "1KHZ", "100HZ", "10HZ", "1HZ"]
+    },
+    "flag": {
+	"$id": "#flag",
+	"enum": ["YES", "NO"]
+    },
+    "cell_settings": {
+	"$id": "#cell_settings",
+	"enum": ["INTERNAL", "EXTERNAL"]
+    },
+    "enabled": {
+	"$id": "#enabled",
+	"enum": ["ENABLED", "DISABLED"]
+    },
+    "bw_settings": {
+	"$id": "#bw_settings",
+	"enum": ["AUTO", "HIGH STABILITY", "1MHZ", "100KHZ", "1KHZ"]
+    },
+    "iface_bw_settings": {
+	"$id": "#iface_bw_settings",
+	"enum": ["AUTO", "NORMAL", "SLOW", "VERY SLOW"]
+    }
+
+}
