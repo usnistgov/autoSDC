@@ -48,12 +48,12 @@ def electroplate(config_file, verbose):
     print('running depositions from ', composition_file)
     comp = pd.read_csv(os.path.join(config['data_dir'], composition_file), index_col=0)
 
-    # add an initial dummy row for the CV...
-    comp = pd.concat((comp.iloc[0:1], comp))
-    comp.iloc[0] *= np.nan
+    # # add an initial dummy row for the CV...
+    # comp = pd.concat((comp.iloc[0:1], comp))
+    # comp.iloc[0] *= np.nan
 
     if len(data_files) == 0:
-        current_spot = pd.Series(dict(x=-9.04, y=-31.64))
+        current_spot = df.iloc[0]
     else:
         current_spot = df.iloc[len(data_files)-1]
         df = df.iloc[len(data_files):]
@@ -66,19 +66,17 @@ def electroplate(config_file, verbose):
     if len(current_solution_datafiles) > 0:
         n_current = len(current_solution_datafiles)
         comp = comp.iloc[n_current:]
-        run_cv = False
-    else:
-        run_cv = True
+
+    run_cv = False
 
     print('start: ', current_spot.x, current_spot.y)
 
-    if config['confirm']:
-        # wait for user input to actually run
-        input('press enter to run experiment')
-
     with sdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
         initial_versastat_position = pos.current_position()
+        print('initial vs position: ', initial_versastat_position)
 
+    if config['confirm']:
+        input('press enter to start the experiment')
 
     for (idx, target), (_, C) in zip(df.iterrows(), comp.iterrows()):
 
@@ -91,7 +89,7 @@ def electroplate(config_file, verbose):
 
         if verbose:
             print(current_spot.x, current_spot.y)
-            # print('position update:', dx, dy)
+            print('position update:', dx, dy)
 
         with sdc.position.controller(ip='192.168.10.11', speed=config['speed']) as pos:
             pos.update(delta=delta, step_height=config['delta_z'], compress=config['compress_dz'])
@@ -105,7 +103,7 @@ def electroplate(config_file, verbose):
                 input('press enter to run experiment')
 
             if config['initial_delay'] > 0:
-                time.sleep(config['initial_delay']
+                time.sleep(config['initial_delay'])
 
             slack.post_message('Running a CV for {}.'.format(config['target_file']))
             the_data = sdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose)
@@ -117,15 +115,16 @@ def electroplate(config_file, verbose):
 
         else:
             potential = C['V']
-            duration = C['t_100nm'] # time in seconds
+            duration = C['time'] # time in seconds
             print('plate', C['f_Co'], 'Co')
             print('x={}, y={}, V={}, t={}'.format(current_spot.x, current_spot.y, potential, duration))
+            print('make sure the flow rate is set to ', C['flow_rate'])
 
             if config['confirm']:
                 input('press enter to run experiment')
 
             if config['initial_delay'] > 0:
-                time.sleep(config['initial_delay']
+                time.sleep(config['initial_delay'])
 
             slack.post_message('Running electrodeposition targeting {} Co. ({}V for {}s)'.format(C['f_Co'], potential, duration))
             the_data = sdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose)
@@ -145,6 +144,10 @@ def electroplate(config_file, verbose):
         logfile = '{}_data_{:03d}.json'.format(stem, idx)
         with open(os.path.join(config['data_dir'], logfile), 'w') as f:
             json.dump(the_data, f)
+
+        if config['confirm']:
+            input('deposition finished; turn off the pump and press enter to move the stage...')
+
 
     open(lockfile, 'a').close()
 
