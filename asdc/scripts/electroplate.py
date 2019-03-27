@@ -32,6 +32,9 @@ def electroplate(config_file, verbose):
     if config['data_dir'] is None:
         config['data_dir'] = os.path.split(config_file)[0]
 
+    if config['figure_dir'] is None:
+        config['figure_dir'] = os.path.join(os.path.split(config_file)[0], 'figures')
+
     if config['delta_z'] is not None:
         config['delta_z'] = abs(config['delta_z'])
 
@@ -114,7 +117,7 @@ def electroplate(config_file, verbose):
             the_data = sdc.experiment.run_cv_scan(cell=config['cell'], verbose=verbose)
             run_cv = False
 
-            figpath = os.path.join(config['data_dir'], 'CV_{}.png'.format(idx))
+            figpath = os.path.join(config['figure_dir'], 'CV_{}.png'.format(idx))
             visualization.plot_vi(the_data['current'], the_data['potential'], figpath=figpath)
             slack.post_image(figpath, title='CV {}'.format(idx))
 
@@ -135,7 +138,7 @@ def electroplate(config_file, verbose):
             the_data = sdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose)
             the_data.update(C.to_dict())
 
-            figpath = os.path.join(config['data_dir'], 'current_plot_{}.png'.format(idx))
+            figpath = os.path.join(config['figure_dir'], 'current_plot_{}.png'.format(idx))
             visualization.plot_i(the_data['elapsed_time'], the_data['current'], figpath=figpath)
             slack.post_image(figpath, title='current vs time {}'.format(idx))
 
