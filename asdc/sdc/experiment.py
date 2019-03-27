@@ -47,7 +47,7 @@ def run_potentiostatic(potential=0.0, duration=10, n_points=1000, cell='INTERNAL
         time_per_point = np.maximum(duration / n_points, 1.0e-5)
 
         status, params = pstat.potentiostatic(
-            initial_potential=potential, time_per_point=time_per_point, duration=duration, current_range='AUTO', e_filter='1Hz', i_filter='1Hz',
+            initial_potential=potential, time_per_point=time_per_point, duration=duration, current_range='AUTO', e_filter='1HZ', i_filter='1HZ',
             cell_to_use=cell
         )
 
@@ -72,13 +72,13 @@ def run_cv_scan(
 
         # # run an open-circuit followed by a CV experiment
         # status, oc_params = pstat.corrosion_open_circuit(
-        #     time_per_point=1, duration=120, current_range='AUTO', e_filter='1Hz', i_filter='1Hz', cell_to_use=cell
+        #     time_per_point=1, duration=120, current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
         # )
 
         status, params = pstat.multi_cyclic_voltammetry(
             initial_potential=initial_potential, vertex_potential_1=vertex_potential_1,
             vertex_potential_2=vertex_potential_2, final_potential=final_potential,
-            scan_rate=scan_rate, cell_to_use=cell, e_filter='1Hz', i_filter='1Hz', cycles=cycles
+            scan_rate=scan_rate, cell_to_use=cell, e_filter='1HZ', i_filter='1HZ', cycles=cycles
         )
 
         if verbose:
