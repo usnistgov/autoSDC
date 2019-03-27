@@ -40,6 +40,9 @@ def electroplate(config_file, verbose):
 
     df = pd.read_csv(config['target_file'], index_col=0)
 
+    if config['initial_spot'] is not None:
+        current_spot = df.loc[config['initial_spot']]
+
     # drop any targets that we want to skip outright
     df.drop(config['skip_spots'])
 
@@ -58,13 +61,14 @@ def electroplate(config_file, verbose):
     # comp = pd.concat((comp.iloc[0:1], comp))
     # comp.iloc[0] *= np.nan
 
-    # assume we start from combi spot one
-    if len(data_files) == 0:
-        current_spot = pd.Series(dict(x=-9.04, y=-31.64))
-    else:
-        # or from a previous spot...
-        current_spot = df.iloc[len(data_files)-1]
-        df = df.iloc[len(data_files):]
+    if config['initial_spot'] is None:
+        # assume we start from combi spot one
+        if (len(data_files) == 0):
+            current_spot = pd.Series(dict(x=-9.04, y=-31.64))
+        else:
+            # or from a previous spot...
+            current_spot = df.iloc[len(data_files)-1]
+            df = df.iloc[len(data_files):]
 
     # check to see if we're starting in the middle of a composition...
     current_solution_datafiles = [
