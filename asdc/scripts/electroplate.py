@@ -44,7 +44,7 @@ def electroplate(config_file, verbose):
         current_spot = df.loc[config['initial_spot']]
 
     # drop any targets that we want to skip outright
-    df.drop(config['skip_spots'])
+    df = df.drop(config['skip_spots'])
 
     data_files = glob.glob(os.path.join(config['data_dir'], '*.json'))
 
