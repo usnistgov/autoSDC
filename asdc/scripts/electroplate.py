@@ -52,9 +52,11 @@ def electroplate(config_file, verbose):
     # comp = pd.concat((comp.iloc[0:1], comp))
     # comp.iloc[0] *= np.nan
 
+    # assume we start from combi spot one
     if len(data_files) == 0:
-        current_spot = df.iloc[0]
+        current_spot = pd.Series(dict(x=-9.04, y=-31.64))
     else:
+        # or from a previous spot...
         current_spot = df.iloc[len(data_files)-1]
         df = df.iloc[len(data_files):]
 
