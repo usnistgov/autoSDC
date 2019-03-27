@@ -37,6 +37,9 @@ def electroplate(config_file, verbose):
 
     df = pd.read_csv(config['target_file'], index_col=0)
 
+    # drop any targets that we want to skip outright
+    df.drop(config['skip_spots'])
+
     data_files = glob.glob(os.path.join(config['data_dir'], '*.json'))
 
     for composition_file in config['composition_file']:
