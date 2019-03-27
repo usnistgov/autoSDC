@@ -28,11 +28,19 @@ def plot_vi(I, V, figpath='iv.png'):
     plt.close()
     return
 
-
 def plot_v(t, V, figpath='v.png'):
     plt.plot(np.arange(len(V)), V)
     plt.xlabel('time')
     plt.ylabel('voltage')
+    plt.savefig(figpath)
+    plt.clf()
+    plt.close()
+    return
+
+def plot_i(t, I, figpath='i.png'):
+    plt.plot(np.arange(len(I)), I)
+    plt.xlabel('time (s)')
+    plt.ylabel('current (A)')
     plt.savefig(figpath)
     plt.clf()
     plt.close()

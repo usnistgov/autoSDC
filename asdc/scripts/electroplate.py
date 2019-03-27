@@ -133,7 +133,7 @@ def electroplate(config_file, verbose):
             the_data.update(C.to_dict())
 
             figpath = os.path.join(config['data_dir'], 'current_plot_{}.png'.format(idx))
-            visualization.plot_v(the_data['elapsed_time'], the_data['current'], figpath=figpath)
+            visualization.plot_i(the_data['elapsed_time'], the_data['current'], figpath=figpath)
             slack.post_image(figpath, title='current vs time {}'.format(idx))
 
 
