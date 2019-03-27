@@ -30,7 +30,7 @@ def electroplate(config_file, verbose):
         config = yaml.safe_load(f)
 
     if config['data_dir'] is None:
-        config['data_dir'] = os.path.split(config_file)[0]
+        config['data_dir'] = os.path.join(os.path.split(config_file)[0], 'data')
 
     if config['figure_dir'] is None:
         config['figure_dir'] = os.path.join(os.path.split(config_file)[0], 'figures')
