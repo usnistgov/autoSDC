@@ -45,7 +45,10 @@ def electroplate(config_file, verbose):
 
     # drop any targets that we want to skip outright
     # df = df.drop(config['skip_spots'])
-    df = df[df.index > config['initial_spot']]
+    if config['restart_in_place']:
+        df = df[df.index >= config['initial_spot']]
+    else:
+        df = df[df.index > config['initial_spot']]
 
     data_files = glob.glob(os.path.join(config['data_dir'], '*.json'))
 
