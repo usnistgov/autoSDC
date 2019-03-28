@@ -138,7 +138,9 @@ def electroplate(config_file, verbose):
             if config['initial_delay'] > 0:
                 time.sleep(config['initial_delay'])
 
-            slack.post_message('Running electrodeposition targeting {} Co. ({}V for {}s)'.format(C['f_Co'], potential, duration))
+            slack.post_message(
+                'Running electrodeposition targeting {} Co. ({}V for {}s at {})'.format(C['f_Co'], potential, duration, C['flow_rate'])
+            )
             the_data = sdc.experiment.run_potentiostatic(potential, duration, cell=config['cell'], verbose=verbose)
             the_data.update(C.to_dict())
 
