@@ -1,6 +1,9 @@
 import os
 import numpy as np
 
+import ternary
+from ternary.helpers import simplex_iterator
+
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
@@ -12,7 +15,6 @@ warnings.simplefilter("ignore", UserWarning)
 sys.coinit_flags = 2
 
 import asdc.analyze
-
 
 def colorbar(mappable):
     ax = mappable.axes
@@ -121,3 +123,85 @@ def plot_ocp_model(x, y, ocp, gridpoints, model, query_position, figure_path=Non
     if figure_path is not None:
         plt.savefig(figure_path, bbox_inches='tight')
         plt.clf()
+
+def ternary_scatter(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, s=50):
+    scale = 1
+    grid = plt.GridSpec(10, 1, wspace=1, hspace=3)
+    ax = plt.subplot(grid[:9, :])
+
+    filtered = value[np.isfinite(value)]
+    vmin, vmax = filtered.min(), filtered.max()
+
+    figure, tax = ternary.figure(scale=scale, ax=ax)
+    figure.set_size_inches(6, 6)
+    s = tax.scatter(composition, marker='o', c=value, cmap=cmap, edgecolors='k', vmin=vmin, vmax=vmax, s=s)
+    # s = tax.scatter(composition, marker='o', c=value, cmap=cmap, edgecolors='k', s=50)
+    tax.boundary(linewidth=2.0)
+    tax.gridlines(multiple=0.1, color='k')
+    tax.ticks(axis='lbr', linewidth=1, multiple=0.1, tick_formats='%0.01f', offset=0.02)
+    tax.clear_matplotlib_ticks()
+    tax.get_axes().axis('off');
+
+    tax.right_corner_label(components[0], fontsize=18, offset=-0.1)
+    tax.top_corner_label(components[1], fontsize=18)
+    tax.left_corner_label(components[2], fontsize=18, offset=0.2)
+    ax.axis('equal')
+
+    ax = plt.subplot(grid[9:,:])
+    norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+    # norm = matplotlib.colors.Normalize(vmin=-0.9, vmax=value.max())
+    cb1 = matplotlib.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm, orientation='horizontal', label=label)
+
+    if cticks is not None:
+        cb1.set_ticks(cticks)
+        # cb1.set_tick_labels([-.85, -.7, -0.5])
+
+    plt.subplots_adjust()
+    plt.tight_layout()
+
+def ternary_heatmap(model, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, scale=10, plot_var=False, nticks=5):
+
+    keys = [k for k in simplex_iterator(scale)]
+    # o_mu, o_var = model.predict_f(np.array(keys).astype(float) / scale)
+    o_mu, o_var = model.predict_f(np.array(keys).astype(float)[:,:2] / scale)
+    if plot_var:
+        v = o_var
+    else:
+        v = o_mu
+    tdata = {key: v for key, v in zip(keys, v.flat)}
+
+    grid = plt.GridSpec(10, 1, wspace=1, hspace=3)
+    ax = plt.subplot(grid[:9, :])
+
+    vmin, vmax = v.min(), v.max()
+
+    figure, tax = ternary.figure(scale=scale, ax=ax)
+    tax.set_axis_limits({'b': (0,1.0), 'l': (0,1.0), 'r': (0,1.0)})
+    tax.get_ticks_from_axis_limits(multiple=scale/nticks)
+
+    figure.set_size_inches(6, 6)
+    s = tax.heatmap(tdata, scale, cmap=cmap, vmin=vmin, vmax=vmax, colorbar=False)
+
+    tax.boundary(linewidth=2.0)
+    tax.gridlines(multiple=scale/nticks, color='k', alpha=0.5)
+    tax.clear_matplotlib_ticks()
+    tax.set_custom_ticks(tick_formats='%0.1f', offset=0.02)
+    tax.get_axes().axis('off');
+
+    tax.right_corner_label(components[0], fontsize=18, offset=-0.1)
+    tax.top_corner_label(components[1], fontsize=18)
+    tax.left_corner_label(components[2], fontsize=18, offset=0.2)
+    ax.axis('equal')
+
+    ax = plt.subplot(grid[9:,:])
+    norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+    # norm = matplotlib.colors.Normalize(vmin=-0.9, vmax=value.max())
+    cb1 = matplotlib.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm, orientation='horizontal', label=label)
+
+    if cticks is not None:
+        cb1.set_ticks(cticks)
+        # cb1.set_tick_labels([-.85, -.7, -0.5])
+
+    plt.subplots_adjust()
+    plt.tight_layout()
+    return tax
