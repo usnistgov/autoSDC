@@ -1,7 +1,10 @@
 import os
 import numpy as np
+
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import sys
 import warnings
@@ -9,6 +12,14 @@ warnings.simplefilter("ignore", UserWarning)
 sys.coinit_flags = 2
 
 import asdc.analyze
+
+
+def colorbar(mappable):
+    ax = mappable.axes
+    fig = ax.figure
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    return fig.colorbar(mappable, cax=cax)
 
 def plot_iv(I, V, figpath='iv.png'):
     plt.plot(np.log10(np.abs(I)), V)
