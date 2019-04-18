@@ -26,7 +26,6 @@ def model_ternary(composition, target):
     sel = np.isfinite(Y).flat
     X, Y = X[sel], Y[sel]
     N, D = X.shape
-    print(D)
 
     gpflow.reset_default_graph_and_session()
 
