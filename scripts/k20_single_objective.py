@@ -19,9 +19,6 @@ from asdc import analyze
 from asdc import emulation
 from asdc import visualization
 
-fig_dir = 'emulation/test'
-os.makedirs(fig_dir, exist_ok=True)
-
 opt = gpflow.training.ScipyOptimizer()
 
 def confidence_bound(mu, var, sigma=2, minimize=True):
@@ -35,10 +32,14 @@ def confidence_bound(mu, var, sigma=2, minimize=True):
 @click.command()
 @click.argument('config-file', type=click.Path())
 def k20_single_objective(config_file):
+    """ optimize a single-objective function emulated by a GP fit to experimental data """
 
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
+    model_dir, _ = os.path.split(config_file)
+    fig_dir = os.path.join(model_dir, 'figures')
+    os.makedirs(fig_dir, exist_ok=True)
     print(config)
 
     c = config['emulator']
@@ -47,7 +48,7 @@ def k20_single_objective(config_file):
     task = config['task']
     target = task['target']
 
-
+    # set up a discrete grid of samples to optimize over...
     # randomize the grid because np.argmax takes the first value in memory order
     # if there are degenerate values
     domain = emulation.simplex_grid(task['domain_resolution'], buffer=task['buffer'])
