@@ -51,6 +51,10 @@ class ExperimentEmulator():
     def __init__(self, datafile, components=['Ni', 'Al', 'Ti'], targets = ['V_oc', 'I_p', 'V_tp', 'slope', 'fwhm']):
         """ fit independent GP models for each target -- read compositions and targets from a csv file... """
         self.df = pd.read_csv(datafile, index_col=0)
+
+        # drop the anomalous point 44 that has a negative jog in the passivation...
+        self.df = self.df.drop(44)
+
         self.components = components
         self.targets = targets
 
