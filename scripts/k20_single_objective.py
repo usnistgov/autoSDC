@@ -2,10 +2,12 @@
 
 import os
 import sys
+import click
 import gpflow
 import numpy as np
 import pandas as pd
 from scipy import stats
+from ruamel import yaml
 import tensorflow as tf
 from sklearn import metrics
 
@@ -17,8 +19,10 @@ from asdc import analyze
 from asdc import emulation
 from asdc import visualization
 
-fig_dir = 'figures/k20-2019-04-18-active/'
+fig_dir = 'emulation/test'
 os.makedirs(fig_dir, exist_ok=True)
+
+opt = gpflow.training.ScipyOptimizer()
 
 def confidence_bound(mu, var, sigma=2, minimize=True):
     """ confidence bound acquisition """
@@ -28,19 +32,25 @@ def confidence_bound(mu, var, sigma=2, minimize=True):
         bound = mu.flat + sigma*np.sqrt(var.flat)
     return bound
 
-def k20_single_objective():
-    em = emulation.ExperimentEmulator('data/k20-echem.csv', components=['Ni', 'Al', 'Ti'])
+@click.command()
+@click.argument('config-file', type=click.Path())
+def k20_single_objective(config_file):
 
-    target = 'V_oc'
-    sigma = 3
-    minimize = False
-    query_budget = 20
-    domain_resolution = 100
-    opt = gpflow.training.ScipyOptimizer()
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+
+    print(config)
+
+    c = config['emulator']
+    em = emulation.ExperimentEmulator(c['datafile'], components=c['components'])
+
+    task = config['task']
+    target = task['target']
+
 
     # randomize the grid because np.argmax takes the first value in memory order
     # if there are degenerate values
-    domain = emulation.simplex_grid(domain_resolution, buffer=0.1)
+    domain = emulation.simplex_grid(task['domain_resolution'], buffer=task['buffer'])
     domain = domain[np.random.permutation(domain.shape[0])]
 
     visualization.ternary_scatter(domain, em(domain, target=target), label=target)
@@ -55,11 +65,11 @@ def k20_single_objective():
 
     # initialize
     queries = []
-    s = emulation.simplex_grid(2, buffer=0.1)
+    s = emulation.simplex_grid(2, buffer=task['buffer'])
     v = em(s, target=target)
 
     mae, r2, ev = [], [], []
-    for query_idx in range(query_budget):
+    for query_idx in range(task['budget']):
 
         # draw a picture
         visualization.ternary_scatter(s, v)
@@ -92,7 +102,7 @@ def k20_single_objective():
         plt.clf()
 
         # acquisition = probability_of_improvement(mu, var, minimize=minimize)
-        acquisition = confidence_bound(mu, var, sigma=sigma, minimize=minimize)
+        acquisition = confidence_bound(mu, var, sigma=task['kappa'], minimize=task['minimize'])
         acquisition[queries] = -np.inf
 
         visualization.ternary_scatter(domain, acquisition, label='acquisition')
@@ -103,7 +113,7 @@ def k20_single_objective():
         queries.append(np.argmax(acquisition))
         query = domain[queries[-1]][None,:]
         s = np.vstack((s, query))
-        v = np.hstack((v, em(query, target='V_oc')))
+        v = np.hstack((v, em(query, target=target)))
 
 
     # draw a picture
@@ -111,13 +121,13 @@ def k20_single_objective():
     plt.savefig(os.path.join(fig_dir, f'measured_{target}_{len(queries)}.png'), bbox_inches='tight')
     plt.clf()
 
-    plt.plot(3+np.arange(query_budget), mae)
+    plt.plot(3+np.arange(task['budget']), mae)
     plt.savefig(os.path.join(fig_dir, f'mae_{target}.png'), bbox_inches='tight')
     plt.clf()
-    plt.plot(3+np.arange(query_budget), r2)
+    plt.plot(3+np.arange(task['budget']), r2)
     plt.savefig(os.path.join(fig_dir, f'R2_{target}.png'), bbox_inches='tight')
     plt.clf()
-    plt.plot(3+np.arange(query_budget), ev)
+    plt.plot(3+np.arange(task['budget']), ev)
     plt.savefig(os.path.join(fig_dir, f'explained_variance_{target}.png'), bbox_inches='tight')
     plt.clf()
 
