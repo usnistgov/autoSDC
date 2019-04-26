@@ -18,6 +18,7 @@ from asdc import slack
 from asdc import visualization
 
 BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
+CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 
 class SDC(scirc.Client):
     """ autonomous scanning droplet cell client """
@@ -93,6 +94,8 @@ class SDC(scirc.Client):
                 print(pos.current_position())
                 print(self.c_position)
 
+        await self.dm(ws, msgdata, 'i finished the thing.')
+        time.sleep(1)
         await self.post(f'moved dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
 
     @command
@@ -178,8 +181,14 @@ class SDC(scirc.Client):
     async def dm(self, ws, msgdata, args):
         """ echo random string to DM channel """
         dm_channel = 'DHNHM74TU'
+        print('got a dm command: ', args)
+        response = await self.api_call(
+            'chat.postMessage',
+            data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'sdc'},
+            token=CTL_TOKEN
+        )
+
         # await self.post(args, ws, dm_channel)
-        await self.api_call('chat.postMessage', data={'channel': dm_channel, 'text': args})
 
 @click.command()
 @click.argument('config-file', type=click.Path())

@@ -17,6 +17,7 @@ from asdc import slack
 
 
 BOT_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
+SDC_TOKEN = open('slacktoken.txt', 'r').read().strip()
 
 class Controller(scirc.Client):
     """ autonomous scanning droplet cell client """
@@ -36,9 +37,14 @@ class Controller(scirc.Client):
     @command
     async def dm(self, ws, msgdata, args):
         """ echo random string to DM channel """
-        dm_channel = 'DHNHM74TU'
+        dm_channel = 'DHY5REQ0H'
+        # dm_channel = 'DHNHM74TU'
         # await self.post(args, ws, dm_channel)
-        await self.api_call('chat.postMessage', data={'channel': dm_channel, 'text': args})
+        response = await self.api_call(
+            'chat.postMessage',
+            data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'ctl'},
+            token=SDC_TOKEN)
+        print(response)
 
 
 @click.command()
