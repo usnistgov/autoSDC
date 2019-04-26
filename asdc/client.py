@@ -3,9 +3,12 @@ import sys
 import json
 import time
 import click
+import asyncio
+import functools
 import numpy as np
 import pandas as pd
 from ruamel import yaml
+from aioconsole import ainput
 
 sys.path.append('../scirc')
 import scirc
@@ -70,14 +73,17 @@ class SDC(scirc.Client):
             print('position update: {} {} (mm)'.format(dx, dy))
 
         if self.confirm:
-            await self.post(f'confirm update: dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
-            input('press enter to allow cell motion...')
+            await self.post(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
+            await ainput('press enter to allow cell motion...')
 
         with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
             if self.verbose:
                 print(pos.current_position())
 
-            pos.update(delta=delta, step_height=self.step_height, compress=self.compress_dz)
+            # pos.update(delta=delta, step_height=self.step_height, compress=self.compress_dz)
+            f = functools.partial(pos.update, delta=delta, step_height=self.step_height, compress=self.compress_dz)
+            await self.loop.run_in_executor(None, f)
+
             self.v_position = pos.current_position()
             self.c_position += np.array([dx, dy])
 
@@ -94,8 +100,28 @@ class SDC(scirc.Client):
         print(args)
         args = json.loads(args)
 
-        results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
-        time.sleep(args['duration'])
+        try:
+            df = pd.read_csv(self.pandas_file, index_col=0)
+            idx = df.index.max() + 1
+        except:
+            df = None
+            idx = 0
+
+        stem = 'test'
+        logfile = '{}_data_{:03d}.json'.format(stem, idx)
+
+        _msg = f"potentiostatic scan {idx}:  V={args['potential']}, t={args['duration']}"
+        if self.confirm:
+            await self.post(f'*confirm*: {_msg}', ws, msgdata['channel'])
+            await ainput('press enter to allow run the experiment...')
+        else:
+            await self.post(_msg, ws, msgdata['channel'])
+
+        # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
+        f = functools.partial(sdc.experiment.run_potentiostatic, args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
+        results = await self.loop.run_in_executor(None, f)
+
+        await self.loop.run_in_executor(None, time.sleep, args['duration'])
 
         results.update(args)
         results['position_versa'] = self.v_position
@@ -104,17 +130,13 @@ class SDC(scirc.Client):
         results['comment'] = ''
 
         # log data
-        idx = 0
-        stem = 'test'
-        logfile = '{}_data_{:03d}.json'.format(stem, idx)
         with open(os.path.join(self.data_dir, logfile), 'w') as f:
             json.dump(results, f)
 
         _df = pd.DataFrame.from_dict(results, orient='index').T
-        try:
-            df = pd.read_csv(self.pandas_file, index_col=0)
+        if df is not None:
             df = pd.concat((df, _df), ignore_index=True)
-        except:
+        else:
             df = _df
 
         df.to_csv(self.pandas_file)
@@ -131,6 +153,23 @@ class SDC(scirc.Client):
 
         df = pd.read_csv(self.pandas_file, index_col=0)
         df.at[idx, 'flag'] = True
+        df.to_csv(self.pandas_file)
+
+    @command
+    async def comment(self, ws, msgdata, args):
+        """ add a comment """
+        idx, text = args.split(' ', 1)  # need to do format checking...
+        idx = int(idx)
+
+        df = pd.read_csv(self.pandas_file, index_col=0)
+        df['comment'] = df.comment.fillna('')
+
+        if df.at[idx, 'comment']:
+            df.at[idx, 'comment'] += '; '
+            df.at[idx, 'comment'] += text
+        else:
+            df.at[idx, 'comment'] = text
+
         df.to_csv(self.pandas_file)
 
     @command
@@ -156,7 +195,10 @@ def sdc_client(config_file, verbose):
     if config['step_height'] is not None:
         config['step_height'] = abs(config['step_height'])
 
-    sdc = SDC(verbose=verbose, config=config)
+    logfile = config.get('command_logfile', 'commands.log')
+    logfile = os.path.join(config['data_dir'], logfile)
+
+    sdc = SDC(verbose=verbose, config=config, logfile=logfile)
     sdc.run()
 
 if __name__ == '__main__':
