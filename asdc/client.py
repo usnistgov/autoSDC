@@ -1,8 +1,10 @@
 import os
 import sys
 import json
-from ruamel import yaml
 import click
+import numpy as np
+import pandas as pd
+from ruamel import yaml
 
 sys.path.append('../scirc')
 import scirc
@@ -16,7 +18,7 @@ class SDC(scirc.Client):
 
     command = scirc.CommandRegistry()
 
-    def __init__(self, verbose=False):
+    def __init__(self, config=None, verbose=False):
         super().__init__(verbose=verbose)
         self.command.update(super().command)
 
@@ -25,29 +27,48 @@ class SDC(scirc.Client):
             if self.verbose:
                 print(f'initial vs position: {initial_versastat_position}')
 
+        self.initial_versastat_position = initial_versastat_position
+        self.initial_combi_position = pd.Series(config['initial_combi_position'])
+        self.step_height = config.get('step_height', 0.0)
+        self.compress_dz = config.get('compress_dz', 0.0)
+        self.cell = config.get('cell', 'INTERNAL')
+        self.speed = config.get('speed', 1e-3)
+
+        self.v_position = self.initial_versastat_position
+        self.c_position = self.initial_combi_position
+
     @command
     async def move(self, ws, msgdata, args):
         print(args)
         args = json.loads(args)
         print(args['x'], args['y'])
+
+        # specify target positions in combi reference frame
+        dx = args['x'] - self.c_position.x
+        dy = args['y'] - self.c_position.y
+        # dx, dy = 1e-3, 1e-3
         # update position: convert from mm to m
         # x_vs is -y_c, y_vs is x
-        # dy = -(args['x'] - current_spot.x) * 1e-3
-        # dx = -(args['y'] - current_spot.y) * 1e-3
-        dx, dy = 1e-3, 1e-3
-        delta = [dx, dy, 0.0]
+        delta = np.array([-dy, -dx, 0.0]) * 1e-3
         # current_spot = target
 
         if self.verbose:
             # print(current_spot.x, current_spot.y)
-            print('position update:', dx, dy)
+            print('position update: {} {} (mm)'.format(dx, dy))
 
-        with sdc.position.controller(ip='192.168.10.11') as pos:
-            # pos.update(delta=delta, step_height=config['delta_z'], compress=config['compress_dz'])
-            pos.update(delta=delta)
-            current_v_position = pos.current_position()
+        with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
+            if self.verbose:
+                print(pos.current_position())
 
-        r = f'moved dx={dx}, dy={dy}'
+            pos.update(delta=delta, step_height=self.step_height, compress=self.compress_dz)
+            self.v_position = pos.current_position()
+            self.c_position += np.array([dx, dy])
+
+            if self.verbose:
+                print(pos.current_position())
+                print(self.c_position)
+
+        r = f'moved dx={dx}, dy={dy} (delta={delta})'
         response = {'id': 2, 'type': 'message', 'channel': msgdata['channel'], 'text': r}
         print(response)
         await ws.send_str(json.dumps(response))
@@ -67,16 +88,16 @@ def sdc_client(config_file, verbose):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
-    # if config['data_dir'] is None:
-    #     config['data_dir'] = os.path.join(os.path.split(config_file)[0], 'data')
+    if config['data_dir'] is None:
+        config['data_dir'] = os.path.join(os.path.split(config_file)[0], 'data')
 
-    # if config['figure_dir'] is None:
-    #     config['figure_dir'] = os.path.join(os.path.split(config_file)[0], 'figures')
+    if config['figure_dir'] is None:
+        config['figure_dir'] = os.path.join(os.path.split(config_file)[0], 'figures')
 
-    # if config['delta_z'] is not None:
-    #     config['delta_z'] = abs(config['delta_z'])
+    if config['step_height'] is not None:
+        config['step_height'] = abs(config['step_height'])
 
-    sdc = SDC(verbose=verbose)
+    sdc = SDC(verbose=verbose, config=config)
     sdc.run()
 
 if __name__ == '__main__':
