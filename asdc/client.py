@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import click
 import numpy as np
 import pandas as pd
@@ -75,13 +76,14 @@ class SDC(scirc.Client):
         print(response)
         await ws.send_str(json.dumps(response))
 
-
     @command
-    def potentiostatic(self, ws, msgdata, args):
+    async def potentiostatic(self, ws, msgdata, args):
         print(args)
         args = json.loads(args)
 
         results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
+        time.sleep(args['duration'])
+
         results.update(args)
         results['position_versa'] = self.v_position
         results['position_combi'] = [float(self.c_position.x), float(self.c_position.y)]
@@ -90,10 +92,13 @@ class SDC(scirc.Client):
         idx = 0
         stem = 'test'
         logfile = '{}_data_{:03d}.json'.format(stem, idx)
-        with open(os.path.join(config['data_dir'], logfile), 'w') as f:
-            json.dump(the_data, f)
+        with open(os.path.join(self.data_dir, logfile), 'w') as f:
+            json.dump(results, f)
 
-        return
+        r = f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}"
+        response = {'id': 2, 'type': 'message', 'channel': msgdata['channel'], 'text': r}
+        print(response)
+        await ws.send_str(json.dumps(response))
 
     @command
     async def dm(self, ws, msgdata, args):
