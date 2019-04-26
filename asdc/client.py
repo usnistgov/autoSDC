@@ -22,6 +22,7 @@ class SDC(scirc.Client):
     def __init__(self, config=None, verbose=False):
         super().__init__(verbose=verbose)
         self.command.update(super().command)
+        self.msg_id = 0
 
         with sdc.position.controller(ip='192.168.10.11') as pos:
             initial_versastat_position = pos.current_position()
@@ -36,9 +37,16 @@ class SDC(scirc.Client):
         self.speed = config.get('speed', 1e-3)
         self.data_dir = config.get('data_dir', os.getcwd())
         self.figure_dir = config.get('figure_dir', os.getcwd())
+        self.confirm = config.get('confirm', True)
 
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
+
+    async def post(self, msg, ws, channel):
+        # TODO: move this to the base Client class...
+        response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
+        self.msg_id += 1
+        await ws.send_str(json.dumps(response))
 
     @command
     async def move(self, ws, msgdata, args):
@@ -59,6 +67,10 @@ class SDC(scirc.Client):
             # print(current_spot.x, current_spot.y)
             print('position update: {} {} (mm)'.format(dx, dy))
 
+        if self.confirm:
+            await self.post(f'confirm update: dx={dx}, dy={dy} (delta={delta})', ws, msgdata)
+            input('press enter to allow cell motion...')
+
         with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
             if self.verbose:
                 print(pos.current_position())
@@ -71,10 +83,7 @@ class SDC(scirc.Client):
                 print(pos.current_position())
                 print(self.c_position)
 
-        r = f'moved dx={dx}, dy={dy} (delta={delta})'
-        response = {'id': 2, 'type': 'message', 'channel': msgdata['channel'], 'text': r}
-        print(response)
-        await ws.send_str(json.dumps(response))
+        await self.post(f'moved dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
 
     @command
     async def potentiostatic(self, ws, msgdata, args):
@@ -95,17 +104,16 @@ class SDC(scirc.Client):
         with open(os.path.join(self.data_dir, logfile), 'w') as f:
             json.dump(results, f)
 
-        r = f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}"
-        response = {'id': 2, 'type': 'message', 'channel': msgdata['channel'], 'text': r}
-        print(response)
-        await ws.send_str(json.dumps(response))
+        await self.post(
+            f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}"
+            ws, msgdata['channel']
+        )
 
     @command
     async def dm(self, ws, msgdata, args):
         """ echo random string to DM channel """
         dm_channel = 'DHNHM74TU'
-        response = {'id': 2, 'type': 'message', 'channel': dm_channel, 'text': args}
-        await ws.send_str(json.dumps(response))
+        await self.post(args, ws, dm_channel)
 
 @click.command()
 @click.argument('config-file', type=click.Path())
