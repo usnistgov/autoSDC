@@ -18,6 +18,14 @@ from asdc import slack
 BOT_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 SDC_TOKEN = open('slacktoken.txt', 'r').read().strip()
 
+def load_experiment_files(csv_files, dir='.'):
+    dir, _ = os.path.split(dir)
+    experiments = pd.concat(
+        (pd.read_csv(os.path.join(dir, csv_file), index_col=0) for csv_file in csv_files),
+        ignore_index=True
+    )
+    return experiments
+
 class Controller(scirc.Client):
     """ autonomous scanning droplet cell client """
 
@@ -26,6 +34,15 @@ class Controller(scirc.Client):
         super().__init__(verbose=verbose, logfile=logfile, token=token)
         self.command.update(super().command)
         self.msg_id = 0
+        self.update_event = asyncio.Event(loop=self.loop)
+
+        self.data_dir = config.get('data_dir', os.getcwd())
+        self.figure_dir = config.get('figure_dir', os.getcwd())
+        self.confirm = config.get('confirm', True)
+
+        self.pandas_file = os.path.join(self.data_dir, config.get('pandas_file', 'test.csv'))
+        self.targets = pd.read_csv(config['target_file'], index_col=0)
+        self.experiments = load_experiment_files(config['composition_file'], dir=self.data_dir)
 
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
@@ -39,6 +56,58 @@ class Controller(scirc.Client):
             data={'channel': channel, 'text': text, 'as_user': False, 'username': 'ctl'},
             token=SDC_TOKEN
         )
+
+
+    def load_experiment_indices(self):
+        # indices start at 0...
+        if os.path.isfile(self.pandas_file):
+            df = pd.read_csv(self.pandas_file)
+            experiment_idx = df[~df['flag']].shape[0]
+            target_idx = df.shape[0]
+        else:
+            df = None
+            experiment_idx = 0
+            target_idx = 0
+
+        return df, target_idx, experiment_idx
+
+    @command
+    async def go(self, ws, msgdata, args):
+        df, target_idx, experiment_idx = self.load_experiment_indices()
+        print(experiment_idx, target_idx)
+
+        target = self.targets.iloc[target_idx]
+        print(target)
+        print(experiment)
+
+        # send the move command...
+        # message @sdc
+        self.update_event.clear()
+        args = {'x': target.x, 'y': target.y}
+        await self.dm_sdc(f'<@UHT11TM6F> move {json.dumps(args)}')
+
+        # wait for the ok
+        # @sdc will message us with @ctl update position ...
+        await self.update_event.wait()
+
+        # the move was successful and we've had our chance to the previous spot
+        # reload the experiment in case flags have changed
+        df, target_idx, experiment_idx = self.load_experiment_indices()
+        experiment = self.experiments.iloc[experiment_idx]
+        print(experiment)
+
+        # send the experiment command
+        args = {'potential': experiment['V'], 'duration': experiment['t_100nm']}
+        await self.dm_sdc(f'<@UHT11TM6F> potentiostatic {json.dumps(args)}')
+
+        return
+
+    @command
+    async def update(self, ws, msgdata, args):
+        update_type, rest = args.split(' ', 1)
+        print(update_type)
+        self.update_event.set()
+        return
 
     @command
     async def dm(self, ws, msgdata, args):

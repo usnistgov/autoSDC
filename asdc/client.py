@@ -84,7 +84,19 @@ class SDC(scirc.Client):
                 print(pos.current_position())
 
             # pos.update(delta=delta, step_height=self.step_height, compress=self.compress_dz)
-            f = functools.partial(pos.update, delta=delta, step_height=self.step_height, compress=self.compress_dz)
+            # f = functools.partial(pos.update, delta=delta, step_height=self.step_height, compress=self.compress_dz)
+            # await self.loop.run_in_executor(None, f)
+
+            # step up and move horizontally
+            f = functools.partial(pos.update_z, delta=self.step_height)
+            await self.loop.run_in_executor(None, f)
+            f = functools.partial(pos.update, delta=delta, compress=self.compress_dz)
+            await self.loop.run_in_executor(None, f)
+
+            await ainput('press enter to step back down...')
+
+            # step back down
+            f = functools.partial(pos.update_z, delta=-self.step_height)
             await self.loop.run_in_executor(None, f)
 
             self.v_position = pos.current_position()
@@ -94,7 +106,8 @@ class SDC(scirc.Client):
                 print(pos.current_position())
                 print(self.c_position)
 
-        await self.dm_controller('i finished the thing.')
+        # @ctl
+        await self.dm_controller('<@UHNHM7198> update position is set.')
         time.sleep(1)
         await self.post(f'moved dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
 
@@ -118,7 +131,7 @@ class SDC(scirc.Client):
         _msg = f"potentiostatic scan {idx}:  V={args['potential']}, t={args['duration']}"
         if self.confirm:
             await self.post(f'*confirm*: {_msg}', ws, msgdata['channel'])
-            await ainput('press enter to allow run the experiment...')
+            await ainput('press enter to allow running the experiment...')
         else:
             await self.post(_msg, ws, msgdata['channel'])
 
@@ -126,7 +139,7 @@ class SDC(scirc.Client):
         f = functools.partial(sdc.experiment.run_potentiostatic, args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
         results = await self.loop.run_in_executor(None, f)
 
-        await self.loop.run_in_executor(None, time.sleep, args['duration'])
+        await self.loop.run_in_executor(None, time.sleep, 20)
 
         results.update(args)
         results['position_versa'] = self.v_position
@@ -150,6 +163,9 @@ class SDC(scirc.Client):
             f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}",
             ws, msgdata['channel']
         )
+
+        time.sleep(1)
+        await self.dm_controller('<@UHNHM7198> go')
 
     @command
     async def flag(self, ws, msgdata, args):
