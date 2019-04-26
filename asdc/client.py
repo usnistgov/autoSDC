@@ -11,7 +11,7 @@ import scirc
 
 from asdc import sdc
 from asdc import slack
-# from asdc import visualization
+from asdc import visualization
 
 class SDC(scirc.Client):
     """ autonomous scanning droplet cell client """
@@ -33,6 +33,8 @@ class SDC(scirc.Client):
         self.compress_dz = config.get('compress_dz', 0.0)
         self.cell = config.get('cell', 'INTERNAL')
         self.speed = config.get('speed', 1e-3)
+        self.data_dir = config.get('data_dir', os.getcwd())
+        self.figure_dir = config.get('figure_dir', os.getcwd())
 
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
@@ -72,6 +74,26 @@ class SDC(scirc.Client):
         response = {'id': 2, 'type': 'message', 'channel': msgdata['channel'], 'text': r}
         print(response)
         await ws.send_str(json.dumps(response))
+
+
+    @command
+    def potentiostatic(self, ws, msgdata, args):
+        print(args)
+        args = json.loads(args)
+
+        results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
+        results.update(args)
+        results['position_versa'] = self.v_position
+        results['position_combi'] = [float(self.c_position.x), float(self.c_position.y)]
+
+        # log data
+        idx = 0
+        stem = 'test'
+        logfile = '{}_data_{:03d}.json'.format(stem, idx)
+        with open(os.path.join(config['data_dir'], logfile), 'w') as f:
+            json.dump(the_data, f)
+
+        return
 
     @command
     async def dm(self, ws, msgdata, args):
