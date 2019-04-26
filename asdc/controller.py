@@ -77,6 +77,7 @@ class Controller(scirc.Client):
         print(experiment_idx, target_idx)
 
         target = self.targets.iloc[target_idx]
+        experiment = self.experiments.iloc[experiment_idx]
         print(target)
         print(experiment)
 
@@ -119,7 +120,7 @@ class Controller(scirc.Client):
             'chat.postMessage',
             data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'ctl'},
             token=SDC_TOKEN)
-        print(response)
+        # print(response)
 
 
 @click.command()

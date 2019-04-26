@@ -17,6 +17,7 @@ from asdc import sdc
 from asdc import slack
 from asdc import visualization
 
+asdc_channel = 'CDW5JFZAR'
 BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
 CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 
@@ -76,7 +77,8 @@ class SDC(scirc.Client):
             print('position update: {} {} (mm)'.format(dx, dy))
 
         if self.confirm:
-            await self.post(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
+            # await self.post(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
+            slack.post_message(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})')
             await ainput('press enter to allow cell motion...')
 
         with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
@@ -109,7 +111,8 @@ class SDC(scirc.Client):
         # @ctl
         await self.dm_controller('<@UHNHM7198> update position is set.')
         time.sleep(1)
-        await self.post(f'moved dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
+        # await self.post(f'moved dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
+        slack.post_message(f'moved dx={dx}, dy={dy} (delta={delta})')
 
     @command
     async def potentiostatic(self, ws, msgdata, args):
@@ -126,14 +129,16 @@ class SDC(scirc.Client):
             idx = 0
 
         stem = 'test'
-        logfile = '{}_data_{:03d}.json'.format(stem, idx)
+        datafile = '{}_data_{:03d}.json'.format(stem, idx)
 
-        _msg = f"potentiostatic scan {idx}:  V={args['potential']}, t={args['duration']}"
+        _msg = f"potentiostatic scan *{idx}*:  V={args['potential']}, t={args['duration']}"
         if self.confirm:
-            await self.post(f'*confirm*: {_msg}', ws, msgdata['channel'])
+            # await self.post(f'*confirm*: {_msg}', ws, msgdata['channel'])
+            slack.post_message(f'*confirm*: {_msg}')
             await ainput('press enter to allow running the experiment...')
         else:
-            await self.post(_msg, ws, msgdata['channel'])
+            # await self.post(_msg, ws, msgdata['channel'])
+            slack.post_message(_msg)
 
         # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
         f = functools.partial(sdc.experiment.run_potentiostatic, args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
@@ -148,7 +153,7 @@ class SDC(scirc.Client):
         results['comment'] = ''
 
         # log data
-        with open(os.path.join(self.data_dir, logfile), 'w') as f:
+        with open(os.path.join(self.data_dir, datafile), 'w') as f:
             json.dump(results, f)
 
         _df = pd.DataFrame.from_dict(results, orient='index').T
@@ -159,10 +164,17 @@ class SDC(scirc.Client):
 
         df.to_csv(self.pandas_file)
 
-        await self.post(
-            f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}",
-            ws, msgdata['channel']
-        )
+        slack.post_message(f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}")
+        # await self.post(
+        #     f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}",
+        #     ws, msgdata['channel']
+        # )
+
+        time.sleep(1)
+        # post an image
+        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(idx))
+        visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
+        slack.post_image(figpath, title='current vs time {}'.format(idx))
 
         time.sleep(1)
         await self.dm_controller('<@UHNHM7198> go')
@@ -224,6 +236,7 @@ def sdc_client(config_file, verbose):
 
     if config['figure_dir'] is None:
         config['figure_dir'] = os.path.join(os.path.split(config_file)[0], 'figures')
+        os.makedirs(config['figure_dir'], exist_ok=True)
 
     if config['step_height'] is not None:
         config['step_height'] = abs(config['step_height'])
