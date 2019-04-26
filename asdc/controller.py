@@ -15,7 +15,6 @@ import scirc
 
 from asdc import slack
 
-
 BOT_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 SDC_TOKEN = open('slacktoken.txt', 'r').read().strip()
 
@@ -33,6 +32,13 @@ class Controller(scirc.Client):
         response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
         self.msg_id += 1
         await ws.send_str(json.dumps(response))
+
+    async def dm_controller(self, text, channel='DHY5REQ0H'):
+        response = await self.api_call(
+            'chat.postMessage',
+            data={'channel': dm_channel, 'text': text, 'as_user': False, 'username': 'ctl'},
+            token=SDC_TOKEN
+        )
 
     @command
     async def dm(self, ws, msgdata, args):

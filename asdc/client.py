@@ -177,6 +177,13 @@ class SDC(scirc.Client):
 
         df.to_csv(self.pandas_file)
 
+    async def dm_controller(self, text, channel='DHNHM74TU'):
+        response = await self.api_call(
+            'chat.postMessage',
+            data={'channel': dm_channel, 'text': text, 'as_user': False, 'username': 'sdc'},
+            token=CTL_TOKEN
+        )
+
     @command
     async def dm(self, ws, msgdata, args):
         """ echo random string to DM channel """
@@ -187,8 +194,6 @@ class SDC(scirc.Client):
             data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'sdc'},
             token=CTL_TOKEN
         )
-
-        # await self.post(args, ws, dm_channel)
 
 @click.command()
 @click.argument('config-file', type=click.Path())
