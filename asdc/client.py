@@ -42,6 +42,8 @@ class SDC(scirc.Client):
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
 
+        self.pandas_file = os.path.join(self.data_dir, config.get('pandas_file', 'test.csv'))
+
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
         response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
@@ -68,7 +70,7 @@ class SDC(scirc.Client):
             print('position update: {} {} (mm)'.format(dx, dy))
 
         if self.confirm:
-            await self.post(f'confirm update: dx={dx}, dy={dy} (delta={delta})', ws, msgdata)
+            await self.post(f'confirm update: dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
             input('press enter to allow cell motion...')
 
         with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
@@ -87,6 +89,8 @@ class SDC(scirc.Client):
 
     @command
     async def potentiostatic(self, ws, msgdata, args):
+        # TODO: database/pandas load/store routine
+        # TODO: implement flag and comment handlers
         print(args)
         args = json.loads(args)
 
@@ -96,6 +100,8 @@ class SDC(scirc.Client):
         results.update(args)
         results['position_versa'] = self.v_position
         results['position_combi'] = [float(self.c_position.x), float(self.c_position.y)]
+        results['flag'] = False
+        results['comment'] = ''
 
         # log data
         idx = 0
@@ -104,10 +110,28 @@ class SDC(scirc.Client):
         with open(os.path.join(self.data_dir, logfile), 'w') as f:
             json.dump(results, f)
 
+        _df = pd.DataFrame.from_dict(results, orient='index').T
+        try:
+            df = pd.read_csv(self.pandas_file, index_col=0)
+            df = pd.concat((df, _df), ignore_index=True)
+        except:
+            df = _df
+
+        df.to_csv(self.pandas_file)
+
         await self.post(
-            f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}"
+            f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}",
             ws, msgdata['channel']
         )
+
+    @command
+    async def flag(self, ws, msgdata, args):
+        """ mark a datapoint as bad """
+        idx = int(args) # need to do format checking...
+
+        df = pd.read_csv(self.pandas_file, index_col=0)
+        df.at[idx, 'flag'] = True
+        df.to_csv(self.pandas_file)
 
     @command
     async def dm(self, ws, msgdata, args):
