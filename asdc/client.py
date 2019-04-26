@@ -17,13 +17,15 @@ from asdc import sdc
 from asdc import slack
 from asdc import visualization
 
+BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
+
 class SDC(scirc.Client):
     """ autonomous scanning droplet cell client """
 
     command = scirc.CommandRegistry()
 
-    def __init__(self, config=None, verbose=False):
-        super().__init__(verbose=verbose)
+    def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN):
+        super().__init__(verbose=verbose, logfile=logfile, token=token)
         self.command.update(super().command)
         self.msg_id = 0
 
@@ -176,7 +178,8 @@ class SDC(scirc.Client):
     async def dm(self, ws, msgdata, args):
         """ echo random string to DM channel """
         dm_channel = 'DHNHM74TU'
-        await self.post(args, ws, dm_channel)
+        # await self.post(args, ws, dm_channel)
+        await self.api_call('chat.postMessage', data={'channel': dm_channel, 'text': args})
 
 @click.command()
 @click.argument('config-file', type=click.Path())
@@ -198,7 +201,7 @@ def sdc_client(config_file, verbose):
     logfile = config.get('command_logfile', 'commands.log')
     logfile = os.path.join(config['data_dir'], logfile)
 
-    sdc = SDC(verbose=verbose, config=config, logfile=logfile)
+    sdc = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN)
     sdc.run()
 
 if __name__ == '__main__':
