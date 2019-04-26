@@ -33,10 +33,10 @@ class Controller(scirc.Client):
         self.msg_id += 1
         await ws.send_str(json.dumps(response))
 
-    async def dm_controller(self, text, channel='DHY5REQ0H'):
+    async def dm_sdc(self, text, channel='DHY5REQ0H'):
         response = await self.api_call(
             'chat.postMessage',
-            data={'channel': dm_channel, 'text': text, 'as_user': False, 'username': 'ctl'},
+            data={'channel': channel, 'text': text, 'as_user': False, 'username': 'ctl'},
             token=SDC_TOKEN
         )
 

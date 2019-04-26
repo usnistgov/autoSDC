@@ -94,7 +94,7 @@ class SDC(scirc.Client):
                 print(pos.current_position())
                 print(self.c_position)
 
-        await self.dm(ws, msgdata, 'i finished the thing.')
+        await self.dm_controller('i finished the thing.')
         time.sleep(1)
         await self.post(f'moved dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
 
@@ -180,7 +180,7 @@ class SDC(scirc.Client):
     async def dm_controller(self, text, channel='DHNHM74TU'):
         response = await self.api_call(
             'chat.postMessage',
-            data={'channel': dm_channel, 'text': text, 'as_user': False, 'username': 'sdc'},
+            data={'channel': channel, 'text': text, 'as_user': False, 'username': 'sdc'},
             token=CTL_TOKEN
         )
 
