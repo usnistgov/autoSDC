@@ -66,12 +66,15 @@ def make_circle(r):
     y = r * np.sin(t)
     return np.hstack((x, y))
 
-def combi_plot():
+def combi_plot(show_flat=False):
     """ scatter plot visualizations on a 3-inch combi wafer.
     coordinate system is specified in mm
     """
     R = 76.2 / 2
     c = make_circle(R) # 3 inch wafer --> 76.2 mm diameter
+    if show_flat:
+        sel = c[:,1] > -35
+        c = c[sel]
     plt.plot(c[:,0], c[:,1], color='k')
 
 def plot_open_circuit(current, potential, segment, figpath='open_circuit.png'):
