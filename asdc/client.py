@@ -45,6 +45,8 @@ class SDC(scirc.SlackClient):
         self.data_dir = config.get('data_dir', os.getcwd())
         self.figure_dir = config.get('figure_dir', os.getcwd())
         self.confirm = config.get('confirm', True)
+        self.notify = config.get('notify_slack', True)
+        self.test_delay = config.get('test', False)
 
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
@@ -77,8 +79,9 @@ class SDC(scirc.SlackClient):
             print('position update: {} {} (mm)'.format(dx, dy))
 
         if self.confirm:
-            # await self.post(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
-            slack.post_message(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})')
+            if self.notify:
+                # await self.post(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
+                slack.post_message(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})')
             await ainput('press enter to allow cell motion...')
 
         with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
@@ -111,8 +114,9 @@ class SDC(scirc.SlackClient):
         # @ctl
         await self.dm_controller('<@UHNHM7198> update position is set.')
         time.sleep(1)
-        # await self.post(f'moved dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
-        slack.post_message(f'moved dx={dx}, dy={dy} (delta={delta})')
+        if self.notify:
+            # await self.post(f'moved dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
+            slack.post_message(f'moved dx={dx}, dy={dy} (delta={delta})')
 
     @command
     async def potentiostatic(self, ws, msgdata, args):
@@ -133,19 +137,24 @@ class SDC(scirc.SlackClient):
 
         _msg = f"potentiostatic scan *{idx}*:  V={args['potential']}, t={args['duration']}"
         if self.confirm:
-            # await self.post(f'*confirm*: {_msg}', ws, msgdata['channel'])
-            slack.post_message(f'*confirm*: {_msg}')
+            if self.notify:
+                # await self.post(f'*confirm*: {_msg}', ws, msgdata['channel'])
+                slack.post_message(f'*confirm*: {_msg}')
             await ainput('press enter to allow running the experiment...')
-        else:
+
+        elif self.notify:
             # await self.post(_msg, ws, msgdata['channel'])
             slack.post_message(_msg)
 
+        # TODO: replace this with asyncio.run?
         # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
         f = functools.partial(sdc.experiment.run_potentiostatic, args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
         results = await self.loop.run_in_executor(None, f)
 
-        await self.loop.run_in_executor(None, time.sleep, 20)
+        if self.test_delay:
+            await self.loop.run_in_executor(None, time.sleep, 10)
 
+        # here lies a name collision bug!
         results.update(args)
         results['position_versa'] = self.v_position
         results['position_combi'] = [float(self.c_position.x), float(self.c_position.y)]
@@ -164,19 +173,22 @@ class SDC(scirc.SlackClient):
 
         df.to_csv(self.pandas_file)
 
-        slack.post_message(f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}")
-        # await self.post(
-        #     f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}",
-        #     ws, msgdata['channel']
-        # )
-
-        time.sleep(1)
-        # post an image
         figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(idx))
         visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
-        slack.post_image(figpath, title='current vs time {}'.format(idx))
 
-        time.sleep(1)
+        if self.notify:
+            slack.post_message(f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}")
+            # await self.post(
+            #     f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}",
+            #     ws, msgdata['channel']
+            # )
+
+            time.sleep(1)
+            # post an image
+            slack.post_image(figpath, title='current vs time {}'.format(idx))
+
+            time.sleep(1)
+
         await self.dm_controller('<@UHNHM7198> go')
 
     @command
@@ -206,7 +218,7 @@ class SDC(scirc.SlackClient):
         df.to_csv(self.pandas_file)
 
     async def dm_controller(self, text, channel='DHNHM74TU'):
-        response = await self.api_call(
+        response = await self.slack_api_call(
             'chat.postMessage',
             data={'channel': channel, 'text': text, 'as_user': False, 'username': 'sdc'},
             token=CTL_TOKEN
@@ -217,7 +229,7 @@ class SDC(scirc.SlackClient):
         """ echo random string to DM channel """
         dm_channel = 'DHNHM74TU'
         print('got a dm command: ', args)
-        response = await self.api_call(
+        response = await self.slack_api_call(
             'chat.postMessage',
             data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'sdc'},
             token=CTL_TOKEN

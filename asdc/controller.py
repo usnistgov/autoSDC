@@ -36,9 +36,10 @@ class Controller(scirc.SlackClient):
         self.msg_id = 0
         self.update_event = asyncio.Event(loop=self.loop)
 
+        self.confirm = config.get('confirm', True)
+        self.notify = config.get('notify_slack', True)
         self.data_dir = config.get('data_dir', os.getcwd())
         self.figure_dir = config.get('figure_dir', os.getcwd())
-        self.confirm = config.get('confirm', True)
 
         self.pandas_file = os.path.join(self.data_dir, config.get('pandas_file', 'test.csv'))
         self.targets = pd.read_csv(config['target_file'], index_col=0)
@@ -51,12 +52,11 @@ class Controller(scirc.SlackClient):
         await ws.send_str(json.dumps(response))
 
     async def dm_sdc(self, text, channel='DHY5REQ0H'):
-        response = await self.api_call(
+        response = await self.slack_api_call(
             'chat.postMessage',
             data={'channel': channel, 'text': text, 'as_user': False, 'username': 'ctl'},
             token=SDC_TOKEN
         )
-
 
     def load_experiment_indices(self):
         # indices start at 0...
@@ -116,10 +116,10 @@ class Controller(scirc.SlackClient):
         dm_channel = 'DHY5REQ0H'
         # dm_channel = 'DHNHM74TU'
         # await self.post(args, ws, dm_channel)
-        response = await self.api_call(
-            'chat.postMessage',
-            data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'ctl'},
-            token=SDC_TOKEN)
+        response = await self.slack_api_call(
+            'chat.postMessage', token=SDC_TOKEN,
+            data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'ctl'}
+        )
         # print(response)
 
 
