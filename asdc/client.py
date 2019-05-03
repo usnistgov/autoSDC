@@ -21,7 +21,7 @@ asdc_channel = 'CDW5JFZAR'
 BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
 CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 
-class SDC(scirc.Client):
+class SDC(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
 
     command = scirc.CommandRegistry()

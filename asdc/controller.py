@@ -26,7 +26,7 @@ def load_experiment_files(csv_files, dir='.'):
     )
     return experiments
 
-class Controller(scirc.Client):
+class Controller(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
 
     command = scirc.CommandRegistry()
