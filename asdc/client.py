@@ -243,12 +243,22 @@ def sdc_client(config_file, verbose):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
-    if config['data_dir'] is None:
-        config['data_dir'] = os.path.join(os.path.split(config_file)[0], 'data')
+    experiment_root, _ = os.path.split(config_file)[0]
 
-    if config['figure_dir'] is None:
-        config['figure_dir'] = os.path.join(os.path.split(config_file)[0], 'figures')
-        os.makedirs(config['figure_dir'], exist_ok=True)
+    # specify target file relative to config file
+    target_file = config.get('target_file')
+    config['target_file'] = os.path.join(experiment_root, target_file)
+
+    data_dir = config.get('data_dir')
+    if data_dir is None:
+        config['data_dir'] = os.path.join(experiment_root, 'data')
+
+    figure_dir = config.get('figure_dir')
+    if figure_dir is None:
+        config['figure_dir'] = os.path.join(experiment_root, 'figures')
+
+    os.makedirs(config['data_dir'], exist_ok=True)
+    os.makedirs(config['figure_dir'], exist_ok=True)
 
     if config['step_height'] is not None:
         config['step_height'] = abs(config['step_height'])
