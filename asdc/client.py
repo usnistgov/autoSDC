@@ -216,6 +216,7 @@ class SDC(scirc.SlackClient):
         row = self.experiment_table.find_one(id=primary_key)
 
         if row['comment']:
+            comment = row['comment']
             comment += '; '
             comment += text
         else:
