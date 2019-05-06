@@ -4,6 +4,7 @@ import json
 import time
 import click
 import asyncio
+import dataset
 import functools
 import numpy as np
 import pandas as pd
@@ -41,7 +42,10 @@ class Controller(scirc.SlackClient):
         self.data_dir = config.get('data_dir', os.getcwd())
         self.figure_dir = config.get('figure_dir', os.getcwd())
 
-        self.pandas_file = os.path.join(self.data_dir, config.get('pandas_file', 'test.csv'))
+        self.db_file = os.path.join(self.data_dir, config.get('db_file', 'test.db'))
+        self.db = dataset.connect(f'sqlite:///{self.db_file}')
+        self.experiment_table = self.db['experiment']
+
         self.targets = pd.read_csv(config['target_file'], index_col=0)
         self.experiments = load_experiment_files(config['composition_file'], dir=self.data_dir)
 
@@ -60,29 +64,33 @@ class Controller(scirc.SlackClient):
 
     def load_experiment_indices(self):
         # indices start at 0...
-        if os.path.isfile(self.pandas_file):
-            df = pd.read_csv(self.pandas_file)
-            experiment_idx = df[~df['flag']].shape[0]
-            target_idx = df.shape[0]
-        else:
-            df = None
-            experiment_idx = 0
-            target_idx = 0
+        # sqlite integer primary keys start at 1...
+        df = pd.DataFrame(self.experiment_table.all())
+
+        target_idx = self.experiment_table.count()
+        experiment_idx = self.experiment_table.count(flag=False)
 
         return df, target_idx, experiment_idx
 
     @command
     async def go(self, ws, msgdata, args):
-        df, target_idx, experiment_idx = self.load_experiment_indices()
-        print(experiment_idx, target_idx)
+        """ keep track of target positions and experiment list
 
+        target and experiment indices start at 0
+        sqlite integer primary keys start at 1...
+        """
+
+        # df, target_idx, experiment_idx = self.load_experiment_indices()
+
+        target_idx = self.db['experiment'].count()
         target = self.targets.iloc[target_idx]
-        experiment = self.experiments.iloc[experiment_idx]
         print(target)
+
+        experiment_idx = self.db['experiment'].count(flag=False)
+        experiment = self.experiments.iloc[experiment_idx]
         print(experiment)
 
-        # send the move command...
-        # message @sdc
+        # send the move command -- message @sdc
         self.update_event.clear()
         args = {'x': target.x, 'y': target.y}
         await self.dm_sdc(f'<@UHT11TM6F> move {json.dumps(args)}')
@@ -91,9 +99,9 @@ class Controller(scirc.SlackClient):
         # @sdc will message us with @ctl update position ...
         await self.update_event.wait()
 
-        # the move was successful and we've had our chance to the previous spot
+        # the move was successful and we've had our chance to check the previous spot
         # reload the experiment in case flags have changed
-        df, target_idx, experiment_idx = self.load_experiment_indices()
+        experiment_idx = self.db['experiment'].count(flag=False)
         experiment = self.experiments.iloc[experiment_idx]
         print(experiment)
 
@@ -115,13 +123,11 @@ class Controller(scirc.SlackClient):
         """ echo random string to DM channel """
         dm_channel = 'DHY5REQ0H'
         # dm_channel = 'DHNHM74TU'
-        # await self.post(args, ws, dm_channel)
+
         response = await self.slack_api_call(
             'chat.postMessage', token=SDC_TOKEN,
             data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'ctl'}
         )
-        # print(response)
-
 
 @click.command()
 @click.argument('config-file', type=click.Path())
@@ -131,7 +137,7 @@ def sdc_controller(config_file, verbose):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
-    experiment_root, _ = os.path.split(config_file)[0]
+    experiment_root, _ = os.path.split(config_file)
 
     # specify target file relative to config file
     target_file = config.get('target_file')

@@ -93,3 +93,5 @@ class Position():
 
         for idx, d in enumerate(delta):
             self.axis[idx] += d
+
+        time.sleep(1)

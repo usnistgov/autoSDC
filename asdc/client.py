@@ -4,11 +4,13 @@ import json
 import time
 import click
 import asyncio
+import dataset
 import functools
 import numpy as np
 import pandas as pd
 from ruamel import yaml
-from aioconsole import ainput
+from datetime import datetime
+from aioconsole import ainput, aprint
 
 sys.path.append('../scirc')
 import scirc
@@ -51,7 +53,11 @@ class SDC(scirc.SlackClient):
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
 
-        self.pandas_file = os.path.join(self.data_dir, config.get('pandas_file', 'test.csv'))
+        self.db_file = os.path.join(self.data_dir, config.get('db_file', 'test.db'))
+        self.db = dataset.connect(f'sqlite:///{self.db_file}')
+        self.experiment_table = self.db['experiment']
+
+        self.current_threshold = 1e-5
 
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
@@ -120,102 +126,103 @@ class SDC(scirc.SlackClient):
 
     @command
     async def potentiostatic(self, ws, msgdata, args):
-        # TODO: database/pandas load/store routine
-        # TODO: implement flag and comment handlers
-        print(args)
-        args = json.loads(args)
+        """ run a potentiostatic experiment (for e.g. electrodeposition) """
 
-        try:
-            df = pd.read_csv(self.pandas_file, index_col=0)
-            idx = df.index.max() + 1
-        except:
-            df = None
-            idx = 0
+        args = json.loads(args)
+        args['x_combi'] = float(self.c_position.x)
+        args['y_combi'] = float(self.c_position.y)
+        args['x_versa'] = self.v_position[0]
+        args['y_versa'] = self.v_position[1]
+        args['z_versa'] = self.v_position[2]
+        args['flag'] = False
+        args['comment'] = ''
+
+        with self.db as tx:
+            args['id'] = tx['experiment'].insert(args)
 
         stem = 'test'
-        datafile = '{}_data_{:03d}.json'.format(stem, idx)
+        datafile = '{}_data_{:03d}.json'.format(stem, args['id'])
 
-        _msg = f"potentiostatic scan *{idx}*:  V={args['potential']}, t={args['duration']}"
+        _msg = "potentiostatic scan *{id}*:  V={potential}, t={duration}".format(**args)
         if self.confirm:
             if self.notify:
-                # await self.post(f'*confirm*: {_msg}', ws, msgdata['channel'])
                 slack.post_message(f'*confirm*: {_msg}')
+            else:
+                print(f'*confirm*: {_msg}')
             await ainput('press enter to allow running the experiment...')
 
         elif self.notify:
-            # await self.post(_msg, ws, msgdata['channel'])
             slack.post_message(_msg)
 
         # TODO: replace this with asyncio.run?
         # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
-        f = functools.partial(sdc.experiment.run_potentiostatic, args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
-        results = await self.loop.run_in_executor(None, f)
-
+        f = functools.partial(
+            sdc.experiment.run_potentiostatic, args['potential'], args['duration'], cell=self.cell, verbose=self.verbose
+        )
+        results, metadata = await self.loop.run_in_executor(None, f)
+        metadata['parameters'] = json.dumps(metadata['parameters'])
         if self.test_delay:
             await self.loop.run_in_executor(None, time.sleep, 10)
 
-        # here lies a name collision bug!
-        results.update(args)
-        results['position_versa'] = self.v_position
-        results['position_combi'] = [float(self.c_position.x), float(self.c_position.y)]
-        results['flag'] = False
-        results['comment'] = ''
+        # heuristic check for experimental error signals?
+        if np.median(np.abs(results['current'])) < self.current_threshold:
+            print(f'WARNING: median current below {self.current_threshold} threshold')
+            if self.notify:
+                slack.post_message(':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold')
 
-        # log data
+        args.update(metadata)
+        args['results'] = json.dumps(results)
+
+        # await aprint(args)
+        with self.db as tx:
+            tx['experiment'].update(args, ['id'])
+
+        # dump data
         with open(os.path.join(self.data_dir, datafile), 'w') as f:
-            json.dump(results, f)
+            for key, value in args.items():
+                if type(value) == datetime:
+                    args[key] = value.isoformat()
+            json.dump(args, f)
 
-        _df = pd.DataFrame.from_dict(results, orient='index').T
-        if df is not None:
-            df = pd.concat((df, _df), ignore_index=True)
-        else:
-            df = _df
-
-        df.to_csv(self.pandas_file)
-
-        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(idx))
+        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(args['id']))
         visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
 
         if self.notify:
             slack.post_message(f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}")
-            # await self.post(
-            #     f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}",
-            #     ws, msgdata['channel']
-            # )
-
             time.sleep(1)
-            # post an image
-            slack.post_image(figpath, title='current vs time {}'.format(idx))
 
+            # post an image
+            slack.post_image(figpath, title='current vs time {}'.format(args['id']))
             time.sleep(1)
 
         await self.dm_controller('<@UHNHM7198> go')
 
     @command
     async def flag(self, ws, msgdata, args):
-        """ mark a datapoint as bad """
-        idx = int(args) # need to do format checking...
+        """ mark a datapoint as bad
+        TODO: format checking
+        """
+        primary_key = int(args)
 
-        df = pd.read_csv(self.pandas_file, index_col=0)
-        df.at[idx, 'flag'] = True
-        df.to_csv(self.pandas_file)
+        with self.db as tx:
+            tx['experiment'].update({'id': primary_key, 'flag': True}, ['id'])
 
     @command
     async def comment(self, ws, msgdata, args):
         """ add a comment """
-        idx, text = args.split(' ', 1)  # need to do format checking...
-        idx = int(idx)
+        primary_key, text = args.split(' ', 1)  # need to do format checking...
+        primary_key = int(primary_key)
 
-        df = pd.read_csv(self.pandas_file, index_col=0)
-        df['comment'] = df.comment.fillna('')
+        row = self.experiment_table.find_one(id=primary_key)
 
-        if df.at[idx, 'comment']:
-            df.at[idx, 'comment'] += '; '
-            df.at[idx, 'comment'] += text
+        if row['comment']:
+            comment += '; '
+            comment += text
         else:
-            df.at[idx, 'comment'] = text
+            comment = text
 
-        df.to_csv(self.pandas_file)
+        with self.db as tx:
+            tx['experiment'].update({'id': primary_key, 'comment': comment}, ['id'])
 
     async def dm_controller(self, text, channel='DHNHM74TU'):
         response = await self.slack_api_call(
@@ -243,7 +250,7 @@ def sdc_client(config_file, verbose):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
-    experiment_root, _ = os.path.split(config_file)[0]
+    experiment_root, _ = os.path.split(config_file)
 
     # specify target file relative to config file
     target_file = config.get('target_file')
