@@ -168,7 +168,7 @@ class SDC(scirc.SlackClient):
         if np.median(np.abs(results['current'])) < self.current_threshold:
             print(f'WARNING: median current below {self.current_threshold} threshold')
             if self.notify:
-                slack.post_message(':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold')
+                slack.post_message(f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold')
 
         args.update(metadata)
         args['results'] = json.dumps(results)
