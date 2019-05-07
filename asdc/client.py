@@ -243,6 +243,24 @@ class SDC(scirc.SlackClient):
             token=CTL_TOKEN
         )
 
+    @command
+    async def abort_running_handlers(self, ws, msgdata, args):
+        """ cancel all currently running task handlers...
+
+        WARNING: does not do any checks on the potentiostat -- don't call this while an experiment is running...
+
+        we could register the coroutine address when we start it up, and broadcast that so it's cancellable...?
+        """
+        current_task = asyncio.current_task()
+
+        for task in asyncio.all_tasks():
+            if task._coro == current_task._coro:
+                continue
+            if task._coro.__name__ == 'handle':
+                print(f'killing task {task._coro}')
+                task.cancel()
+
+
 @click.command()
 @click.argument('config-file', type=click.Path())
 @click.option('--verbose/--no-verbose', default=False)
