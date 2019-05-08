@@ -4,15 +4,17 @@ from datetime import datetime
 
 from . import potentiostat
 
-def run_experiment(pstat):
+# the 3F potentiostat
+potentiostat_id = 17109013
 
-    # check on experiment status periodically:
-    poll_interval = 1
+def run_experiment(pstat, poll_interval=1):
+    """ run an SDC experiment -- busy wait until it's finished """
 
-    timestamp_start = datetime.now().isoformat()
     pstat.start()
 
     error_codes = set()
+    metadata = {'timestamp_start': datetime.now()}
+
     while pstat.sequence_running():
         time.sleep(poll_interval)
         pstat.update_status()
@@ -21,10 +23,10 @@ def run_experiment(pstat):
             print('OVERLOAD:', overload_status)
             error_codes.add(overload_status)
 
-    # collect and log data
+    metadata['timestamp'] = datetime.now()
+
+    # collect results
     scan_data = {
-        'timestamp_start': timestamp_start,
-        'timestamp': datetime.now().isoformat(),
         'current': pstat.current(),
         'potential': pstat.potential(),
         'elapsed_time': pstat.elapsed_time(),
@@ -34,7 +36,7 @@ def run_experiment(pstat):
         'segment': pstat.segment()
     }
 
-    return scan_data
+    return scan_data, metadata
 
 def run_potentiostatic(potential=0.0, duration=10, n_points=1000, cell='INTERNAL', verbose=False):
     """ run a constant potential
@@ -42,20 +44,20 @@ def run_potentiostatic(potential=0.0, duration=10, n_points=1000, cell='INTERNAL
     duration (s)
     """
 
-    with potentiostat.controller(start_idx=17109013) as pstat:
+    with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
         time_per_point = np.maximum(duration / n_points, 1.0e-5)
 
         status, params = pstat.potentiostatic(
-            initial_potential=potential, time_per_point=time_per_point, duration=duration, current_range='AUTO', e_filter='1HZ', i_filter='1HZ',
-            cell_to_use=cell
+            initial_potential=potential, time_per_point=time_per_point, duration=duration,
+            current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
         )
 
-        scan_data = run_experiment(pstat)
-        scan_data['parameters'] = params
-        scan_data['measurement'] = 'potentiostatic'
+        scan_data, metadata = run_experiment(pstat)
+        metadata['measurement'] = 'potentiostatic'
+        metadata['parameters'] = params
 
-    return scan_data
+    return scan_data, metadata
 
 def run_cv_scan(
         initial_potential=-0.5,
@@ -68,7 +70,7 @@ def run_cv_scan(
         verbose=False):
     """ run a CV scan for each point """
 
-    with potentiostat.controller(start_idx=17109013) as pstat:
+    with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
         # # run an open-circuit followed by a CV experiment
         # status, oc_params = pstat.corrosion_open_circuit(
@@ -86,8 +88,8 @@ def run_cv_scan(
             print('CV added:', params)
             print(status)
 
-        scan_data = run_experiment(pstat)
-        scan_data['parameters'] = params
-        scan_data['measurement'] = 'cyclic_voltammetry'
+        scan_data, metadata = run_experiment(pstat)
+        metadata['measurement'] = 'cyclic_voltammetry'
+        metadata['parameters'] = params
 
-    return scan_data
+    return scan_data, metadata

@@ -6,6 +6,8 @@ import time
 import numpy as np
 from contextlib import contextmanager
 
+ax = [0, 0, 0]
+
 @contextmanager
 def controller(ip='192.168.10.11', speed=1e-4):
     """ context manager that wraps position controller class Position. """
@@ -18,6 +20,10 @@ def controller(ip='192.168.10.11', speed=1e-4):
     finally:
         pass
 
+class Controller():
+    def __init__(self):
+        self.Parameters = [1, 2, 3]
+
 class Position():
     """ Interface to the VersaSTAT motion controller library """
 
@@ -27,10 +33,13 @@ class Position():
         self._speed = speed
 
         # Set up and connect to the position controller
-        self.controller = None
+        self.controller = Controller()
         self.settings = None
 
-        self.axis = [0, 0, 0]
+        # use this global variable to keep track of state
+        # across different instantiations of the position controller shim
+        global ax
+        self.axis = ax
 
     @property
     def speed(self):
@@ -87,33 +96,7 @@ class Position():
         poll_interval: busy-waiting polling interval (seconds)
         """
 
-        if step_height is not None and step_height > 0:
-            step_height = abs(step_height)
-            self.update_z(delta=step_height, verbose=verbose)
+        for idx, d in enumerate(delta):
+            self.axis[idx] += d
 
-        for d, ax in zip(delta, self.controller.Parameters):
-
-            if verbose:
-                print(ax.Quantity)
-
-            if d != 0.0:
-                ax.SetPoint = ax.Values[0] + d
-
-        # busy-wait while the motion controller moves the stage
-        time_elapsed = 0
-        while not self.at_setpoint(verbose=verbose):
-
-            time.sleep(poll_interval)
-            time_elapsed += poll_interval
-
-            if time_elapsed > max_wait_time:
-                raise TimeoutError('Max position update time of {}s exceeded'.format(max_wait_time))
-
-        if step_height is not None and step_height > 0:
-            self.update_z(delta=-step_height, verbose=verbose)
-
-        if compress is not None and abs(compress) > 0:
-            compress = np.clip(abs(compress), 0, 5e-5)
-
-            self.update_z(delta=-compress)
-            self.update_z(delta=compress)
+        time.sleep(1)

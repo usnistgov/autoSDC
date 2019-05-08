@@ -27,7 +27,7 @@ def plot_iv(I, V, figpath='iv.png'):
     plt.plot(np.log10(np.abs(I)), V)
     plt.xlabel('log current')
     plt.ylabel('voltage')
-    plt.savefig(figpath)
+    plt.savefig(figpath, bbox_inches='tight')
     plt.clf()
     plt.close()
     return
@@ -36,7 +36,7 @@ def plot_vi(I, V, figpath='iv.png'):
     plt.plot(V, np.log10(np.abs(I)))
     plt.ylabel('log current')
     plt.xlabel('voltage')
-    plt.savefig(figpath)
+    plt.savefig(figpath, bbox_inches='tight')
     plt.clf()
     plt.close()
     return
@@ -45,7 +45,7 @@ def plot_v(t, V, figpath='v.png'):
     plt.plot(np.arange(len(V)), V)
     plt.xlabel('time')
     plt.ylabel('voltage')
-    plt.savefig(figpath)
+    plt.savefig(figpath, bbox_inches='tight')
     plt.clf()
     plt.close()
     return
@@ -54,7 +54,7 @@ def plot_i(t, I, figpath='i.png'):
     plt.plot(np.arange(len(I)), I)
     plt.xlabel('time (s)')
     plt.ylabel('current (A)')
-    plt.savefig(figpath)
+    plt.savefig(figpath, bbox_inches='tight')
     plt.clf()
     plt.close()
     return
