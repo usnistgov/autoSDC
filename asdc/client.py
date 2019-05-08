@@ -11,6 +11,7 @@ import pandas as pd
 from ruamel import yaml
 from datetime import datetime
 from aioconsole import ainput, aprint
+from contextlib import asynccontextmanager
 
 sys.path.append('../scirc')
 import scirc
@@ -59,6 +60,71 @@ class SDC(scirc.SlackClient):
 
         self.current_threshold = 1e-5
 
+
+    @asynccontextmanager
+    async def position_controller(self, use_z_step=False):
+        """ wrap position controller context manager
+
+        perform vertical steps before lateral cell motion with the ctx manager
+        so that the cell drops back down to baseline z level if the `move` task is cancelled.
+
+        Note: there seems to be some issue with cancelling an async task that uses position_controller...
+        specifically, ainput seems to be causing some problems?
+        Do we need to kill another task?
+        https://stackoverflow.com/a/42294554
+
+        Note: this doesn't seem to actually impact subsequent tasks -- there's just some error output.
+        """
+        _cancel_self_on_exit = False
+        step = 0
+        with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
+            start_position = pos.current_position()
+            baseline_z = start_position[2]
+
+            if self.verbose:
+                c = pos.current_position()
+                await aprint('1', c)
+
+            try:
+                if use_z_step > 0:
+                    if self.confirm:
+                        try:
+                            await ainput('press enter to step up...', loop=self.loop)
+                        except asyncio.CancelledError:
+                            _cancel_self_on_exit = True
+                            raise
+                    f = functools.partial(pos.update_z, delta=self.step_height)
+                    await self.loop.run_in_executor(None, f)
+
+                yield pos
+
+            finally:
+                if use_z_step:
+                    # go back to baseline
+                    current_position = pos.current_position()
+                    current_z = current_position[2]
+                    dz = baseline_z - current_z
+
+                    if self.confirm:
+                        try:
+                            await ainput('press enter to step back down...', loop=self.loop)
+                        except asyncio.CancelledError:
+                            _cancel_self_on_exit = True
+
+                    f = functools.partial(pos.update_z, delta=dz)
+                    await self.loop.run_in_executor(None, f)
+
+                # update internal tracking of versastat position
+                self.v_position = pos.current_position()
+                if self.verbose:
+                    c = pos.current_position()
+                    await aprint('3', c)
+
+                if _cancel_self_on_exit:
+                    current_task = asyncio.current_task()
+                    current_task.cancel()
+                    raise asyncio.CancelledError
+
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
         response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
@@ -67,51 +133,40 @@ class SDC(scirc.SlackClient):
 
     @command
     async def move(self, ws, msgdata, args):
-        print(args)
+
         args = json.loads(args)
-        print(args['x'], args['y'])
+
+        if self.verbose:
+            print(args)
 
         # specify target positions in combi reference frame
+        # update this in the ctx manager even if things get cancelled...
         dx = args['x'] - self.c_position.x
         dy = args['y'] - self.c_position.y
-        # dx, dy = 1e-3, 1e-3
+
         # update position: convert from mm to m
         # x_vs is -y_c, y_vs is x
         delta = np.array([-dy, -dx, 0.0]) * 1e-3
-        # current_spot = target
 
-        if self.verbose:
-            # print(current_spot.x, current_spot.y)
-            print('position update: {} {} (mm)'.format(dx, dy))
-
-        if self.confirm:
-            if self.notify:
-                # await self.post(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
-                slack.post_message(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})')
-            await ainput('press enter to allow cell motion...')
-
-        with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
+        if (dx != 0) or (dy != 0):
             if self.verbose:
-                print(pos.current_position())
+                print('position update: {} {} (mm)'.format(dx, dy))
 
-            # pos.update(delta=delta, step_height=self.step_height, compress=self.compress_dz)
-            # f = functools.partial(pos.update, delta=delta, step_height=self.step_height, compress=self.compress_dz)
-            # await self.loop.run_in_executor(None, f)
+            if self.notify:
+                slack.post_message(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})')
 
-            # step up and move horizontally
-            f = functools.partial(pos.update_z, delta=self.step_height)
-            await self.loop.run_in_executor(None, f)
-            f = functools.partial(pos.update, delta=delta, compress=self.compress_dz)
-            await self.loop.run_in_executor(None, f)
+            async with self.position_controller(use_z_step=True) as pos:
 
-            await ainput('press enter to step back down...')
+                if self.confirm:
+                    await ainput('press enter to allow lateral cell motion...', loop=self.loop)
 
-            # step back down
-            f = functools.partial(pos.update_z, delta=-self.step_height)
-            await self.loop.run_in_executor(None, f)
+                # move horizontally
+                f = functools.partial(pos.update, delta=delta)
+                await self.loop.run_in_executor(None, f)
+                self.c_position += np.array([dx, dy])
 
-            self.v_position = pos.current_position()
-            self.c_position += np.array([dx, dy])
+                if self.verbose:
+                    await aprint('2', pos.current_position())
 
             if self.verbose:
                 print(pos.current_position())
@@ -121,7 +176,6 @@ class SDC(scirc.SlackClient):
         await self.dm_controller('<@UHNHM7198> update position is set.')
         time.sleep(1)
         if self.notify:
-            # await self.post(f'moved dx={dx}, dy={dy} (delta={delta})', ws, msgdata['channel'])
             slack.post_message(f'moved dx={dx}, dy={dy} (delta={delta})')
 
     @command
@@ -137,44 +191,44 @@ class SDC(scirc.SlackClient):
         args['flag'] = False
         args['comment'] = ''
 
+        # wrap the whole experiment in a transaction
+        # this way, if the experiment is cancelled, it's not committed to the db
         with self.db as tx:
             args['id'] = tx['experiment'].insert(args)
 
-        stem = 'test'
-        datafile = '{}_data_{:03d}.json'.format(stem, args['id'])
+            stem = 'test'
+            datafile = '{}_data_{:03d}.json'.format(stem, args['id'])
 
-        _msg = "potentiostatic scan *{id}*:  V={potential}, t={duration}".format(**args)
-        if self.confirm:
-            if self.notify:
-                slack.post_message(f'*confirm*: {_msg}')
-            else:
-                print(f'*confirm*: {_msg}')
-            await ainput('press enter to allow running the experiment...')
+            _msg = "potentiostatic scan *{id}*:  V={potential}, t={duration}".format(**args)
+            if self.confirm:
+                if self.notify:
+                    slack.post_message(f'*confirm*: {_msg}')
+                else:
+                    print(f'*confirm*: {_msg}')
+                await ainput('press enter to allow running the experiment...', loop=self.loop)
 
-        elif self.notify:
-            slack.post_message(_msg)
+            elif self.notify:
+                slack.post_message(_msg)
 
-        # TODO: replace this with asyncio.run?
-        # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
-        f = functools.partial(
-            sdc.experiment.run_potentiostatic, args['potential'], args['duration'], cell=self.cell, verbose=self.verbose
-        )
-        results, metadata = await self.loop.run_in_executor(None, f)
-        metadata['parameters'] = json.dumps(metadata['parameters'])
-        if self.test_delay:
-            await self.loop.run_in_executor(None, time.sleep, 10)
+            # TODO: replace this with asyncio.run?
+            # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
+            f = functools.partial(
+                sdc.experiment.run_potentiostatic, args['potential'], args['duration'], cell=self.cell, verbose=self.verbose
+            )
+            results, metadata = await self.loop.run_in_executor(None, f)
+            metadata['parameters'] = json.dumps(metadata['parameters'])
+            if self.test_delay:
+                await self.loop.run_in_executor(None, time.sleep, 10)
 
-        # heuristic check for experimental error signals?
-        if np.median(np.abs(results['current'])) < self.current_threshold:
-            print(f'WARNING: median current below {self.current_threshold} threshold')
-            if self.notify:
-                slack.post_message(f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold')
+            # heuristic check for experimental error signals?
+            if np.median(np.abs(results['current'])) < self.current_threshold:
+                print(f'WARNING: median current below {self.current_threshold} threshold')
+                if self.notify:
+                    slack.post_message(f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold')
 
-        args.update(metadata)
-        args['results'] = json.dumps(results)
+            args.update(metadata)
+            args['results'] = json.dumps(results)
 
-        # await aprint(args)
-        with self.db as tx:
             tx['experiment'].update(args, ['id'])
 
         # dump data
@@ -254,11 +308,15 @@ class SDC(scirc.SlackClient):
         current_task = asyncio.current_task()
 
         for task in asyncio.all_tasks():
+            print(task._coro.__name__)
             if task._coro == current_task._coro:
                 continue
             if task._coro.__name__ == 'handle':
                 print(f'killing task {task._coro}')
                 task.cancel()
+
+        # ask the controller to cancel the caller task too...!
+        await self.dm_controller('<@UHNHM7198> abort_running_handlers')
 
 
 @click.command()
@@ -286,6 +344,7 @@ def sdc_client(config_file, verbose):
     os.makedirs(config['data_dir'], exist_ok=True)
     os.makedirs(config['figure_dir'], exist_ok=True)
 
+    # make sure step_height is positive!
     if config['step_height'] is not None:
         config['step_height'] = abs(config['step_height'])
 
