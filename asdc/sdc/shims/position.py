@@ -6,6 +6,8 @@ import time
 import numpy as np
 from contextlib import contextmanager
 
+ax = [0, 0, 0]
+
 @contextmanager
 def controller(ip='192.168.10.11', speed=1e-4):
     """ context manager that wraps position controller class Position. """
@@ -34,7 +36,10 @@ class Position():
         self.controller = Controller()
         self.settings = None
 
-        self.axis = [0, 0, 0]
+        # use this global variable to keep track of state
+        # across different instantiations of the position controller shim
+        global ax
+        self.axis = ax
 
     @property
     def speed(self):
