@@ -80,7 +80,9 @@ class Controller(scirc.SlackClient):
         sqlite integer primary keys start at 1...
         """
 
-        # df, target_idx, experiment_idx = self.load_experiment_indices()
+        # need to be more subtle here: filter experiment conditions on 'ok' or 'flag'
+        # but also: filter everything on wafer_id, and maybe session_id?
+        # also: how to allow cancelling tasks and adding combi spots to a queue to redo?
 
         target_idx = self.db['experiment'].count()
         target = self.targets.iloc[target_idx]
@@ -140,9 +142,10 @@ class Controller(scirc.SlackClient):
         current_task = asyncio.current_task()
 
         for task in asyncio.all_tasks():
-            print(task._coro.__name__)
+
             if task._coro == current_task._coro:
                 continue
+
             if task._coro.__name__ == 'handle':
                 print(f'killing task {task._coro}')
                 task.cancel()
