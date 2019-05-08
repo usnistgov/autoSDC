@@ -88,12 +88,11 @@ class SDC(scirc.SlackClient):
             try:
                 if use_z_step > 0:
                     if self.confirm:
-                        await ainput('press enter to step up...', loop=self.loop)
-                        # try:
-                        #     await ainput('press enter to step up...', loop=self.loop)
-                        # except asyncio.CancelledError:
-                        #     _cancel_self_on_exit = True
-                        #     raise
+                        try:
+                            await ainput('press enter to step up...', loop=self.loop)
+                        except asyncio.CancelledError:
+                            _cancel_self_on_exit = True
+                            raise
                     f = functools.partial(pos.update_z, delta=self.step_height)
                     await self.loop.run_in_executor(None, f)
 
@@ -107,11 +106,10 @@ class SDC(scirc.SlackClient):
                     dz = baseline_z - current_z
 
                     if self.confirm:
-                        await ainput('press enter to step back down...', loop=self.loop)
-                        # try:
-                        #     await ainput('press enter to step back down...', loop=self.loop)
-                        # except asyncio.CancelledError:
-                        #     _cancel_self_on_exit = True
+                        try:
+                            await ainput('press enter to step back down...', loop=self.loop)
+                        except asyncio.CancelledError:
+                            _cancel_self_on_exit = True
 
                     f = functools.partial(pos.update_z, delta=dz)
                     await self.loop.run_in_executor(None, f)
@@ -122,10 +120,10 @@ class SDC(scirc.SlackClient):
                     c = pos.current_position()
                     await aprint('3', c)
 
-                # if _cancel_self_on_exit:
-                #     current_task = asyncio.current_task()
-                #     current_task.cancel()
-                #     raise asyncio.CancelledError
+                if _cancel_self_on_exit:
+                    current_task = asyncio.current_task()
+                    current_task.cancel()
+                    raise asyncio.CancelledError
 
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
