@@ -213,7 +213,9 @@ class SDC(scirc.SlackClient):
             # TODO: replace this with asyncio.run?
             # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
             f = functools.partial(
-                sdc.experiment.run_potentiostatic, args['potential'], args['duration'], cell=self.cell, verbose=self.verbose
+                sdc.experiment.run_potentiostatic,
+                args['potential'], args['duration'], pre_potential=-0.5, pre_duration=10,
+                cell=self.cell, verbose=self.verbose
             )
             results, metadata = await self.loop.run_in_executor(None, f)
             metadata['parameters'] = json.dumps(metadata['parameters'])

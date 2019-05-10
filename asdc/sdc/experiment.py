@@ -38,7 +38,10 @@ def run_experiment(pstat, poll_interval=1):
 
     return scan_data, metadata
 
-def run_potentiostatic(potential=0.0, duration=10, n_points=1000, cell='INTERNAL', verbose=False):
+def run_potentiostatic(
+        potential=0.0, duration=10, n_points=1000,
+        pre_potential=-0.5, pre_duration=None,
+        cell='INTERNAL', verbose=False):
     """ run a constant potential
     potential (V)
     duration (s)
@@ -47,6 +50,16 @@ def run_potentiostatic(potential=0.0, duration=10, n_points=1000, cell='INTERNAL
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
         time_per_point = np.maximum(duration / n_points, 1.0e-5)
+
+        if pre_duration is not None:
+            # add a preconditioning step
+            # -0.5V might be a good potential to use for preconditioning
+            # this should make the initial conditions more consistent across spots
+            # because open circuit might not be the same for every spot
+            status, params = pstat.potentiostatic(
+                initial_potential=pre_potential, time_per_point=time_per_point*10, duration=pre_duration,
+                current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
+            )
 
         status, params = pstat.potentiostatic(
             initial_potential=potential, time_per_point=time_per_point, duration=duration,
