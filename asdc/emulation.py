@@ -1,4 +1,5 @@
 import gpflow
+import dataset
 import numpy as np
 import pandas as pd
 
@@ -48,18 +49,20 @@ def model_ternary(composition, target):
     return m
 
 class ExperimentEmulator():
-    def __init__(self, datafile, components=['Ni', 'Al', 'Ti'], targets = ['V_oc', 'I_p', 'V_tp', 'slope', 'fwhm']):
+    def __init__(self, db_file, components=['Ni', 'Al', 'Ti'], targets = ['V_oc', 'I_p', 'V_tp', 'slope', 'fwhm']):
         """ fit independent GP models for each target -- read compositions and targets from a csv file... """
-        self.df = pd.read_csv(datafile, index_col=0)
 
-        # drop the anomalous point 44 that has a negative jog in the passivation...
-        self.df = self.df.drop(44)
+        # load all the unflagged data from sqlite to pandas
+        # use sqlite id as pandas index
+        self.db = dataset.connect(f'sqlite:///{db_file}')
+        self.df = pd.DataFrame(self.db['experiment'].all(flag=False))
+        self.df.set_index('id', inplace=True)
+
+        # drop the anomalous point 45 that has a negative jog in the passivation...
+        self.df = self.df.drop(45)
 
         self.components = components
         self.targets = targets
-
-        for component in self.components:
-            self.df[component] = self.df[component] / 100
 
         self.models = {}
         self.fit()
