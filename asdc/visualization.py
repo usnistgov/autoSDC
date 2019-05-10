@@ -42,8 +42,9 @@ def plot_vi(I, V, figpath='iv.png'):
     return
 
 def plot_v(t, V, figpath='v.png'):
-    plt.plot(np.arange(len(V)), V)
-    plt.xlabel('time')
+    n = min(len(t), len(I))
+    plt.plot(t[:n], V[:n])
+    plt.xlabel('time (s)')
     plt.ylabel('voltage')
     plt.savefig(figpath, bbox_inches='tight')
     plt.clf()
@@ -51,7 +52,8 @@ def plot_v(t, V, figpath='v.png'):
     return
 
 def plot_i(t, I, figpath='i.png'):
-    plt.plot(np.arange(len(I)), I)
+    n = min(len(t), len(I))
+    plt.plot(t[:n], I[:n])
     plt.xlabel('time (s)')
     plt.ylabel('current (A)')
     plt.savefig(figpath, bbox_inches='tight')
