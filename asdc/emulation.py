@@ -77,13 +77,19 @@ class ExperimentEmulator():
             self.opt.minimize(model)
             self.models[target] = (session, model)
 
-    def __call__(self, composition, target=None, return_var=False):
+    def __call__(self, composition, target=None, return_var=False, sample_posterior=False, n_samples=1, seed=None):
         """ evaluate GP models on compositions """
         session, model = self.models[target]
 
         with session.as_default():
-            mu, var = model.predict_y(composition[:,:-1])
-            if return_var:
-                return mu, var
+            if sample_posterior:
+                if seed is not None:
+                    tf.set_random_seed(seed)
+                mu = model.predict_f_samples(composition[:,:-1], n_samples)
+                return mu.squeeze()
             else:
-                return mu.flatten()
+                mu, var = model.predict_y(composition[:,:-1])
+                if return_var:
+                    return mu, var
+                else:
+                    return mu.squeeze()

@@ -143,7 +143,7 @@ def ternary_scatter(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blu
     # s = tax.scatter(composition, marker='o', c=value, cmap=cmap, edgecolors='k', s=50)
     tax.boundary(linewidth=2.0)
     tax.gridlines(multiple=0.1, color='k')
-    tax.ticks(axis='lbr', linewidth=1, multiple=0.1, tick_formats='%0.01f', offset=0.02)
+    tax.ticks(axis='lbr', linewidth=1, multiple=0.2, tick_formats='%0.01f', offset=0.02)
     tax.clear_matplotlib_ticks()
     tax.get_axes().axis('off');
 
