@@ -164,15 +164,61 @@ def ternary_scatter(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blu
     plt.subplots_adjust()
     plt.tight_layout()
 
-def ternary_heatmap(model, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, scale=10, plot_var=False, nticks=5):
+def ternary_scatter_sub(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, s=50, ax=None):
+    scale = 1
+    if ax is None:
+        fig, ax = plt.subplots()
+    # grid = plt.GridSpec(10, 1, wspace=1, hspace=3)
+    # ax = plt.subplot(grid[:9, :])
+
+    filtered = value[np.isfinite(value)]
+    vmin, vmax = filtered.min(), filtered.max()
+
+    figure, tax = ternary.figure(scale=scale, ax=ax)
+    # figure.set_size_inches(6, 6)
+    s = tax.scatter(composition, marker='o', c=value, cmap=cmap, edgecolors='k', vmin=vmin, vmax=vmax, s=s)
+    # s = tax.scatter(composition, marker='o', c=value, cmap=cmap, edgecolors='k', s=50)
+    tax.boundary(linewidth=2.0)
+    tax.gridlines(multiple=0.1, color='k')
+    tax.ticks(axis='lbr', linewidth=1, multiple=0.2, tick_formats='%0.01f', offset=0.02)
+    tax.clear_matplotlib_ticks()
+    tax.get_axes().axis('off');
+
+    # tax.right_corner_label(components[0], fontsize=18, offset=0.1)
+    # tax.top_corner_label(components[1], fontsize=18, offset=0.1)
+    # tax.left_corner_label(components[2], fontsize=18, offset=0.1)
+    tax.bottom_axis_label(components[0], fontsize=18, offset=0.1)
+    tax.right_axis_label(components[1], fontsize=18, offset=0.1)
+    tax.left_axis_label(components[2], fontsize=18, offset=0.1)
+
+    ax.axis('equal')
+
+    # ax = plt.subplot(grid[9:,:])
+    # norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+    # # norm = matplotlib.colors.Normalize(vmin=-0.9, vmax=value.max())
+    # cb1 = matplotlib.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm, orientation='horizontal', label=label)
+
+    # if cticks is not None:
+    #     cb1.set_ticks(cticks)
+    #     # cb1.set_tick_labels([-.85, -.7, -0.5])
+
+    plt.subplots_adjust()
+    plt.tight_layout()
+
+
+def ternary_heatmap(model, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, scale=10, plot_var=False, nticks=5, sample_posterior=False):
 
     keys = [k for k in simplex_iterator(scale)]
     # o_mu, o_var = model.predict_f(np.array(keys).astype(float) / scale)
-    o_mu, o_var = model.predict_f(np.array(keys).astype(float)[:,:2] / scale)
+    if sample_posterior:
+        o_mu = model.predict_f_samples(np.array(keys).astype(float)[:,:2] / scale, 1).squeeze()
+    else:
+        o_mu, o_var = model.predict_f(np.array(keys).astype(float)[:,:2] / scale)
     if plot_var:
         v = o_var
     else:
         v = o_mu
+
     tdata = {key: v for key, v in zip(keys, v.flat)}
 
     grid = plt.GridSpec(10, 1, wspace=1, hspace=3)

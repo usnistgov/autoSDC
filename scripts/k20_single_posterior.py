@@ -2,6 +2,7 @@
 
 import os
 import sys
+import json
 import click
 import gpflow
 import numpy as np
@@ -164,27 +165,12 @@ def k20_single_objective(config_file):
     plt.savefig(os.path.join(fig_dir, f'measured_{target}_{len(queries)}.png'), bbox_inches='tight')
     plt.clf()
 
-
-    plt.plot(3+np.arange(task['budget']), mae)
-    plt.xlabel('queries')
-    plt.ylabel('MAE')
-    plt.savefig(os.path.join(fig_dir, f'mae_{target}.png'), bbox_inches='tight')
-    plt.clf()
-    plt.plot(3+np.arange(task['budget']), r2)
-    plt.xlabel('queries')
-    plt.ylabel('$R^2$')
-    plt.savefig(os.path.join(fig_dir, f'R2_{target}.png'), bbox_inches='tight')
-    plt.clf()
-    plt.plot(3+np.arange(task['budget']), ev)
-    plt.xlabel('queries')
-    plt.ylabel('explained variance')
-    plt.savefig(os.path.join(fig_dir, f'explained_variance_{target}.png'), bbox_inches='tight')
-    plt.clf()
-    plt.plot(3+np.arange(task['budget']), best_value)
-    plt.xlabel('queries')
-    plt.ylabel('best value')
-    plt.savefig(os.path.join(fig_dir, f'best_value_{target}.png'), bbox_inches='tight')
-    plt.clf()
+    budget = (3+np.arange(task['budget'])).tolist()
+    with open(os.path.join(model_dir, 'trace.json'), 'w') as f:
+        json.dump(
+            {'budget': budget, 'mae': mae, 'r2': r2, 'ev': ev, 'best_value': best_value},
+            f
+        )
 
     return
 
