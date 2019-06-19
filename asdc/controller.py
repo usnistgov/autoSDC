@@ -27,6 +27,17 @@ def load_experiment_files(csv_files, dir='.'):
     )
     return experiments
 
+def load_experiment_json(experiment_files, dir='.'):
+    """ an experiment file contains a json list of experiment definitions """
+    dir, _ = os.path.split(dir)
+
+    experiments = []
+    for experiment_file in experiment_files:
+        with open(experiment_file, 'r') as f:
+            experiments.append(json.load(f))
+
+    return experiments
+
 class Controller(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
 
@@ -47,7 +58,7 @@ class Controller(scirc.SlackClient):
         self.experiment_table = self.db['experiment']
 
         self.targets = pd.read_csv(config['target_file'], index_col=0)
-        self.experiments = load_experiment_files(config['composition_file'], dir=self.data_dir)
+        self.experiments = load_experiment_files(config['experiment_file'], dir=self.data_dir)
 
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
@@ -89,7 +100,7 @@ class Controller(scirc.SlackClient):
         print(target)
 
         experiment_idx = self.db['experiment'].count(flag=False)
-        experiment = self.experiments.iloc[experiment_idx]
+        experiment = self.experiments[experiment_idx]
         print(experiment)
 
         # send the move command -- message @sdc
@@ -104,12 +115,11 @@ class Controller(scirc.SlackClient):
         # the move was successful and we've had our chance to check the previous spot
         # reload the experiment in case flags have changed
         experiment_idx = self.db['experiment'].count(flag=False)
-        experiment = self.experiments.iloc[experiment_idx]
+        experiment = self.experiments[experiment_idx]
         print(experiment)
 
         # send the experiment command
-        args = {'potential': experiment['V'], 'duration': experiment['t_100nm']}
-        await self.dm_sdc(f'<@UHT11TM6F> potentiostatic {json.dumps(args)}')
+        await self.dm_sdc(f'<@UHT11TM6F> {experiment['action']} {json.dumps(experiment['params'])}')
 
         return
 

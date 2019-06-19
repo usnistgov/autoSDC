@@ -80,15 +80,30 @@ def run_cv_scan(
         scan_rate=0.02,
         cycles=2,
         cell='INTERNAL',
+        precondition_potential=None,
+        precondition_duration=None,
+        precondition_points=1000,
         verbose=False):
     """ run a CV scan for each point """
 
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
-        # # run an open-circuit followed by a CV experiment
-        # status, oc_params = pstat.corrosion_open_circuit(
-        #     time_per_point=1, duration=120, current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
-        # )
+        # run an open-circuit followed by a CV experiment
+        status, oc_params = pstat.corrosion_open_circuit(
+            time_per_point=1, duration=120, current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
+        )
+
+        if precondition_duration is not None and precondition_potential is not None:
+            # add a preconditioning step
+            # -0.5V might be a good potential to use for preconditioning
+            # this should make the initial conditions more consistent across spots
+            # because open circuit might not be the same for every spot
+            time_per_point = np.maximum(duration / n_points, 1.0e-5)
+
+            status, params = pstat.potentiostatic(
+                initial_potential=precondition_potential, time_per_point=time_per_point, duration=precondition_duration,
+                current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
+            )
 
         status, params = pstat.multi_cyclic_voltammetry(
             initial_potential=initial_potential, vertex_potential_1=vertex_potential_1,

@@ -254,6 +254,90 @@ class SDC(scirc.SlackClient):
         await self.dm_controller('<@UHNHM7198> go')
 
     @command
+    async def cv(self, ws, msgdata, args):
+        """ run a cv experiment (for characterization) """
+
+        args = json.loads(args)
+        args['x_combi'] = float(self.c_position.x)
+        args['y_combi'] = float(self.c_position.y)
+        args['x_versa'] = self.v_position[0]
+        args['y_versa'] = self.v_position[1]
+        args['z_versa'] = self.v_position[2]
+        args['flag'] = False
+        args['comment'] = ''
+
+        # wrap the whole experiment in a transaction
+        # this way, if the experiment is cancelled, it's not committed to the db
+        with self.db as tx:
+            args['id'] = tx['experiment'].insert(args)
+
+            stem = 'test'
+            datafile = '{}_data_{:03d}.json'.format(stem, args['id'])
+
+            _msg = "cv scan *{id}*:  V={initial_potential}, cycles={cycles}".format(**args)
+            if self.confirm:
+                if self.notify:
+                    slack.post_message(f'*confirm*: {_msg}')
+                else:
+                    print(f'*confirm*: {_msg}')
+                await ainput('press enter to allow running the experiment...', loop=self.loop)
+
+            elif self.notify:
+                slack.post_message(_msg)
+
+            # TODO: replace this with asyncio.run?
+            # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
+            f = functools.partial(
+                sdc.experiment.run_cv_scan
+                initial_potential=args.get('initial_potential'),
+                vertex_potential_1=args.get('vertex_potential_1'),
+                vertex_potential_2=args.get('vertex_potential_2'),
+                final_potential=args.get('final_potential'),
+                scan_rate=args.get('scan_rate'),
+                cycles=args.get('cycles'),
+                pre_potential=args.get('pre_potential'),
+                pre_duration=args.get('pre_duration'),
+                cell=self.cell,
+                verbose=self.verbose
+            )
+            results, metadata = await self.loop.run_in_executor(None, f)
+            metadata['parameters'] = json.dumps(metadata['parameters'])
+            if self.test_delay:
+                await self.loop.run_in_executor(None, time.sleep, 10)
+
+            # heuristic check for experimental error signals?
+            if np.median(np.abs(results['current'])) < self.current_threshold:
+                print(f'WARNING: median current below {self.current_threshold} threshold')
+                if self.notify:
+                    slack.post_message(f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold')
+
+            args.update(metadata)
+            args['results'] = json.dumps(results)
+
+            tx['experiment'].update(args, ['id'])
+
+        # dump data
+        with open(os.path.join(self.data_dir, datafile), 'w') as f:
+            for key, value in args.items():
+                if type(value) == datetime:
+                    args[key] = value.isoformat()
+            json.dump(args, f)
+
+        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(args['id']))
+        visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
+
+        if self.notify:
+            slack.post_message(f"finished cv scan V={args['initial_potential']}, duration={args['cycles']}")
+            time.sleep(1)
+
+            # post an image
+            slack.post_image(figpath, title='current vs time {}'.format(args['id']))
+            time.sleep(1)
+
+        await self.dm_controller('<@UHNHM7198> go')
+
+
+    @command
     async def flag(self, ws, msgdata, args):
         """ mark a datapoint as bad
         TODO: format checking
