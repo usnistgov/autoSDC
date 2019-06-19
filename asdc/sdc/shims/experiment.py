@@ -35,7 +35,7 @@ def run_experiment(pstat, poll_interval=1):
 
     return scan_data, metadata
 
-def run_potentiostatic(potential=0.0, duration=10, n_points=1000, cell='INTERNAL', verbose=False):
+def run_potentiostatic(potential=0.0, duration=10, n_points=1000, cell='INTERNAL', precondition_potential=None, precondition_duration=None, verbose=False):
     """ run a constant potential
     potential (V)
     duration (s)
