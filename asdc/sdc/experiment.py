@@ -7,7 +7,10 @@ from . import potentiostat
 # the 3F potentiostat
 potentiostat_id = 17109013
 
-def run_experiment(pstat, poll_interval=1):
+POLL_INTERVAL = 1
+MIN_SAMPLING_FREQUENCY = 1.0e-5
+
+def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL):
     """ run an SDC experiment -- busy wait until it's finished """
 
     pstat.start()
@@ -38,86 +41,115 @@ def run_experiment(pstat, poll_interval=1):
 
     return scan_data, metadata
 
-def run_potentiostatic(
-        potential=0.0, duration=10, n_points=1000,
-        precondition_potential=-0.5, precondition_duration=None,
-        cell='INTERNAL', verbose=False):
+def setup_potentiostatic(pstat, expt, cell='INTERNAL'):
     """ run a constant potential
-    potential (V)
-    duration (s)
+
+    potential (float:volt)
+    duration (float:second)
+
+    {"op": "potentiostatic", "potential": Number(volts), "duration": Time(seconds)}
     """
 
+    n_points = 1000
+    duration = expt.get('duration', 10)
+    time_per_point = np.maximum(duration / n_points, MIN_SAMPLING_FREQUENCY)
+
+    status, params = pstat.potentiostatic(
+        initial_potential=expt.get('potential'),
+        time_per_point=time_per_point,
+        duration=duration,
+        current_range='AUTO',
+        e_filter='1HZ',
+        i_filter='1HZ',
+        cell_to_use=cell
+    )
+
+    return status, params
+
+def setup_corrosion_oc(pstat, expt, cell='INTERNAL'):
+    """ set up corrosion open circuit
+
+    duration (float:second)
+
+    {"op": "corrosion_oc", "duration": Time}
+    """
+    time_per_point = 1
+    duration = expt.get('duration', 10)
+
+    # run an open-circuit followed by a CV experiment
+    status, params = pstat.corrosion_open_circuit(
+        time_per_point=time_per_point,
+        duration=duration,
+        current_range='AUTO',
+        e_filter='1HZ',
+        i_filter='1HZ',
+        cell_to_use=cell
+    )
+
+    return status, params
+
+def setup_cv(pstat, expt, cell='INTERNAL'):
+    """ set up a CV experiment
+
+    initial_potential (float:volt)
+    vertex_potential_1 (float:volt)
+    vertex_potential_2 (float:volt)
+    final_potential (float:volt)
+    scan_rate (float)
+    cycles (int)
+
+    {
+        "op": "cv",
+        "initial_potential": 0.0,
+        "vertex_potential_1": -1.0,
+        "vertex_potential_2": 1.2,
+        "final_potential": 0.0,
+        "scan_rate": 0.075,
+        "cycles": 2
+    }
+    """
+
+    status, params = pstat.multi_cyclic_voltammetry(
+        initial_potential=expt.get('initial_potential'),
+        vertex_potential_1=expt.get('vertex_potential_1'),
+        vertex_potential_2=expt.get('vertex_potential_2'),
+        final_potential=expt.get('final_potential'),
+        scan_rate=expt.get('scan_rate'),
+        cycles=expt.get('cycles'),
+        e_filter='1HZ',
+        i_filter='1HZ',
+        cell_to_use=cell
+    )
+
+    return status, params
+
+
+def run(experiment_json, cell='INTERNAL', verbose=False):
+
+    experiment_data = json.loads(experiment_json)
+
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
-        time_per_point = np.maximum(duration / n_points, 1.0e-5)
+        if experiment_data.get('op'):
+            # single experiment -- just run it
+            experiment_data = [experiment_data]
 
-        if pre_duration is not None:
-            # add a preconditioning step
-            # -0.5V might be a good potential to use for preconditioning
-            # this should make the initial conditions more consistent across spots
-            # because open circuit might not be the same for every spot
-            status, params = pstat.potentiostatic(
-                initial_potential=precondition_potential, time_per_point=time_per_point*10, duration=precondition_duration,
-                current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
-            )
+        _params = []
+        for expt in experiment_data:
+            if expt.get('op') == 'potentiostatic':
+                status, params = setup_potentiostatic(pstat, expt, cell=cell)
 
-        status, params = pstat.potentiostatic(
-            initial_potential=potential, time_per_point=time_per_point, duration=duration,
-            current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
-        )
+            elif expt.get('op') == 'cv':
+                status, params = setup_cv(pstat, expt, cell=cell)
 
-        scan_data, metadata = run_experiment(pstat)
-        metadata['measurement'] = 'potentiostatic'
-        metadata['parameters'] = params
+            elif expt.get('op') == 'corrosion_oc':
+                status, params = setup_corrosion_oc(pstat, expt, cell=cell)
 
-    return scan_data, metadata
+            _params.append(params)
 
-def run_cv_scan(
-        initial_potential=-0.5,
-        vertex_potential_1=-1.2,
-        vertex_potential_2=-0.5,
-        final_potential=-0.5,
-        scan_rate=0.02,
-        cycles=2,
-        cell='INTERNAL',
-        precondition_potential=None,
-        precondition_duration=None,
-        precondition_points=1000,
-        verbose=False):
-    """ run a CV scan for each point """
+        scan_data, metadata = run_experiment_sequence(pstat)
 
-    with potentiostat.controller(start_idx=potentiostat_id) as pstat:
-
-        # run an open-circuit followed by a CV experiment
-        status, oc_params = pstat.corrosion_open_circuit(
-            time_per_point=1, duration=120, current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
-        )
-
-        if precondition_duration is not None and precondition_potential is not None:
-            # add a preconditioning step
-            # -0.5V might be a good potential to use for preconditioning
-            # this should make the initial conditions more consistent across spots
-            # because open circuit might not be the same for every spot
-            time_per_point = np.maximum(duration / n_points, 1.0e-5)
-
-            status, params = pstat.potentiostatic(
-                initial_potential=precondition_potential, time_per_point=time_per_point, duration=precondition_duration,
-                current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
-            )
-
-        status, params = pstat.multi_cyclic_voltammetry(
-            initial_potential=initial_potential, vertex_potential_1=vertex_potential_1,
-            vertex_potential_2=vertex_potential_2, final_potential=final_potential,
-            scan_rate=scan_rate, cell_to_use=cell, e_filter='1HZ', i_filter='1HZ', cycles=cycles
-        )
-
-        if verbose:
-            # print('OC added:', oc_params)
-            print('CV added:', params)
-            print(status)
-
-        scan_data, metadata = run_experiment(pstat)
-        metadata['measurement'] = 'cyclic_voltammetry'
-        metadata['parameters'] = params
+    metadata['measurement'] = [expt.get('op') for expt in experiment_data]
+    metadata['parameters'] = _params
 
     return scan_data, metadata
