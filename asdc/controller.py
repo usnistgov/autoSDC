@@ -119,7 +119,7 @@ class Controller(scirc.SlackClient):
         print(experiment)
 
         # send the experiment command
-        await self.dm_sdc(f'<@UHT11TM6F> {experiment['action']} {json.dumps(experiment['params'])}')
+        await self.dm_sdc(f'<@UHT11TM6F> {experiment['op']} {json.dumps(experiment)}')
 
         return
 
