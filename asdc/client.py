@@ -288,15 +288,15 @@ class SDC(scirc.SlackClient):
             # TODO: replace this with asyncio.run?
             # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
             f = functools.partial(
-                sdc.experiment.run_cv_scan
+                sdc.experiment.run_cv_scan,
                 initial_potential=args.get('initial_potential'),
                 vertex_potential_1=args.get('vertex_potential_1'),
                 vertex_potential_2=args.get('vertex_potential_2'),
                 final_potential=args.get('final_potential'),
                 scan_rate=args.get('scan_rate'),
                 cycles=args.get('cycles'),
-                pre_potential=args.get('pre_potential'),
-                pre_duration=args.get('pre_duration'),
+                precondition_potential=args.get('precondition_potential'),
+                precondition_duration=args.get('precondition_duration'),
                 cell=self.cell,
                 verbose=self.verbose
             )

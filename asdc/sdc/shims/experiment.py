@@ -64,6 +64,9 @@ def run_cv_scan(
         scan_rate=0.02,
         cycles=2,
         cell='INTERNAL',
+        precondition_potential=None,
+        precondition_duration=None,
+        precondition_points=1000,
         verbose=False):
     """ run a CV scan for each point """
 

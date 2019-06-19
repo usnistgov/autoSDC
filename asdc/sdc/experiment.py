@@ -40,7 +40,7 @@ def run_experiment(pstat, poll_interval=1):
 
 def run_potentiostatic(
         potential=0.0, duration=10, n_points=1000,
-        pre_potential=-0.5, pre_duration=None,
+        precondition_potential=-0.5, precondition_duration=None,
         cell='INTERNAL', verbose=False):
     """ run a constant potential
     potential (V)
@@ -57,7 +57,7 @@ def run_potentiostatic(
             # this should make the initial conditions more consistent across spots
             # because open circuit might not be the same for every spot
             status, params = pstat.potentiostatic(
-                initial_potential=pre_potential, time_per_point=time_per_point*10, duration=pre_duration,
+                initial_potential=precondition_potential, time_per_point=time_per_point*10, duration=precondition_duration,
                 current_range='AUTO', e_filter='1HZ', i_filter='1HZ', cell_to_use=cell
             )
 

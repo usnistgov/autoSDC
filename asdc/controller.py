@@ -31,10 +31,13 @@ def load_experiment_json(experiment_files, dir='.'):
     """ an experiment file contains a json list of experiment definitions """
     dir, _ = os.path.split(dir)
 
-    experiments = []
+    experiments = None
     for experiment_file in experiment_files:
-        with open(experiment_file, 'r') as f:
-            experiments.append(json.load(f))
+        with open(os.path.join(dir, experiment_file), 'r') as f:
+            if experiments is None:
+                experiments = json.load(f)
+            else:
+                experiments.append(json.load(f))
 
     return experiments
 
@@ -58,7 +61,7 @@ class Controller(scirc.SlackClient):
         self.experiment_table = self.db['experiment']
 
         self.targets = pd.read_csv(config['target_file'], index_col=0)
-        self.experiments = load_experiment_files(config['experiment_file'], dir=self.data_dir)
+        self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
 
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
@@ -119,7 +122,7 @@ class Controller(scirc.SlackClient):
         print(experiment)
 
         # send the experiment command
-        await self.dm_sdc(f'<@UHT11TM6F> {experiment['op']} {json.dumps(experiment)}')
+        await self.dm_sdc(f"<@UHT11TM6F> {experiment['op']} {json.dumps(experiment)}")
 
         return
 
