@@ -205,7 +205,7 @@ class SDC(scirc.SlackClient):
             'y_versa': self.v_position[1],
             'z_versa': self.v_position[2],
             'flag': False,
-            'comment': = ''
+            'comment': ''
         }
 
         # wrap the whole experiment in a transaction
