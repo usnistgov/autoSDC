@@ -29,7 +29,7 @@ class SDC(scirc.SlackClient):
 
     command = scirc.CommandRegistry()
 
-    def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN):
+    def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN, resume=False):
         super().__init__(verbose=verbose, logfile=logfile, token=token)
         self.command.update(super().command)
         self.msg_id = 0
@@ -60,6 +60,31 @@ class SDC(scirc.SlackClient):
 
         self.current_threshold = 1e-5
 
+        self.resume = resume
+        if self.resume:
+            # load last known combi position and update internal state accordingly
+            refs = pd.DataFrame(self.experiment_table.all())
+
+            # arbitrarily grab the first position
+            # TODO: verify that this record comes from the current session...
+            ref = refs.iloc[0]
+            x_versa, y_versa = self.v_position[0], self.v_position[1]
+
+            # get the offset
+            # convert versa -> combi (m -> mm)
+            disp_x = (x_versa - ref.x_versa)*1e3
+            disp_y = (y_versa - ref.y_versa)*1e3
+
+            # keep track of the coordinate switch!
+            # x_combi ~ -y_versa
+            # y_combi ~ -x_versa
+            x_combi = ref.x_combi - disp_y
+            y_combi = ref.y_combi - disp_x
+
+            self.initial_combi_position = pd.Series({'x': x_combi, 'y': y_combi})
+            self.c_position = self.initial_combi_position
+            if self.verbose:
+                print(f"initial combi position: {self.c_position}")
 
     @asynccontextmanager
     async def position_controller(self, use_z_step=False):
@@ -373,7 +398,7 @@ def sdc_client(config_file, resume, verbose):
     logfile = config.get('command_logfile', 'commands.log')
     logfile = os.path.join(config['data_dir'], logfile)
 
-    sdc = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN)
+    sdc = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume)
     sdc.run()
 
 if __name__ == '__main__':
