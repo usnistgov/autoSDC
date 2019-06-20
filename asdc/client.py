@@ -185,25 +185,39 @@ class SDC(scirc.SlackClient):
         # TODO: in the json-api rethink, args should now be a json array containing experiment steps....
         # so cramming things into args is no longer appropriate, probably.
         # unless args becomes a dictionary containing a list of ops to execute....
+        # expanding on this: autoprotocol uses structure like:
+        # {
+        #   "refs": {...},
+        #   "instructions": [{"op": "action1", ...}, {"op": "action2", ...}],
+        #   "constraints": {...}
+        # }
 
-        args = json.loads(args)
-        args['x_combi'] = float(self.c_position.x)
-        args['y_combi'] = float(self.c_position.y)
-        args['x_versa'] = self.v_position[0]
-        args['y_versa'] = self.v_position[1]
-        args['z_versa'] = self.v_position[2]
-        args['flag'] = False
-        args['comment'] = ''
+        # args should contain a sequence of SDC experiments -- basically the "instructions"
+        # segment of an autoprotocol protocol
+        # that comply with the SDC experiment schema (TODO: finalize and enforce schema)
+        instructions = json.loads(args)
+
+        meta = {
+            'instructions': json.dumps(instructions),
+            'x_combi': float(self.c_position.x),
+            'y_combi': float(self.c_position.y),
+            'x_versa': self.v_position[0],
+            'y_versa': self.v_position[1],
+            'z_versa': self.v_position[2],
+            'flag': False,
+            'comment': = ''
+        }
 
         # wrap the whole experiment in a transaction
         # this way, if the experiment is cancelled, it's not committed to the db
         with self.db as tx:
-            args['id'] = tx['experiment'].insert(args)
+            meta['id'] = tx['experiment'].insert(meta)
 
             stem = 'test'
-            datafile = '{}_data_{:03d}.json'.format(stem, args['id'])
+            datafile = '{}_data_{:03d}.json'.format(stem, meta['id'])
 
-            _msg = "potentiostatic scan *{id}*:  V={potential}, t={duration}".format(**args)
+            summary = '-'.join(step['op'] for step in instructions)
+            _msg = "experiment *{meta['id']}*:  {summary}"
             if self.confirm:
                 if self.notify:
                     slack.post_message(f'*confirm*: {_msg}')
@@ -217,43 +231,43 @@ class SDC(scirc.SlackClient):
             # TODO: replace this with asyncio.run?
             f = functools.partial(
                 sdc.experiment.run,
-                args,
+                instructions,
                 cell=self.cell,
                 verbose=self.verbose
             )
             results, metadata = await self.loop.run_in_executor(None, f)
             metadata['parameters'] = json.dumps(metadata['parameters'])
+
             if self.test_delay:
                 await self.loop.run_in_executor(None, time.sleep, 10)
 
+            # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
             # heuristic check for experimental error signals?
             if np.median(np.abs(results['current'])) < self.current_threshold:
                 print(f'WARNING: median current below {self.current_threshold} threshold')
                 if self.notify:
-                    slack.post_message(f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold')
+                    slack.post_message(
+                        f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
+                    )
 
-            args.update(metadata)
-            args['results'] = json.dumps(results)
+            meta.update(metadata)
+            meta['results'] = json.dumps(results)
 
-            tx['experiment'].update(args, ['id'])
+            tx['experiment'].update(meta, ['id'])
 
         # dump data (redundant with sqlite store)
         with open(os.path.join(self.data_dir, datafile), 'w') as f:
-            for key, value in args.items():
+            for key, value in meta.items():
                 if type(value) == datetime:
-                    args[key] = value.isoformat()
+                    meta[key] = value.isoformat()
             json.dump(args, f)
 
-        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(args['id']))
+        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
         visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
 
         if self.notify:
-            slack.post_message(f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}")
-            time.sleep(1)
-
-            # post an image
-            slack.post_image(figpath, title='current vs time {}'.format(args['id']))
-            time.sleep(1)
+            slack.post_message(f"finished experiment {meta['id']}: {summary}")
+            slack.post_image(figpath, title=f"current vs time {meta['id']}")
 
         await self.dm_controller('<@UHNHM7198> go')
 
