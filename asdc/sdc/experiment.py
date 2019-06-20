@@ -2,7 +2,10 @@ import time
 import numpy as np
 from datetime import datetime
 
-from . import potentiostat
+try:
+    from . import potentiostat
+except ModuleNotFoundError:
+    from.shims import potentiostat
 
 # the 3F potentiostat
 potentiostat_id = 17109013
@@ -127,7 +130,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
 
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
-        if instructions.get('op'):
+        if type(instructions) is dict and instructions.get('op'):
             # single experiment -- just run it
             instructions = [instructions]
 
