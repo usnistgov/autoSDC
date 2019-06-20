@@ -1,3 +1,4 @@
+import json
 import time
 import numpy as np
 from datetime import datetime
@@ -149,7 +150,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
 
         scan_data, metadata = run_experiment_sequence(pstat)
 
-    metadata['measurement'] = [instruction.get('op') for instruction in instructions]
-    metadata['parameters'] = _params
+    metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
+    metadata['parameters'] = json.dumps(_params)
 
     return scan_data, metadata

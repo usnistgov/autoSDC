@@ -217,7 +217,7 @@ class SDC(scirc.SlackClient):
             datafile = '{}_data_{:03d}.json'.format(stem, meta['id'])
 
             summary = '-'.join(step['op'] for step in instructions)
-            _msg = "experiment *{meta['id']}*:  {summary}"
+            _msg = f"experiment *{meta['id']}*:  {summary}"
             if self.confirm:
                 if self.notify:
                     slack.post_message(f'*confirm*: {_msg}')
@@ -342,8 +342,9 @@ class SDC(scirc.SlackClient):
 
 @click.command()
 @click.argument('config-file', type=click.Path())
+@click.option('--resume/--no-resume', default=False)
 @click.option('--verbose/--no-verbose', default=False)
-def sdc_client(config_file, verbose):
+def sdc_client(config_file, resume, verbose):
 
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
