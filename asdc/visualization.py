@@ -163,6 +163,7 @@ def ternary_scatter(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blu
 
     plt.subplots_adjust()
     plt.tight_layout()
+    return tax
 
 def ternary_scatter_sub(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, s=50, ax=None):
     scale = 1
@@ -204,6 +205,7 @@ def ternary_scatter_sub(composition, value, components=['Ni', 'Al', 'Ti'], cmap=
 
     plt.subplots_adjust()
     plt.tight_layout()
+    return tax
 
 
 def ternary_heatmap(model, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, scale=10, plot_var=False, nticks=5, sample_posterior=False):
