@@ -139,7 +139,7 @@ class Controller(scirc.SlackClient):
 
         # set up scaling for X (if X is wafer coords...)
         # scale targets to range (-0.5, 0.5)
-        scale_factor = 2*self.targets.max()
+        scale_factor = 2*self.targets.max().values
         X = X / scale_factor
         candidates = candidates / scale_factor
 
