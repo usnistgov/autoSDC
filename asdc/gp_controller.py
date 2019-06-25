@@ -144,7 +144,7 @@ class Controller(scirc.SlackClient):
         candidates = candidates / scale_factor
 
         # remove previously measured candidates
-        mindist = spatial.distance.cdist(X, candidates).min(axis=1)
+        mindist = spatial.distance.cdist(X, candidates).min(axis=0)
         candidates = candidates[mindist > 1e-3]
 
         # reset tf graph -- long-running program!
