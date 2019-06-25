@@ -181,7 +181,7 @@ class Controller(scirc.SlackClient):
         guess = candidates[query_idx]
 
         target = guess * scale_factor
-        target = pd.Series({'x': target[0], 'y': target[1]}
+        target = pd.Series({'x': target[0], 'y': target[1]})
 
         return target
 
