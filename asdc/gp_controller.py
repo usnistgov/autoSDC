@@ -122,6 +122,9 @@ class Controller(scirc.SlackClient):
 
     def gp_acquisition(self):
 
+        if self.notify:
+            slack.post_message(f'analyzing CV features...')
+
         # make sure all experiments are postprocessed and have values in the results table
         self.analyze_corrosion_features()
 
@@ -146,6 +149,9 @@ class Controller(scirc.SlackClient):
         # reset tf graph -- long-running program!
         gpflow.reset_default_graph_and_session()
 
+        if self.notify:
+            slack.post_message(f'fitting GP models')
+
         # set up models
         models = [
             emulation.model_ternary(X, (self.sgn*Y)[:, idx][:,None], reset_tf_graph=False)
@@ -164,6 +170,10 @@ class Controller(scirc.SlackClient):
         # fit the surrogate models
         # gpflowopt objective will optimize the full model list...
         criterion._optimize_models()
+
+
+        if self.notify:
+            slack.post_message(f'evaluating acquisition function')
 
         # evaluate the acquisition function on a grid
         acq = criterion.evaluate(candidates)
