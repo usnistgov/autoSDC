@@ -53,7 +53,7 @@ def setup_potentiostatic(pstat, data, cell='INTERNAL'):
     {"op": "potentiostatic", "potential": Number(volts), "duration": Time(seconds)}
     """
 
-    n_points = 1000
+    n_points = 3000
     duration = data.get('duration', 10)
     time_per_point = np.maximum(duration / n_points, MIN_SAMPLING_FREQUENCY)
 
