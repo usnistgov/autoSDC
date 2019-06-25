@@ -29,7 +29,7 @@ class SDC(scirc.SlackClient):
 
     command = scirc.CommandRegistry()
 
-    def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN):
+    def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN, resume=False):
         super().__init__(verbose=verbose, logfile=logfile, token=token)
         self.command.update(super().command)
         self.msg_id = 0
@@ -60,6 +60,31 @@ class SDC(scirc.SlackClient):
 
         self.current_threshold = 1e-5
 
+        self.resume = resume
+        if self.resume:
+            # load last known combi position and update internal state accordingly
+            refs = pd.DataFrame(self.experiment_table.all())
+
+            # arbitrarily grab the first position
+            # TODO: verify that this record comes from the current session...
+            ref = refs.iloc[0]
+            x_versa, y_versa = self.v_position[0], self.v_position[1]
+
+            # get the offset
+            # convert versa -> combi (m -> mm)
+            disp_x = (x_versa - ref.x_versa)*1e3
+            disp_y = (y_versa - ref.y_versa)*1e3
+
+            # keep track of the coordinate switch!
+            # x_combi ~ -y_versa
+            # y_combi ~ -x_versa
+            x_combi = ref.x_combi - disp_y
+            y_combi = ref.y_combi - disp_x
+
+            self.initial_combi_position = pd.Series({'x': x_combi, 'y': y_combi})
+            self.c_position = self.initial_combi_position
+            if self.verbose:
+                print(f"initial combi position: {self.c_position}")
 
     @asynccontextmanager
     async def position_controller(self, use_z_step=False):
@@ -179,27 +204,45 @@ class SDC(scirc.SlackClient):
             slack.post_message(f'moved dx={dx}, dy={dy} (delta={delta})')
 
     @command
-    async def potentiostatic(self, ws, msgdata, args):
-        """ run a potentiostatic experiment (for e.g. electrodeposition) """
+    async def run_experiment(self, ws, msgdata, args):
+        """ run an SDC experiment """
 
-        args = json.loads(args)
-        args['x_combi'] = float(self.c_position.x)
-        args['y_combi'] = float(self.c_position.y)
-        args['x_versa'] = self.v_position[0]
-        args['y_versa'] = self.v_position[1]
-        args['z_versa'] = self.v_position[2]
-        args['flag'] = False
-        args['comment'] = ''
+        # TODO: in the json-api rethink, args should now be a json array containing experiment steps....
+        # so cramming things into args is no longer appropriate, probably.
+        # unless args becomes a dictionary containing a list of ops to execute....
+        # expanding on this: autoprotocol uses structure like:
+        # {
+        #   "refs": {...},
+        #   "instructions": [{"op": "action1", ...}, {"op": "action2", ...}],
+        #   "constraints": {...}
+        # }
+
+        # args should contain a sequence of SDC experiments -- basically the "instructions"
+        # segment of an autoprotocol protocol
+        # that comply with the SDC experiment schema (TODO: finalize and enforce schema)
+        instructions = json.loads(args)
+
+        meta = {
+            'instructions': json.dumps(instructions),
+            'x_combi': float(self.c_position.x),
+            'y_combi': float(self.c_position.y),
+            'x_versa': self.v_position[0],
+            'y_versa': self.v_position[1],
+            'z_versa': self.v_position[2],
+            'flag': False,
+            'comment': ''
+        }
 
         # wrap the whole experiment in a transaction
         # this way, if the experiment is cancelled, it's not committed to the db
         with self.db as tx:
-            args['id'] = tx['experiment'].insert(args)
+            meta['id'] = tx['experiment'].insert(meta)
 
             stem = 'test'
-            datafile = '{}_data_{:03d}.json'.format(stem, args['id'])
+            datafile = '{}_data_{:03d}.json'.format(stem, meta['id'])
 
-            _msg = "potentiostatic scan *{id}*:  V={potential}, t={duration}".format(**args)
+            summary = '-'.join(step['op'] for step in instructions)
+            _msg = f"experiment *{meta['id']}*:  {summary}"
             if self.confirm:
                 if self.notify:
                     slack.post_message(f'*confirm*: {_msg}')
@@ -211,131 +254,47 @@ class SDC(scirc.SlackClient):
                 slack.post_message(_msg)
 
             # TODO: replace this with asyncio.run?
-            # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
             f = functools.partial(
-                sdc.experiment.run_potentiostatic,
-                args['potential'], args['duration'], precondition_potential=-0.5, precondition_duration=10,
-                cell=self.cell, verbose=self.verbose
-            )
-            results, metadata = await self.loop.run_in_executor(None, f)
-            metadata['parameters'] = json.dumps(metadata['parameters'])
-            if self.test_delay:
-                await self.loop.run_in_executor(None, time.sleep, 10)
-
-            # heuristic check for experimental error signals?
-            if np.median(np.abs(results['current'])) < self.current_threshold:
-                print(f'WARNING: median current below {self.current_threshold} threshold')
-                if self.notify:
-                    slack.post_message(f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold')
-
-            args.update(metadata)
-            args['results'] = json.dumps(results)
-
-            tx['experiment'].update(args, ['id'])
-
-        # dump data
-        with open(os.path.join(self.data_dir, datafile), 'w') as f:
-            for key, value in args.items():
-                if type(value) == datetime:
-                    args[key] = value.isoformat()
-            json.dump(args, f)
-
-        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(args['id']))
-        visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
-
-        if self.notify:
-            slack.post_message(f"finished potentiostatic scan V={args['potential']}, duration={args['duration']}")
-            time.sleep(1)
-
-            # post an image
-            slack.post_image(figpath, title='current vs time {}'.format(args['id']))
-            time.sleep(1)
-
-        await self.dm_controller('<@UHNHM7198> go')
-
-    @command
-    async def cv(self, ws, msgdata, args):
-        """ run a cv experiment (for characterization) """
-
-        args = json.loads(args)
-        args['x_combi'] = float(self.c_position.x)
-        args['y_combi'] = float(self.c_position.y)
-        args['x_versa'] = self.v_position[0]
-        args['y_versa'] = self.v_position[1]
-        args['z_versa'] = self.v_position[2]
-        args['flag'] = False
-        args['comment'] = ''
-
-        # wrap the whole experiment in a transaction
-        # this way, if the experiment is cancelled, it's not committed to the db
-        with self.db as tx:
-            args['id'] = tx['experiment'].insert(args)
-
-            stem = 'test'
-            datafile = '{}_data_{:03d}.json'.format(stem, args['id'])
-
-            _msg = "cv scan *{id}*:  V={initial_potential}, cycles={cycles}".format(**args)
-            if self.confirm:
-                if self.notify:
-                    slack.post_message(f'*confirm*: {_msg}')
-                else:
-                    print(f'*confirm*: {_msg}')
-                await ainput('press enter to allow running the experiment...', loop=self.loop)
-
-            elif self.notify:
-                slack.post_message(_msg)
-
-            # TODO: replace this with asyncio.run?
-            # results = sdc.experiment.run_potentiostatic(args['potential'], args['duration'], cell=self.cell, verbose=self.verbose)
-            f = functools.partial(
-                sdc.experiment.run_cv_scan,
-                initial_potential=args.get('initial_potential'),
-                vertex_potential_1=args.get('vertex_potential_1'),
-                vertex_potential_2=args.get('vertex_potential_2'),
-                final_potential=args.get('final_potential'),
-                scan_rate=args.get('scan_rate'),
-                cycles=args.get('cycles'),
-                precondition_potential=args.get('precondition_potential'),
-                precondition_duration=args.get('precondition_duration'),
+                sdc.experiment.run,
+                instructions,
                 cell=self.cell,
                 verbose=self.verbose
             )
             results, metadata = await self.loop.run_in_executor(None, f)
             metadata['parameters'] = json.dumps(metadata['parameters'])
+
             if self.test_delay:
                 await self.loop.run_in_executor(None, time.sleep, 10)
 
+            # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
             # heuristic check for experimental error signals?
             if np.median(np.abs(results['current'])) < self.current_threshold:
                 print(f'WARNING: median current below {self.current_threshold} threshold')
                 if self.notify:
-                    slack.post_message(f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold')
+                    slack.post_message(
+                        f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
+                    )
 
-            args.update(metadata)
-            args['results'] = json.dumps(results)
+            meta.update(metadata)
+            meta['results'] = json.dumps(results)
 
-            tx['experiment'].update(args, ['id'])
+            tx['experiment'].update(meta, ['id'])
 
-        # dump data
+        # dump data (redundant with sqlite store)
         with open(os.path.join(self.data_dir, datafile), 'w') as f:
-            for key, value in args.items():
+            for key, value in meta.items():
                 if type(value) == datetime:
-                    args[key] = value.isoformat()
+                    meta[key] = value.isoformat()
             json.dump(args, f)
 
-        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(args['id']))
+        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
         visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
 
         if self.notify:
-            slack.post_message(f"finished cv scan V={args['initial_potential']}, duration={args['cycles']}")
-            time.sleep(1)
-
-            # post an image
-            slack.post_image(figpath, title='current vs time {}'.format(args['id']))
-            time.sleep(1)
+            slack.post_message(f"finished experiment {meta['id']}: {summary}")
+            slack.post_image(figpath, title=f"current vs time {meta['id']}")
 
         await self.dm_controller('<@UHNHM7198> go')
-
 
     @command
     async def flag(self, ws, msgdata, args):
@@ -408,8 +367,9 @@ class SDC(scirc.SlackClient):
 
 @click.command()
 @click.argument('config-file', type=click.Path())
+@click.option('--resume/--no-resume', default=False)
 @click.option('--verbose/--no-verbose', default=False)
-def sdc_client(config_file, verbose):
+def sdc_client(config_file, resume, verbose):
 
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
@@ -438,7 +398,7 @@ def sdc_client(config_file, verbose):
     logfile = config.get('command_logfile', 'commands.log')
     logfile = os.path.join(config['data_dir'], logfile)
 
-    sdc = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN)
+    sdc = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume)
     sdc.run()
 
 if __name__ == '__main__':

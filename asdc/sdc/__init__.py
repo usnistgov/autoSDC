@@ -1,13 +1,13 @@
-import sys
+""" SDC interface """
 
-if sys.platform == 'win32':
+# if clr module (pythonnet) is not available, load the SDC shims
+from . import experiment
 
+try:
     from . import position
-    from . import experiment
     from . import potentiostat
 
-else:
+except ModuleNotFoundError:
 
     from .shims import position
-    from .shims import experiment
     from .shims import potentiostat
