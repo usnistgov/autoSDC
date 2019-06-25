@@ -12,6 +12,7 @@ from ruamel import yaml
 from aioconsole import ainput
 
 sys.path.append('../scirc')
+sys.path.append('.')
 import scirc
 
 from asdc import slack

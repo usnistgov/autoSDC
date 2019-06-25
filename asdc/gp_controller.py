@@ -17,6 +17,7 @@ from scipy import spatial
 from datetime import datetime
 
 sys.path.append('../scirc')
+sys.path.append('.')
 import scirc
 
 from asdc import slack

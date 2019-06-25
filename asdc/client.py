@@ -14,6 +14,7 @@ from aioconsole import ainput, aprint
 from contextlib import asynccontextmanager
 
 sys.path.append('../scirc')
+sys.path.append('.')
 import scirc
 
 from asdc import sdc
