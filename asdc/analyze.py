@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from scipy import signal
+from sklearn import metrics
 from sklearn import linear_model
 from skimage import filters
 
@@ -89,7 +90,7 @@ def piecewise_savgol(x, y, x_split=0, window_length=121, polyorder=5):
 
     return y
 
-def model_polarization_curve(V, log_I, bg_order=3, smooth=True, shoulder_percentile=0.99, lm_method='huber'):
+def model_polarization_curve(V, log_I, bg_order=3, smooth=True, smooth_window=121, shoulder_percentile=0.96, lm_method='huber'):
     """ extract features from polarization curve.
     open circuit potential by modeling log(I)-V curve an laplace peak with a polynomial background
     extract passivation region by fitting a robust regression model (with the laplace peak as a hint for where to start)
@@ -100,47 +101,60 @@ def model_polarization_curve(V, log_I, bg_order=3, smooth=True, shoulder_percent
     # apply piecewise smoothing
     # i.e. don't oversmooth the open circuit peak
     if smooth:
-        log_I = piecewise_savgol(V, log_I, x_split=V_oc)
+        log_I = piecewise_savgol(V, log_I, x_split=V_oc, window_length=smooth_window)
 
     peak_shoulder_idx = np.argmax(
         stats.laplace.cdf(V, loc=V_oc, scale=peak.best_values['peak_scale']) > shoulder_percentile
     )
 
     # fit robust regression model to passivation region
+    # shift the peak shoulder to the origin and constrain
+    # the intercept to pass through that point...
     vp = V[peak_shoulder_idx:]
     ip = log_I[peak_shoulder_idx:]
+
+    _vp = vp - vp[0]
+    _ip = ip - ip[0]
+
     if lm_method == 'thiel-sen':
-        lm = linear_model.TheilSenRegressor()
+        lm = linear_model.TheilSenRegressor(fit_intercept=False)
     elif lm_method == 'huber':
-        lm = linear_model.HuberRegressor()
+        lm = linear_model.HuberRegressor(fit_intercept=False)
     elif lm_method == 'ransac':
-        lm = linear_model.RANSACRegressor()
+        lm = linear_model.RANSACRegressor(fit_intercept=False)
 
     score = []
-    n_fit = np.arange(50, 500, 5)
+    n_fit = np.arange(100, 800, 5)
     for n in n_fit:
-
-        lm.fit(vp[:n, None], ip[:n])
-        score.append(lm.score(vp[:,None], ip))
+        lm.fit(_vp[:n, None], _ip[:n])
+        score.append(metrics.mean_squared_error(_ip, lm.predict(_vp[:,None])))
 
     # refit with the best model...
-    n = n_fit[np.argmin(score)]
-    lm.fit(vp[:n, None], ip[:n])
+    n = n_fit[np.argmax(score)]
 
-    deviation = ip - lm.predict(vp[:,None])
+    lm.fit(_vp[:n, None], _ip[:n])
+
+    deviation = _ip - lm.predict(_vp[:,None])
     thresh = filters.threshold_triangle(deviation)
     id_thresh = np.argmax(deviation > thresh)
-    V_transpassive = vp[id_thresh]
 
+    V_transpassive = vp[id_thresh]
     I_passive = np.median(ip[:id_thresh])
 
     polarization_data = {
         'V_oc': V_oc,
         'V_tp': V_transpassive,
-        'I_p': I_passive
+        'I_p': I_passive,
     }
 
-    return log_I, peak, lm, polarization_data
+    fit_data = {
+        'peak': peak,
+        'lm': lm,
+        'vref': vp[0],
+        'iref': ip[0]
+    }
+
+    return log_I, polarization_data, fit_data
 
 def extract_open_circuit_potential(current, potential, segment, return_model=False):
 
@@ -188,3 +202,47 @@ def segment_IV(I, V, segment=1):
             V = V[t[1]:]
 
     return I, V
+
+def split_data(data, segment=0, split=0):
+    """ data should be a versastat result dictionary """
+
+    V_applied = np.array(data['applied_potential'])
+    s = np.array(data['segment'])
+
+    # assume there is only one vertex per segment...
+    # look for the change point on the sign of the derivative of
+    # the applied potential. Should be about halfway for CV curves
+    sgn = np.sign(np.diff(V_applied[s==segment]))
+    vertex = np.abs(np.diff(sgn)).argmax()
+
+    if split == 0:
+        sel = slice(0,vertex)
+    elif split == 1:
+        sel = slice(vertex,-1)
+
+    res = {
+        key: np.array(value)[s == segment][sel]
+        for key, value in data.items()
+        if key in ('current', 'potential', 'elapsed_time')
+    }
+    return res
+
+def extract_cv_features(data, return_raw_data=False, shoulder_percentile=0.99):
+
+    I = data['current']
+    V = data['potential']
+
+    # log_I = correct_autorange_artifacts(V, I)
+    a = model_autorange_artifacts(V, I)
+    log_I = np.log10(np.abs(I)) - a
+
+    _log_I, cv_features, fit_data = model_polarization_curve(
+        V, log_I, bg_order=5, lm_method='huber', smooth=True, smooth_window=121, shoulder_percentile=shoulder_percentile
+    )
+    cv_features['slope'] = fit_data['lm'].coef_[0]
+
+    if return_raw_data:
+        meta = {'V': V, 'log_I': _log_I, 'fit_data': fit_data}
+        return cv_features, meta
+
+    return cv_features
