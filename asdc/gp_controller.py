@@ -117,7 +117,7 @@ class Controller(scirc.SlackClient):
             d.update(cv_features)
             d['ts'] = datetime.now()
 
-            tab.upsert(d, ['id'])
+            rtab.upsert(d, ['id'])
 
         return
 
