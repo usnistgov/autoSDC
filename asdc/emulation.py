@@ -18,7 +18,7 @@ def simplex_grid(n=3, buffer=0.1):
     s = buffer + s*scale
     return s
 
-def model_ternary(composition, target, reset_tf_graph=True, optimize_noise_variance=True):
+def model_ternary(composition, target, reset_tf_graph=True, optimize_noise_variance=True, initial_noise_var=1e-4):
 
     X = composition[:,:-1] # ignore the last composition column
     Y = target
@@ -35,8 +35,8 @@ def model_ternary(composition, target, reset_tf_graph=True, optimize_noise_varia
         m = gpflow.models.GPR(
             X, Y,
             # kern=gpflow.kernels.Linear(D, ARD=True) + gpflow.kernels.RBF(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D)
-            # kern=gpflow.kernels.Matern52(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D, variance=0.01)
-            kern=gpflow.kernels.RationalQuadratic(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D, variance=1e-4)
+            kern=gpflow.kernels.Matern52(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D, variance=initial_noise_var) # \sigma_noise = 0.01
+            # kern=gpflow.kernels.RationalQuadratic(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D, variance=initial_noise_var)
         )
 
     # set a weakly-informative lengthscale prior
@@ -55,7 +55,7 @@ def model_ternary(composition, target, reset_tf_graph=True, optimize_noise_varia
     if not optimize_noise_variance:
         m.kern.kernels[2].variance.trainable = False
 
-    m.likelihood.variance = 0.01
+    m.likelihood.variance = 1e-6
 
     m.compile()
     return m
