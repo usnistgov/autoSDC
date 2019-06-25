@@ -219,6 +219,8 @@ def split_data(data, segment=0, split=0):
         sel = slice(0,vertex)
     elif split == 1:
         sel = slice(vertex,-1)
+    elif split == -1:
+        sel = slice(0,-1)
 
     res = {
         key: np.array(value)[s == segment][sel]
