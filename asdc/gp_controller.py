@@ -13,6 +13,7 @@ from aioconsole import ainput
 
 import gpflow
 from gpflowopt import acquisition
+from scipy import stats
 from scipy import spatial
 from datetime import datetime
 
@@ -72,9 +73,11 @@ class Controller(scirc.SlackClient):
         self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
 
         # gpflowopt minimizes objectives...
-        # swap signs for things we want to maximize (V_tp)
-        self.objectives = ('V_oc', 'I_p', 'V_tp', 'slope')
-        self.sgn = np.array([1,1,-1,1])
+        # UCB switches to maximizing objectives...
+        # swap signs for things we want to minimize (everything but V_tp)
+        self.objectives = ('I_p', 'slope', 'V_oc', 'V_tp')
+        self.objective_alphas = [3,3,2,1]]
+        self.sgn = np.array([-1,-1,-1,1])
 
 
     async def post(self, msg, ws, channel):
@@ -121,6 +124,21 @@ class Controller(scirc.SlackClient):
 
         return
 
+
+    def random_scalarization_cb(self, model_wrapper, candidates, cb_beta):
+        """ random scalarization upper confidence bound acquisition policy function """
+
+        objective = np.zeros(candidates.shape[0])
+
+        weights = stats.dirichlet.rvs(self.objective_alphas)
+
+        for weight, model in zip(model_wrapper.models, weights.squeeze()):
+            mean, var = model.predict_y(candidates)
+            ucb = mean + cb_beta*np.sqrt(var)
+            objective += weight * ucb.squeeze()
+
+        return objective
+
     def gp_acquisition(self):
 
         if self.notify:
@@ -136,6 +154,10 @@ class Controller(scirc.SlackClient):
         X = df.loc[:,('x_combi', 'y_combi')].values
         Y = r.loc[:,self.objectives].values
         candidates = self.targets.values
+
+        # set confidence bound beta
+        t = X.shape[0]
+        cb_beta = 0.125 * np.log(2*t + 1)
 
         # set up scaling for X (if X is wafer coords...)
         # scale targets to range (-0.5, 0.5)
@@ -161,9 +183,10 @@ class Controller(scirc.SlackClient):
         ]
 
         # set up multiobjective acquisition...
+        # use this as a convenient model wrapper for now...
         criterion = acquisition.HVProbabilityOfImprovement(models)
 
-        # rescale model outputs to balance hypervolume estimates
+        # rescale model outputs to balance objectives...
         for model in criterion.models:
             model.normalize_output = True
         criterion.root._needs_setup = True
@@ -173,12 +196,13 @@ class Controller(scirc.SlackClient):
         # gpflowopt objective will optimize the full model list...
         criterion._optimize_models()
 
-
         if self.notify:
             slack.post_message(f'evaluating acquisition function')
 
         # evaluate the acquisition function on a grid
-        acq = criterion.evaluate(candidates)
+        # acq = criterion.evaluate(candidates)
+        acq = self.random_scalarization_cb(criterion, candidates, cb_beta)
+
         query_idx = np.argmax(acq)
         guess = candidates[query_idx]
 
