@@ -130,9 +130,14 @@ class Controller(scirc.SlackClient):
 
         objective = np.zeros(candidates.shape[0])
 
-        weights = stats.dirichlet.rvs(self.objective_alphas)
+        # sample one set of weights from a dirichlet distribution
+        # that specifies our general preference on the objective weightings
+        weights = stats.dirichlet.rvs(self.objective_alphas).squeeze()
 
-        for weight, model in zip(model_wrapper.models, weights.squeeze()):
+        if self.notify:
+            slack.post_message(f'sampled objective fn weights: {weights}')
+
+        for weight, model in zip(model_wrapper.models, weights):
             mean, var = model.predict_y(candidates)
             ucb = mean + cb_beta*np.sqrt(var)
             objective += weight * ucb.squeeze()
