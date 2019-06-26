@@ -76,7 +76,7 @@ class Controller(scirc.SlackClient):
         # UCB switches to maximizing objectives...
         # swap signs for things we want to minimize (everything but V_tp)
         self.objectives = ('I_p', 'slope', 'V_oc', 'V_tp')
-        self.objective_alphas = [3,3,2,1]]
+        self.objective_alphas = [3,3,2,1]
         self.sgn = np.array([-1,-1,-1,1])
 
 
