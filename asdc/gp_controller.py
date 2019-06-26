@@ -24,6 +24,7 @@ import scirc
 from asdc import slack
 from asdc import analyze
 from asdc import emulation
+from asdc import visualization
 
 BOT_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 SDC_TOKEN = open('slacktoken.txt', 'r').read().strip()
@@ -124,7 +125,6 @@ class Controller(scirc.SlackClient):
 
         return
 
-
     def random_scalarization_cb(self, model_wrapper, candidates, cb_beta):
         """ random scalarization upper confidence bound acquisition policy function """
 
@@ -207,6 +207,12 @@ class Controller(scirc.SlackClient):
         # evaluate the acquisition function on a grid
         # acq = criterion.evaluate(candidates)
         acq = self.random_scalarization_cb(criterion, candidates, cb_beta)
+
+        # plot the acquisition function...
+        figpath = os.path.join(self.figure_dir, f'acquisition_plot_{t}.png')
+        visualization.scatter_wafer(candidates*scale_factor, acq, label='acquisition', figpath=figpath)
+        if self.notify:
+            slack.post_image(figpath, title=f"acquisition at t={t}")
 
         query_idx = np.argmax(acq)
         guess = candidates[query_idx]

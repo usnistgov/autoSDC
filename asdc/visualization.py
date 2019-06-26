@@ -79,6 +79,21 @@ def combi_plot(show_flat=False):
         c = c[sel]
     plt.plot(c[:,0], c[:,1], color='k')
 
+def scatter_wafer(X, y, label=None, figpath='wafer_plot.png'):
+    fig, axes = plt.subplots(figsize=(4.5,4))
+    combi_plot(show_flat=True)
+
+    p = plt.scatter(X[:,0], X[:,1], c=y, cmap='Blues', edgecolors='k')
+    plt.xlabel('x (mm)')
+    plt.ylabel('y (mm)')
+
+    cbar = colorbar(p)
+    cbar.set_label(label)
+    plt.savefig(figpath, bbox_inches='tight')
+    plt.clf()
+    plt.close()
+    return
+
 def plot_open_circuit(current, potential, segment, figpath='open_circuit.png'):
     plt.figure(figsize=(4,5))
 
