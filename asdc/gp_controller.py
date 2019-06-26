@@ -137,7 +137,7 @@ class Controller(scirc.SlackClient):
         if self.notify:
             slack.post_message(f'sampled objective fn weights: {weights}')
 
-        for weight, model in zip(model_wrapper.models, weights):
+        for model, weight in zip(model_wrapper.models, weights):
             mean, var = model.predict_y(candidates)
             ucb = mean + cb_beta*np.sqrt(var)
             objective += weight * ucb.squeeze()
