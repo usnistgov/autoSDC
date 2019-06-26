@@ -18,9 +18,12 @@ def simplex_grid(n=3, buffer=0.1):
     s = buffer + s*scale
     return s
 
-def model_ternary(composition, target, reset_tf_graph=True, optimize_noise_variance=True, initial_noise_var=1e-4):
+def model_ternary(composition, target, reset_tf_graph=True, drop_last=True, optimize_noise_variance=True, initial_noise_var=1e-4):
 
-    X = composition[:,:-1] # ignore the last composition column
+    if drop_last:
+        X = composition[:,:-1] # ignore the last composition column
+    else:
+        X = composition
     Y = target
 
     # sel = np.isfinite(Y).sum(axis=1)

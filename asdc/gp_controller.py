@@ -154,8 +154,9 @@ class Controller(scirc.SlackClient):
             slack.post_message(f'fitting GP models')
 
         # set up models
+        # don't drop the last input dimension with wafer position inputs...
         models = [
-            emulation.model_ternary(X, (self.sgn*Y)[:, idx][:,None], reset_tf_graph=False)
+            emulation.model_ternary(X, (self.sgn*Y)[:, idx][:,None], reset_tf_graph=False, drop_last=False)
             for idx in range(Y.shape[1])
         ]
 
