@@ -23,11 +23,14 @@ def simplex_grid(n=3, buffer=0.1):
     s = buffer + s*scale
     return s
 
-def update_posterior(model, x_new=None, y_new=None, num_steps=150):
+def update_posterior(model, x_new=None, y_new=None, lr=1e-3, num_steps=150, optimize_noise_variance=True):
 
     if x_new is not None and y_new is not None:
+        if x_new.ndimension() == 1:
+            x_new = x_new.unsqueeze(0)
         X = torch.cat([model.X, x_new])
-        y = torch.cat([model.y, y_new.squeeze(1)])
+        # y = torch.cat([model.y, y_new.squeeze(1)])
+        y = torch.cat([model.y, y_new])
         model.set_data(X, y)
 
     # update model noise prior based on variance of observed data
@@ -37,13 +40,18 @@ def update_posterior(model, x_new=None, y_new=None, num_steps=150):
     p = model.kernel._priors
     model.kernel.variance = p['variance']()
     model.kernel.lengthscale = p['lengthscale'](model.kernel.lengthscale.size())
-    # model.noise = model._priors['noise']()
 
-    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=0.001)
+
+    if optimize_noise_variance:
+        model.noise = model._priors['noise']()
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+    else:
+        optimizer = optim.Adam([param for name, param in model.named_parameters() if 'noise' not in name], lr=lr)
+
     losses = gp.util.train(model, optimizer, num_steps=num_steps)
     return losses
 
-def model_ternary(X, y, drop_last=True, optimize_noise_variance=True, initial_noise_var=1e-4):
+def model_ternary(X, y, drop_last=True, initial_noise_var=1e-4):
     """ set up GP model for single target """
 
     if drop_last:
@@ -68,31 +76,23 @@ def model_ternary(X, y, drop_last=True, optimize_noise_variance=True, initial_no
     # set a prior on the likelihood noise based on the variance of the observed data
     model.set_prior('noise', dist.HalfNormal(model.y.var()/2))
 
-    if not optimize_noise_variance:
-        raise NotImplementedError
-        for name, param in model.named_parameters():
-            if name == 'noise_map_unconstrained':
-                param.requires_grad = False
-
     return model
 
-class ExperimentEmulator():
-    def __init__(self, db_file, components=['Ni', 'Al', 'Ti'], targets = ['V_oc', 'I_p', 'V_tp', 'slope', 'fwhm'], optimize_noise_variance=True):
-        """ fit independent GP models for each target -- read compositions and targets from a csv file... """
+class ModelWrapper():
 
-        # load all the unflagged data from sqlite to pandas
-        # use sqlite id as pandas index
-        self.db = dataset.connect(f'sqlite:///{db_file}')
-        self.df = pd.DataFrame(self.db['experiment'].all(flag=False))
-        self.df.set_index('id', inplace=True)
+    def __init__(self, inputs, targets, optimize_noise_variance=True, dtype=torch.float, num_steps=2000):
+        """ fit independent GP models for each target
+        inputs X and targets should be data frames
+        """
 
-        # # drop the anomalous point 45 that has a negative jog in the passivation...
-        # self.df = self.df.drop(45)
-
-        self.components = components
-        self.composition = self.df.loc[:,self.components].values
+        self.dtype = dtype
+        self.inputs = inputs
         self.targets = targets
+        self.num_steps = num_steps
         self.optimize_noise_variance = optimize_noise_variance
+
+        self.X = torch.tensor(inputs.values, dtype=dtype)
+        self.Y = torch.tensor(targets.values, dtype=dtype)
 
         self.models = {}
         self.samplers = {}
@@ -100,13 +100,12 @@ class ExperimentEmulator():
 
     def fit(self):
 
-        X = torch.tensor(self.composition, dtype=torch.float)
+        for target in self.targets.keys():
 
-        for target in self.targets:
-            y = torch.tensor(self.df[target].values, dtype=torch.float)
+            y = torch.tensor(self.targets[target].values, dtype=self.dtype)
 
-            model = model_ternary(X, y, initial_noise_var=0.1, optimize_noise_variance=self.optimize_noise_variance)
-            update_posterior(model, num_steps=2000)
+            model = model_ternary(self.X, y, initial_noise_var=0.01)
+            update_posterior(model, num_steps=self.num_steps, optimize_noise_variance=self.optimize_noise_variance)
             self.models[target] = model
 
     def __call__(self, X, target=None, noiseless=True, sample_posterior=False, n_samples=1, seed=None):
@@ -124,25 +123,30 @@ class ExperimentEmulator():
             with torch.no_grad():
                 _mean, _cov = model(X[:,:-1], full_cov=True, noiseless=noiseless)
 
-            mean[target] = _mean
-            var[target] = _cov.diag()
+            if sample_posterior:
 
-        return mean, var
+                n = _mean.size(0)
+                jitter = torch.eye(n) * 1e-6
+
+                L = torch.cholesky(_cov + jitter)
+                V = torch.randn(X.size(0))
+
+                mean[target] = _mean + L @ V
+
+            else:
+                mean[target] = _mean
+                var[target] = _cov.diag()
 
         if sample_posterior:
-            if seed is not None:
-                tf.set_random_seed(seed)
-            mu = model.predict_f_samples(composition[:,:-1], n_samples)
-            return mu.squeeze()
+            return mean
         else:
-            mu, var = model.predict_y(composition[:,:-1])
-            if return_var:
-                return mu, var
-            else:
-                return mu.squeeze()
+            return mean, var
 
-    def sample_posterior(self, X, target=None, noiseless=True):
-        """ sample GP posteriors """
+    def iter_sample(self, X, target=None, noiseless=True):
+        """ sample GP posteriors iteratively"""
+
+        if X.ndimension() == 1:
+            X = X.unsqueeze(0)
 
         if target is None:
             targets = self.models.keys()
@@ -161,3 +165,37 @@ class ExperimentEmulator():
             mean[target] = fn(X[:,:-1])
 
         return mean
+
+
+class K20Wrapper(ModelWrapper):
+    """ Independent GPs fit to NiTiAl k20 dataset """
+    def __init__(self, db_file, components=['Ni', 'Al', 'Ti'], targets=['V_oc', 'I_p', 'V_tp', 'slope', 'fwhm'], optimize_noise_variance=True, num_steps=2000):
+
+        # load all the unflagged data from sqlite to pandas
+        # use sqlite id as pandas index
+        self.db = dataset.connect(f'sqlite:///{db_file}')
+        self.df = pd.DataFrame(self.db['experiment'].all(flag=False))
+        self.df.set_index('id', inplace=True)
+
+        # # drop the anomalous point 45 that has a negative jog in the passivation...
+        # self.df = self.df.drop(45)
+
+        super().__init__(self.df.loc[:,components], self.df.loc[:,targets], num_steps=num_steps)
+
+
+class K20v2Wrapper(ModelWrapper):
+    """ Independent GPs fit to NiTiAl k20v2 dataset """
+    def __init__(self, db_file, results_file, components=['Ni', 'Al', 'Ti'], targets=['V_oc', 'I_p', 'V_tp', 'slope'], optimize_noise_variance=True, num_steps=2000):
+
+        # db_file = '../data/k20-NiTiAl-v2.db'
+        # results_file = '../data/k20-NiTiAl-v2-results.db'
+        self.db = dataset.connect(f'sqlite:///{db_file}')
+        self.res = dataset.connect(f'sqlite:///{results_file}')
+        experiment_table = self.db['experiment']
+
+        # only load the more recent session...
+        df = pd.DataFrame(experiment_table.find(session=2))
+        r = pd.DataFrame(self.res['cycle0'].all())
+        r = r[r['id'].isin(df['id'])]
+
+        super().__init__(r.loc[:,components], r.loc[:,targets], num_steps=num_steps)
