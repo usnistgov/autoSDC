@@ -70,6 +70,13 @@ def plot_emulator(model, domain, sample_posterior=True, fig_path=None):
         plt.clf()
         plt.close()
 
+def plot_acquisition(D, acq, fig_path=None):
+    tax = visualization.ternary_scatter(D.numpy(), acq.numpy(), label='acquisition');
+    tax.scatter(D[acq.argmax()].unsqueeze(0).numpy(), edgecolors='r', color='none', linewidths=2);
+    if fig_path is not None:
+        plt.savefig(fig_path, bbox_inches='tight')
+        plt.clf(); plt.close()
+
 def sample_weights(alpha=alpha):
     """ sample objective function weighting from Dirichlet distribution
     specified by concentration parameters alpha
@@ -107,6 +114,7 @@ def random_scalarization_cb(model, candidates, cb_beta, weights=None, sign=sign)
 
 def k20_optimize():
     """ multiobjective K20 problem. """
+    budget = 20
     db_file = 'data/k20-NiTiAl.db'
     targets = ['V_oc', 'I_p', 'V_tp', 'slope']
     domain = emulation.simplex_grid(30, buffer=0.05)
@@ -117,8 +125,8 @@ def k20_optimize():
     plot_emulator(em, D, fig_path=os.path.join(fig_dir, 'k20.png'))
 
     # start by sampling at the corners of the simplex
-    # _s = D.argmax(0)
-    _s = torch.randperm(D.size(0))[:10]
+    # _s = torch.randperm(D.size(0))[:10]
+    _s = D.argmax(0)
     X = D[_s]
 
     samples = [em.iter_sample(x) for x in X]
@@ -134,21 +142,19 @@ def k20_optimize():
     )
     plot_emulator(model, D, sample_posterior=False, fig_path=os.path.join(fig_dir, 'initial_model.png'))
 
-    w = sample_weights()
-    acq = random_scalarization_cb(model, D, weights=w, cb_beta=2)
-    tax = visualization.ternary_scatter(D.numpy(), acq.numpy(), label='acquisition');
-    tax.scatter(D[acq.argmax()].unsqueeze(0).numpy(), edgecolors='r', color='none', linewidths=2);
-    plt.savefig(os.path.join(fig_dir, 'acquisition.png'), bbox_inches='tight')
-    plt.clf(); plt.close()
+    for idx in range(budget):
+        w = sample_weights()
+        acq = random_scalarization_cb(model, D, weights=w, cb_beta=2)
+        plot_acquisition(D, acq, fig_path=os.path.join(fig_dir, f'acquisition_{idx:02d}.png'))
 
-    ## query the emulator and update the models
-    x = D[acq.argmax()]
-    y = em.iter_sample(x)
+        ## query the emulator and update the models
+        x = D[acq.argmax()]
+        y = em.iter_sample(x)
 
-    for key, m in model.models.items():
-        emulation.update_posterior(m, x_new=x[:-1], y_new=y[key])
+        for key, m in model.models.items():
+            emulation.update_posterior(m, x_new=x[:-1], y_new=y[key])
 
-    plot_emulator(model, D, sample_posterior=False, fig_path=os.path.join(fig_dir, 'updated_model.png'))
+        plot_emulator(model, D, sample_posterior=False, fig_path=os.path.join(fig_dir, f'model_{idx:02d}.png'))
 
 if __name__ == '__main__':
     k20_optimize()
