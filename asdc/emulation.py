@@ -9,6 +9,9 @@ import pyro.contrib.gp as gp
 from pyro.contrib.gp.util import conditional
 import pyro.distributions as dist
 
+DTYPE = torch.double
+torch.set_default_dtype(DTYPE)
+
 def simplex_grid(n=3, buffer=0.1):
     """ construct a regular grid on the ternary simplex """
 
@@ -110,7 +113,7 @@ def new_iter_sample(model, X, noiseless=True):
 
     return mean
 
-def smooth_posterior_sample(model, X_init):
+def smooth_posterior_sample(model, X_init, uniform_noise=False):
 
     X = X_init.clone().detach()
     V = torch.randn(X.size(0))
@@ -118,7 +121,16 @@ def smooth_posterior_sample(model, X_init):
     with torch.no_grad():
         mean, cov = model(X[:,:-1], full_cov=True, noiseless=True)
 
-    noise = dist.Normal(0, cov.diag() + model.noise + model.jitter).sample()
+    if not uniform_noise:
+        noise = dist.Normal(0, cov.diag() + model.noise + model.jitter).sample()
+    else:
+        v = cov.diag().median()
+        noise = dist.Normal(0, v + model.noise + model.jitter).sample(torch.tensor([X.size(0)]))
+
+    n = mean.size(0)
+    jitter = torch.eye(n) * model.jitter
+    L = torch.cholesky(cov + jitter)
+    sample = mean + L @ V
 
     outside_vars = {"X": X_init, "V": V, "noise": noise}
 
@@ -141,11 +153,16 @@ def smooth_posterior_sample(model, X_init):
         with torch.no_grad():
             mean, cov = model(X[:,:-1], full_cov=True, noiseless=True)
 
-        observation_variance = cov.diag()[-sample_size:]
-        observation_noise = dist.Normal(0, observation_variance + model.noise + model.jitter).sample()
+        if not uniform_noise:
+            observation_variance = cov.diag()[-sample_size:]
+            observation_noise = dist.Normal(0, observation_variance + model.noise + model.jitter).sample()
+        else:
+            print('sampling uniform observation noise')
+            v = cov.diag().median()
+            observation_noise = dist.Normal(0, v + model.noise + model.jitter).sample(torch.tensor([sample_size]))
 
         n = mean.size(0)
-        jitter = torch.eye(n) * 1e-6
+        jitter = torch.eye(n) * model.jitter
         L = torch.cholesky(cov + jitter)
 
         sample = mean + L @ V
@@ -160,7 +177,7 @@ def smooth_posterior_sample(model, X_init):
         return sample[-sample_size:], observation_noise
 
     f = lambda x, return_full=False: sample_next(x, outside_vars, return_full=return_full)
-    return f, mean, noise
+    return f, sample, noise
 
 def update_posterior(model, x_new=None, y_new=None, lr=1e-3, num_steps=150, optimize_noise_variance=True):
 
@@ -202,8 +219,9 @@ def model_ternary(X, y, drop_last=True, initial_noise_var=1e-4):
 
     # set up ARD Matern 5/2 kernel
     # set an empirical mean function to the median value of observed data...
-    kernel = gp.kernels.Matern52(input_dim=2, variance=torch.tensor(1.), lengthscale=torch.tensor([1.0, 1.0]))
-    model = gp.models.GPRegression(X, y, kernel, noise=torch.tensor(initial_noise_var))
+    kernel = gp.kernels.RBF(input_dim=2, variance=torch.tensor(1.), lengthscale=torch.tensor([1.0, 1.0]))
+    # kernel = gp.kernels.Matern52(input_dim=2, variance=torch.tensor(1.), lengthscale=torch.tensor([1.0, 1.0]))
+    model = gp.models.GPRegression(X, y, kernel, noise=torch.tensor(initial_noise_var), jitter=1e-8)
     model.mean_function = lambda x: model.y.median()
 
     # set a weakly-informative lengthscale prior
@@ -219,11 +237,12 @@ def model_ternary(X, y, drop_last=True, initial_noise_var=1e-4):
 
 class ModelWrapper():
 
-    def __init__(self, inputs, targets, optimize_noise_variance=True, dtype=torch.float, num_steps=2000):
+    def __init__(self, inputs, targets, optimize_noise_variance=True, dtype=DTYPE, num_steps=2000, lr=1e-3):
         """ fit independent GP models for each target
         inputs X and targets should be data frames
         """
 
+        self.lr = lr
         self.dtype = dtype
         self.inputs = inputs
         self.targets = targets
@@ -235,16 +254,20 @@ class ModelWrapper():
 
         self.models = {}
         self.samplers = {}
-        self.fit()
+        self.fit(num_steps=2000)
 
-    def fit(self):
+    def fit(self, lr=None, num_steps=None):
+        if lr is None:
+            lr = self.lr
+        if num_steps is None:
+            num_steps = self.num_steps
 
         for target in self.targets.keys():
-
+            print(f'optimizing {target} model')
             y = torch.tensor(self.targets[target].values, dtype=self.dtype)
 
             model = model_ternary(self.X, y, initial_noise_var=0.01)
-            update_posterior(model, num_steps=self.num_steps, optimize_noise_variance=self.optimize_noise_variance)
+            update_posterior(model, num_steps=num_steps, lr=lr, optimize_noise_variance=self.optimize_noise_variance)
             self.models[target] = model
 
     def __call__(self, X, target=None, noiseless=True, sample_posterior=False, n_samples=1, seed=None):
@@ -305,7 +328,7 @@ class ModelWrapper():
 
         return mean
 
-    def clean_iter_sample(self, X, target=None, noiseless=True):
+    def clean_iter_sample(self, X, target=None, noiseless=True, uniform_noise=False):
         """ sample GP posteriors iteratively"""
 
         if X.ndimension() == 1:
@@ -323,7 +346,7 @@ class ModelWrapper():
                 mean[target], noise[target] = fn(X)
             except KeyError:
                 model = self.models[target]
-                fn, mean[target], noise[target] = smooth_posterior_sample(model, X)
+                fn, mean[target], noise[target] = smooth_posterior_sample(model, X, uniform_noise=uniform_noise)
                 self.samplers[target] = fn
 
         return mean, noise
