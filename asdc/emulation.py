@@ -6,6 +6,7 @@ import pandas as pd
 
 import pyro
 import pyro.contrib.gp as gp
+from pyro.contrib.gp.util import conditional
 import pyro.distributions as dist
 
 def simplex_grid(n=3, buffer=0.1):
@@ -22,6 +23,144 @@ def simplex_grid(n=3, buffer=0.1):
     scale = 1-(3*buffer)
     s = buffer + s*scale
     return s
+
+def mod_iter_sample(model, noiseless=True):
+    r"""
+        Iteratively constructs a sample from the Gaussian Process posterior.
+        Recall that at test input points :math:`X_{new}`, the posterior is
+        multivariate Gaussian distributed with mean and covariance matrix
+        given by :func:`forward`.
+        This method samples lazily from this multivariate Gaussian. The advantage
+        of this approach is that later query points can depend upon earlier ones.
+        Particularly useful when the querying is to be done by an optimisation
+        routine.
+        .. note:: The noise parameter ``noise`` (:math:`\epsilon`) together with
+            kernel's parameters have been learned from a training procedure (MCMC or
+            SVI).
+        :param bool noiseless: A flag to decide if we want to add sampling noise
+            to the samples beyond the noise inherent in the GP posterior.
+        :returns: sampler
+        :rtype: function
+    """
+    noise = model.noise.detach()
+    X = model.X.clone().detach()
+    y = model.y.clone().detach()
+    N = X.size(0)
+    Kff = model.kernel(X).contiguous()
+    if not noiseless:
+        Kff.view(-1)[::N + 1] += noise  # add noise to the diagonal
+    else:
+        Kff.view(-1)[::N + 1] += 1e-8  # add noise to the diagonal
+
+    outside_vars = {"X": X, "y": y, "N": N, "Kff": Kff}
+
+    def sample_next(xnew, outside_vars):
+        """Repeatedly samples from the Gaussian process posterior,
+        conditioning on previously sampled values.
+        """
+
+
+        # Variables from outer scope
+        X, y, Kff = outside_vars["X"], outside_vars["y"], outside_vars["Kff"]
+
+        # Compute Cholesky decomposition of kernel matrix
+        Lff = Kff.cholesky()
+        y_residual = y - model.mean_function(X)
+
+        # Compute conditional mean and variance
+        loc, cov = conditional(xnew, X, model.kernel, y_residual, None, Lff)
+        if not noiseless:
+            cov = cov + noise
+
+        ynew = dist.Normal(loc + model.mean_function(xnew), cov.sqrt()).rsample()
+
+        # Update kernel matrix
+        N = outside_vars["N"]
+        Kffnew = Kff.new_empty(N+1, N+1)
+        Kffnew[:N, :N] = Kff
+        cross = model.kernel(X, xnew).squeeze()
+        end = model.kernel(xnew, xnew).squeeze()
+        Kffnew[N, :N] = cross
+        Kffnew[:N, N] = cross
+        # No noise, just jitter for numerical stability
+        Kffnew[N, N] = end + model.jitter
+        # Heuristic to avoid adding degenerate points
+        if Kffnew.logdet() > -15.:
+            outside_vars["Kff"] = Kffnew
+            outside_vars["N"] += 1
+            outside_vars["X"] = torch.cat((X, xnew))
+            outside_vars["y"] = torch.cat((y, ynew))
+
+        return ynew
+
+    return lambda xnew: sample_next(xnew, outside_vars)
+
+def new_iter_sample(model, X, noiseless=True):
+
+    with torch.no_grad():
+        _mean, _cov = model(X[:,:-1], full_cov=True, noiseless=noiseless)
+
+    n = _mean.size(0)
+    jitter = torch.eye(n) * 1e-6
+
+    L = torch.cholesky(_cov + jitter)
+    V = torch.randn(X.size(0))
+
+    mean = _mean + L @ V
+
+    return mean
+
+def smooth_posterior_sample(model, X_init):
+
+    X = X_init.clone().detach()
+    V = torch.randn(X.size(0))
+
+    with torch.no_grad():
+        mean, cov = model(X[:,:-1], full_cov=True, noiseless=True)
+
+    noise = dist.Normal(0, cov.diag() + model.noise + model.jitter).sample()
+
+    outside_vars = {"X": X_init, "V": V, "noise": noise}
+
+    def sample_next(xnew, outside_vars, return_full=False):
+        """Repeatedly samples from the Gaussian process posterior,
+        conditioning on previously sampled values.
+        """
+
+        sample_size = xnew.size(0)
+        vnew = torch.randn(sample_size)
+
+        # get variables from outer scope
+        X, V, noise = outside_vars.get("X"), outside_vars.get("V"), outside_vars.get("noise")
+
+        X = torch.cat((X, xnew))
+        V = torch.cat((V, vnew))
+
+        # ask for the noiseless covariance matrix
+        # explicitly add noise to it when sampling new observation noise (separately)
+        with torch.no_grad():
+            mean, cov = model(X[:,:-1], full_cov=True, noiseless=True)
+
+        observation_variance = cov.diag()[-sample_size:]
+        observation_noise = dist.Normal(0, observation_variance + model.noise + model.jitter).sample()
+
+        n = mean.size(0)
+        jitter = torch.eye(n) * 1e-6
+        L = torch.cholesky(cov + jitter)
+
+        sample = mean + L @ V
+
+        outside_vars["X"] = X
+        outside_vars["V"] = V
+        outside_vars["noise"] = torch.cat((outside_vars["noise"], observation_noise))
+
+        if return_full:
+            return sample, outside_vars["noise"]
+
+        return sample[-sample_size:], observation_noise
+
+    f = lambda x, return_full=False: sample_next(x, outside_vars, return_full=return_full)
+    return f, mean, noise
 
 def update_posterior(model, x_new=None, y_new=None, lr=1e-3, num_steps=150, optimize_noise_variance=True):
 
@@ -166,6 +305,28 @@ class ModelWrapper():
 
         return mean
 
+    def clean_iter_sample(self, X, target=None, noiseless=True):
+        """ sample GP posteriors iteratively"""
+
+        if X.ndimension() == 1:
+            X = X.unsqueeze(0)
+
+        if target is None:
+            targets = self.models.keys()
+        elif type(target) is str:
+            targets = [target]
+
+        mean, noise = {}, {}
+        for target in targets:
+            try:
+                fn = self.samplers[target]
+                mean[target], noise[target] = fn(X)
+            except KeyError:
+                model = self.models[target]
+                fn, mean[target], noise[target] = smooth_posterior_sample(model, X)
+                self.samplers[target] = fn
+
+        return mean, noise
 
 class K20Wrapper(ModelWrapper):
     """ Independent GPs fit to NiTiAl k20 dataset """
