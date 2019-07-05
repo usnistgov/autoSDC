@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 from asdc import visualization
 
-def plot_emulator(model, domain, sample_posterior=True):
+def plot_emulator(model, domain, sample_posterior=True, fig_path=None):
     if sample_posterior:
         fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(16,12))
     else:
@@ -31,3 +31,8 @@ def plot_emulator(model, domain, sample_posterior=True):
 
     plt.tight_layout()
     plt.subplots_adjust()
+
+    if fig_path is not None:
+        plt.savefig(fig_path, bbox_inches='tight')
+        plt.clf()
+        plt.close()

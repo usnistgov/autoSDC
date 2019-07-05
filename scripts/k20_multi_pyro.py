@@ -15,11 +15,15 @@ import pyro.distributions as dist
 
 import matplotlib.pyplot as plt
 
-from asdc import visualization
 from asdc import analyze
 from asdc import emulation
+from asdc import acquisition
+from asdc import visualization
+from asdc.k20_util import plot_emulator
 
 fig_dir = 'emulation/test'
+DTYPE = torch.double
+torch.set_default_dtype(DTYPE)
 
 # set dirichlet distribution concentration parameters
 # for each objective
@@ -39,37 +43,6 @@ sign = {
     'V_tp': 1
 }
 
-def plot_emulator(model, domain, sample_posterior=True, fig_path=None):
-    if sample_posterior:
-        fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(16,12))
-    else:
-        fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(16,8))
-
-    features = ['V_oc', 'V_tp', 'I_p', 'slope']
-    labels = [r'$V_{oc}$', r'$V_{tp}$', r'log $I_p$', 'slope']
-
-    mean, var = model(domain)
-    if sample_posterior:
-        sample = model(domain, sample_posterior=True, noiseless=False)
-
-    for col, feature, title in zip(axes.T, features, labels):
-        m = model.models[feature]
-        visualization.ternary_scatter_sub(m.X, m.y, ax=col[0])
-        visualization.ternary_scatter_sub(domain.numpy(), mean[feature].numpy(), ax=col[1]);
-        if sample_posterior:
-            visualization.ternary_scatter_sub(domain.numpy(), sample[feature].numpy(), ax=col[2]);
-
-        for ax in col:
-            ax.axis('equal')
-        col[0].set_title(title, size=18)
-
-    plt.tight_layout()
-    plt.subplots_adjust()
-    if fig_path is not None:
-        plt.savefig(fig_path, bbox_inches='tight')
-        plt.clf()
-        plt.close()
-
 def plot_acquisition(D, acq, fig_path=None):
     tax = visualization.ternary_scatter(D.numpy(), acq.numpy(), label='acquisition');
     tax.scatter(D[acq.argmax()].unsqueeze(0).numpy(), edgecolors='r', color='none', linewidths=2);
@@ -77,50 +50,17 @@ def plot_acquisition(D, acq, fig_path=None):
         plt.savefig(fig_path, bbox_inches='tight')
         plt.clf(); plt.close()
 
-def sample_weights(alpha=alpha):
-    """ sample objective function weighting from Dirichlet distribution
-    specified by concentration parameters alpha
-    """
-    a = torch.tensor(list(alpha.values()), dtype=torch.float)
-    weights = dist.Dirichlet(a).sample()
-    return dict(zip(alpha.keys(), weights))
-
-def random_scalarization_cb(model, candidates, cb_beta, weights=None, sign=sign):
-    # scaling some data by some constant --> scaling the variance by the square of the constant
-
-    objective = torch.zeros(candidates.size(0))
-
-    with torch.no_grad():
-        mean, var = model(candidates)
-
-    for key, weight in weights.items():
-        m = model.models[key]
-        mu, v = mean[key], var[key]
-
-        # remap objective function to [0,1]
-        # use the observed data to set the scaling.
-        min_val = (m.y * sign[key]).min()
-        scale = torch.abs(m.y.max() - m.y.min())
-
-        mu = mu * sign[key]
-        mu = (mu - min_val) / scale
-        v = v * (1/scale)**2
-
-        sd = v.sqrt()
-        ucb = mu + np.sqrt(cb_beta) * sd
-        objective += weight * ucb
-
-    return objective
-
 def k20_optimize():
     """ multiobjective K20 problem. """
     budget = 20
-    db_file = 'data/k20-NiTiAl.db'
+    # db_file = 'data/k20-NiTiAl.db'
+    db_file = 'data/k20-NiTiAl-v2.db'
+    results_file = 'data/k20-NiTiAl-v2-results.db'
     targets = ['V_oc', 'I_p', 'V_tp', 'slope']
-    domain = emulation.simplex_grid(30, buffer=0.05)
-    D = torch.tensor(domain, dtype=torch.float)
+    domain = emulation.simplex_grid(50, buffer=0.01)
+    D = torch.tensor(domain)
 
-    em = emulation.K20Wrapper(db_file, targets=targets, num_steps=100)
+    em = emulation.K20v2Wrapper(db_file, results_file, targets=targets, num_steps=2000)
     print('ok')
     plot_emulator(em, D, fig_path=os.path.join(fig_dir, 'k20.png'))
 
@@ -129,30 +69,34 @@ def k20_optimize():
     _s = D.argmax(0)
     X = D[_s]
 
-    samples = [em.iter_sample(x) for x in X]
-    Y_init = {
-        key: torch.cat([s[key] for s in samples])
-        for key in em.targets.keys()
-    }
+    # samples = [em.iter_sample(x) for x in X]
+    # Y_init = {
+    #     key: torch.cat([s[key] for s in samples])
+    #     for key in em.targets.keys()
+    # }
+    sample_init, noise_init = em.clean_iter_sample(X, noiseless=False, uniform_noise=True)
+    Y_init = {key: (sample_init[key] + noise_init[key]) for key in sample_init.keys()}
 
     model = emulation.ModelWrapper(
         pd.DataFrame(X.numpy(), columns=[em.inputs.keys()]),
         pd.DataFrame(Y_init),
-        num_steps=100
+        num_steps=250
     )
     plot_emulator(model, D, sample_posterior=False, fig_path=os.path.join(fig_dir, 'initial_model.png'))
 
     for idx in range(budget):
-        w = sample_weights()
-        acq = random_scalarization_cb(model, D, weights=w, cb_beta=2)
+        w = acquisition.sample_weights(alpha=alpha)
+        acq = acquisition.random_scalarization_cb(model, D, weights=w, cb_beta=1, sign=sign)
         plot_acquisition(D, acq, fig_path=os.path.join(fig_dir, f'acquisition_{idx:02d}.png'))
 
         ## query the emulator and update the models
         x = D[acq.argmax()]
-        y = em.iter_sample(x)
+        # y = em.iter_sample(x)
+        y, n = em.clean_iter_sample(x, uniform_noise=True)
+        y_new = {key: y[key] + n[key] for key in y.keys()}
 
         for key, m in model.models.items():
-            emulation.update_posterior(m, x_new=x[:-1], y_new=y[key])
+            emulation.update_posterior(m, x_new=x[:-1], y_new=y_new[key])
 
         plot_emulator(model, D, sample_posterior=False, fig_path=os.path.join(fig_dir, f'model_{idx:02d}.png'))
 

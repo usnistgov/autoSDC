@@ -144,7 +144,7 @@ def plot_ocp_model(x, y, ocp, gridpoints, model, query_position, figure_path=Non
         plt.savefig(figure_path, bbox_inches='tight')
         plt.clf()
 
-def ternary_scatter(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, s=50):
+def ternary_scatter(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, s=50, edgecolors='k', marker='o'):
     scale = 1
     grid = plt.GridSpec(10, 1, wspace=1, hspace=3)
     ax = plt.subplot(grid[:9, :])
@@ -154,7 +154,7 @@ def ternary_scatter(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blu
 
     figure, tax = ternary.figure(scale=scale, ax=ax)
     figure.set_size_inches(6, 6)
-    s = tax.scatter(composition, marker='o', c=value, cmap=cmap, edgecolors='k', vmin=vmin, vmax=vmax, s=s)
+    s = tax.scatter(composition, marker=marker, c=value, cmap=cmap, edgecolors=edgecolors, vmin=vmin, vmax=vmax, s=s)
     # s = tax.scatter(composition, marker='o', c=value, cmap=cmap, edgecolors='k', s=50)
     tax.boundary(linewidth=2.0)
     tax.gridlines(multiple=0.1, color='k')
@@ -180,7 +180,7 @@ def ternary_scatter(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blu
     plt.tight_layout()
     return tax
 
-def ternary_scatter_sub(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, s=50, ax=None):
+def ternary_scatter_sub(composition, value, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, s=50, ax=None, edgecolors='k', marker='o'):
     scale = 1
     if ax is None:
         fig, ax = plt.subplots()
@@ -192,7 +192,7 @@ def ternary_scatter_sub(composition, value, components=['Ni', 'Al', 'Ti'], cmap=
 
     figure, tax = ternary.figure(scale=scale, ax=ax)
     # figure.set_size_inches(6, 6)
-    s = tax.scatter(composition, marker='o', c=value, cmap=cmap, edgecolors='k', vmin=vmin, vmax=vmax, s=s)
+    s = tax.scatter(composition, marker=marker, c=value, cmap=cmap, edgecolors=edgecolors, vmin=vmin, vmax=vmax, s=s)
     # s = tax.scatter(composition, marker='o', c=value, cmap=cmap, edgecolors='k', s=50)
     tax.boundary(linewidth=2.0)
     tax.gridlines(multiple=0.1, color='k')
@@ -221,7 +221,6 @@ def ternary_scatter_sub(composition, value, components=['Ni', 'Al', 'Ti'], cmap=
     plt.subplots_adjust()
     plt.tight_layout()
     return tax
-
 
 def ternary_heatmap(model, components=['Ni', 'Al', 'Ti'], cmap='Blues', label=None, cticks=None, scale=10, plot_var=False, nticks=5, sample_posterior=False):
 
