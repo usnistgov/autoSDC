@@ -1,7 +1,9 @@
 import os
 import sys
 import json
+import yaml
 import torch
+import click
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -21,27 +23,8 @@ from asdc import acquisition
 from asdc import visualization
 from asdc.k20_util import plot_emulator
 
-fig_dir = 'emulation/test'
 DTYPE = torch.double
 torch.set_default_dtype(DTYPE)
-
-# set dirichlet distribution concentration parameters
-# for each objective
-alpha = {
-    'I_p': 3,
-    'slope': 3,
-    'V_oc': 2,
-    'V_tp': 1
-}
-
-# maximization problem:
-# e.g. maximize the negative passivation current...
-sign = {
-    'I_p': -1,
-    'slope': -1,
-    'V_oc': -1,
-    'V_tp': 1
-}
 
 def plot_acquisition(D, acq, fig_path=None):
     tax = visualization.ternary_scatter(D.numpy(), acq.numpy(), label='acquisition');
@@ -50,19 +33,37 @@ def plot_acquisition(D, acq, fig_path=None):
         plt.savefig(fig_path, bbox_inches='tight')
         plt.clf(); plt.close()
 
-def k20_optimize():
-    """ multiobjective K20 problem. """
-    budget = 20
-    # db_file = 'data/k20-NiTiAl.db'
-    db_file = 'data/k20-NiTiAl-v2.db'
-    results_file = 'data/k20-NiTiAl-v2-results.db'
-    targets = ['V_oc', 'I_p', 'V_tp', 'slope']
-    domain = emulation.simplex_grid(50, buffer=0.01)
-    D = torch.tensor(domain)
 
-    em = emulation.K20v2Wrapper(db_file, results_file, targets=targets, num_steps=2000)
-    print('ok')
-    plot_emulator(em, D, fig_path=os.path.join(fig_dir, 'k20.png'))
+@click.command()
+@click.argument('config-file', type=click.Path())
+def k20_optimize(config_file):
+    """ multiobjective K20 problem. """
+
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+
+    model_dir, _ = os.path.split(config_file)
+    fig_dir = os.path.join(model_dir, 'figures')
+    os.makedirs(fig_dir, exist_ok=True)
+
+    targets = config['targets']
+    sign = {k: np.sign(v) for k,v in targets.items()}
+    alpha = {k: np.abs(v) for k,v in targets.items()}
+    print(f'maximize {sign}')
+    print(f'Dirichlet concentrations: {alpha}')
+
+    domain = emulation.simplex_grid(50, buffer=0.05)
+    D = torch.tensor(domain)
+    plot_D = torch.tensor(emulation.simplex_grid(50, buffer=0.01))
+
+    db_file = config['emulator']['datafile']
+    if 'v2' in db_file:
+        results_file = 'data/k20-NiTiAl-v2-results.db'
+        em = emulation.K20v2Wrapper(db_file, results_file, targets=targets.keys(), num_steps=2000)
+    else:
+        em = emulation.K20Wrapper(db_file, targets=targets.keys(), num_steps=2000)
+
+    plot_emulator(em, plot_D, fig_path=os.path.join(fig_dir, 'k20.png'))
 
     # start by sampling at the corners of the simplex
     # _s = torch.randperm(D.size(0))[:10]
@@ -82,23 +83,30 @@ def k20_optimize():
         pd.DataFrame(Y_init),
         num_steps=250
     )
-    plot_emulator(model, D, sample_posterior=False, fig_path=os.path.join(fig_dir, 'initial_model.png'))
+    plot_emulator(model, plot_D, sample_posterior=False, fig_path=os.path.join(fig_dir, 'initial_model.png'))
 
-    for idx in range(budget):
+    for idx in range(config.get('budget', 10)):
+        print(f'query {idx}')
+
         w = acquisition.sample_weights(alpha=alpha)
-        acq = acquisition.random_scalarization_cb(model, D, weights=w, cb_beta=1, sign=sign)
+        print(f'weights: {w}')
+        cb_beta = 2
+        cb_beta = 0.125 * np.log(2*(idx+3) + 1)
+        acq = acquisition.random_scalarization_cb(model, D, weights=w, cb_beta=cb_beta, sign=sign)
         plot_acquisition(D, acq, fig_path=os.path.join(fig_dir, f'acquisition_{idx:02d}.png'))
 
         ## query the emulator and update the models
         x = D[acq.argmax()]
+
         # y = em.iter_sample(x)
         y, n = em.clean_iter_sample(x, uniform_noise=True)
         y_new = {key: y[key] + n[key] for key in y.keys()}
 
+        print(f'x: {x}, y: {y}, ynew: {y_new}')
         for key, m in model.models.items():
             emulation.update_posterior(m, x_new=x[:-1], y_new=y_new[key])
 
-        plot_emulator(model, D, sample_posterior=False, fig_path=os.path.join(fig_dir, f'model_{idx:02d}.png'))
+        plot_emulator(model, plot_D, sample_posterior=False, fig_path=os.path.join(fig_dir, f'model_{idx:02d}.png'))
 
 if __name__ == '__main__':
     k20_optimize()

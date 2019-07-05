@@ -4,9 +4,9 @@ import torch
 import torch.distributions as dist
 
 alpha = {
-    'I_p': 3,
-    'slope': 3,
-    'V_oc': 2,
+    'I_p': 1,
+    'slope': 1,
+    'V_oc': 1,
     'V_tp': 1
 
 }

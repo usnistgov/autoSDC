@@ -24,13 +24,13 @@ def plot_emulator(model, domain, sample_posterior=True, fig_path=None):
         Y_sample, noise_sample = model.clean_iter_sample(domain, uniform_noise=True)
         sample = {key: (Y_sample[key] + noise_sample[key]) for key in Y_sample.keys()}
 
-    for col, feature, m in zip(axes.T, model.models.items()):
+    for col, (feature, m) in zip(axes.T, model.models.items()):
 
         visualization.ternary_scatter_sub(m.X, m.y, ax=col[0])
-        visualization.ternary_scatter_sub(domain.numpy(), mean[feature].numpy(), ax=col[1]);
+        visualization.ternary_scatter_sub(domain.numpy(), mean[feature].numpy(), ax=col[1], s=20, edgecolors=None, marker='H');
 
         if sample_posterior:
-            visualization.ternary_scatter_sub(domain.numpy(), sample[feature].numpy(), ax=col[2]);
+            visualization.ternary_scatter_sub(domain.numpy(), sample[feature].numpy(), ax=col[2], s=20, edgecolors=None, marker='H');
 
         for ax in col:
             ax.axis('equal')
