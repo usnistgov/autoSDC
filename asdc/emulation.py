@@ -139,40 +139,44 @@ def smooth_posterior_sample(model, X_init, uniform_noise=False):
         conditioning on previously sampled values.
         """
 
-        sample_size = xnew.size(0)
-        vnew = torch.randn(sample_size)
-
         # get variables from outer scope
         X, V, noise = outside_vars.get("X"), outside_vars.get("V"), outside_vars.get("noise")
 
-        X = torch.cat((X, xnew))
-        V = torch.cat((V, vnew))
+        if xnew is not None:
+            sample_size = xnew.size(0)
+            vnew = torch.randn(sample_size)
 
+            X = torch.cat((X, xnew))
+            V = torch.cat((V, vnew))
+        else:
+            sample_size = 0
+
+        # sample a noiseless posterior function
         # ask for the noiseless covariance matrix
         # explicitly add noise to it when sampling new observation noise (separately)
         with torch.no_grad():
             mean, cov = model(X[:,:-1], full_cov=True, noiseless=True)
 
-        if not uniform_noise:
-            observation_variance = cov.diag()[-sample_size:]
-            observation_noise = dist.Normal(0, observation_variance + model.noise + model.jitter).sample()
-        else:
-            print('sampling uniform observation noise')
-            v = cov.diag().median()
-            observation_noise = dist.Normal(0, v + model.noise + model.jitter).sample(torch.tensor([sample_size]))
-
         n = mean.size(0)
         jitter = torch.eye(n) * model.jitter
         L = torch.cholesky(cov + jitter)
-
         sample = mean + L @ V
-
-        outside_vars["X"] = X
-        outside_vars["V"] = V
-        outside_vars["noise"] = torch.cat((outside_vars["noise"], observation_noise))
 
         if return_full:
             return sample, outside_vars["noise"]
+
+        if xnew is not None:
+            if not uniform_noise:
+                observation_variance = cov.diag()[-sample_size:]
+                observation_noise = dist.Normal(0, observation_variance + model.noise + model.jitter).sample()
+            else:
+                print('sampling uniform observation noise')
+                v = cov.diag().median()
+                observation_noise = dist.Normal(0, v + model.noise + model.jitter).sample(torch.tensor([sample_size]))
+
+            outside_vars["X"] = X
+            outside_vars["V"] = V
+            outside_vars["noise"] = torch.cat((outside_vars["noise"], observation_noise))
 
         return sample[-sample_size:], observation_noise
 
@@ -270,8 +274,10 @@ class ModelWrapper():
             update_posterior(model, num_steps=num_steps, lr=lr, optimize_noise_variance=self.optimize_noise_variance)
             self.models[target] = model
 
-    def __call__(self, X, target=None, noiseless=True, sample_posterior=False, n_samples=1, seed=None):
+    def __call__(self, X, target=None, noiseless=True, sample_posterior=False, n_samples=1, seed=None, drop_last=True):
         """ evaluate GP models on compositions """
+        if drop_last:
+            X = X[:,:-1]
 
         if target is None:
             targets = self.models.keys()
@@ -283,7 +289,7 @@ class ModelWrapper():
             model = self.models[target]
 
             with torch.no_grad():
-                _mean, _cov = model(X[:,:-1], full_cov=True, noiseless=noiseless)
+                _mean, _cov = model(X, full_cov=True, noiseless=noiseless)
 
             if sample_posterior:
 
@@ -330,8 +336,10 @@ class ModelWrapper():
 
     def clean_iter_sample(self, X, target=None, noiseless=True, uniform_noise=False):
         """ sample GP posteriors iteratively"""
-
-        if X.ndimension() == 1:
+        return_full = False
+        if X is None:
+            return_full = True
+        elif X.ndimension() == 1:
             X = X.unsqueeze(0)
 
         if target is None:
@@ -343,7 +351,7 @@ class ModelWrapper():
         for target in targets:
             try:
                 fn = self.samplers[target]
-                mean[target], noise[target] = fn(X)
+                mean[target], noise[target] = fn(X, return_full=return_full)
             except KeyError:
                 model = self.models[target]
                 fn, mean[target], noise[target] = smooth_posterior_sample(model, X, uniform_noise=uniform_noise)

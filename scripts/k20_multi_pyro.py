@@ -21,7 +21,8 @@ from asdc import analyze
 from asdc import emulation
 from asdc import acquisition
 from asdc import visualization
-from asdc.k20_util import plot_emulator
+from asdc import k20_util
+# from asdc.k20_util import plot_emulator
 
 DTYPE = torch.double
 torch.set_default_dtype(DTYPE)
@@ -52,9 +53,9 @@ def k20_optimize(config_file):
     print(f'maximize {sign}')
     print(f'Dirichlet concentrations: {alpha}')
 
-    domain = emulation.simplex_grid(50, buffer=0.05)
+    domain = emulation.simplex_grid(30, buffer=0.05)
     D = torch.tensor(domain)
-    plot_D = torch.tensor(emulation.simplex_grid(50, buffer=0.01))
+    plot_D = torch.tensor(emulation.simplex_grid(40, buffer=0.01))
 
     db_file = config['emulator']['datafile']
     if 'v2' in db_file:
@@ -63,7 +64,7 @@ def k20_optimize(config_file):
     else:
         em = emulation.K20Wrapper(db_file, targets=targets.keys(), num_steps=2000)
 
-    plot_emulator(em, plot_D, fig_path=os.path.join(fig_dir, 'k20.png'))
+    k20_util.plot_emulator(em, plot_D, fig_path=os.path.join(fig_dir, 'k20_mean.png'))
 
     # start by sampling at the corners of the simplex
     # _s = torch.randperm(D.size(0))[:10]
@@ -83,17 +84,34 @@ def k20_optimize(config_file):
         pd.DataFrame(Y_init),
         num_steps=250
     )
-    plot_emulator(model, plot_D, sample_posterior=False, fig_path=os.path.join(fig_dir, 'initial_model.png'))
+
+    # plot the initial model
+    k20_util.plot_emulator(model, plot_D, sample_posterior=False, fig_path=os.path.join(fig_dir, 'initial_model.png'))
+
+    # also plot the noise-free posterior sample that defines the problem...
+    posterior_grid, noise_grid = em.clean_iter_sample(plot_D, noiseless=False, uniform_noise=True)
+    k20_util.plot_values(posterior_grid, plot_D, fig_path=os.path.join(fig_dir, 'k20_posterior_sample_noiseless.png'))
+    k20_util.plot_values(
+        {k: posterior_grid[k] + noise_grid[k] for k in posterior_grid.keys()},
+        plot_D, fig_path=os.path.join(fig_dir, 'k20_posterior_sample.png')
+    )
+    k20_util.plot_pareto_set(posterior_grid, plot_D, sign=sign, fig_path=os.path.join(fig_dir, 'k20_posterior_pareto_set.png'))
+
+    # mean, var = model(grid)
 
     for idx in range(config.get('budget', 10)):
-        print(f'query {idx}')
 
         w = acquisition.sample_weights(alpha=alpha)
-        print(f'weights: {w}')
         cb_beta = 2
-        cb_beta = 0.125 * np.log(2*(idx+3) + 1)
+        # Samy's paper recommends 0.2dlog(2t)
+        cb_beta = 0.2 * 2 * np.log(2*(idx+3) + 1)
+        print(f'query {idx}: beta = {cb_beta}')
         acq = acquisition.random_scalarization_cb(model, D, weights=w, cb_beta=cb_beta, sign=sign)
         plot_acquisition(D, acq, fig_path=os.path.join(fig_dir, f'acquisition_{idx:02d}.png'))
+
+        # remove previously measured candidates
+        mindist = torch.cdist(model.models['I_p'].X, D[:,:-1]).min(1)
+        acq[mindist.indices.unique()] = 0
 
         ## query the emulator and update the models
         x = D[acq.argmax()]
@@ -106,7 +124,17 @@ def k20_optimize(config_file):
         for key, m in model.models.items():
             emulation.update_posterior(m, x_new=x[:-1], y_new=y_new[key])
 
-        plot_emulator(model, plot_D, sample_posterior=False, fig_path=os.path.join(fig_dir, f'model_{idx:02d}.png'))
+        k20_util.plot_model_single(model, plot_D, fig_path=os.path.join(fig_dir, f'model_{idx:02d}.png'))
+        k20_util.plot_model_paneled(model, plot_D, fig_path=os.path.join(fig_dir, f'model_{idx:02d}.png'))
+        pred, _ = model(plot_D)
+        k20_util.plot_pareto_set(pred, plot_D, sign=sign, fig_path=os.path.join(fig_dir, f'predicted_pareto_set_{idx:02d}.png'))
+        k20_util.compare_pareto(
+            pred, posterior_grid, plot_D, sign=sign, targets=['I_p', 'slope'],
+            fig_path=os.path.join(fig_dir, f'pareto_front_comparison_{idx:02d}.png')
+        )
+        k20_util.plot_measured_pareto_set(model, em, fig_path = os.path.join(fig_dir, f'pareto_front_plot{idx:02d}.png'))
+
+
 
 if __name__ == '__main__':
     k20_optimize()
