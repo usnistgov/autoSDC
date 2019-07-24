@@ -8,15 +8,15 @@ except NameError:
     ModuleNotFoundError = ImportError
 
 # if clr module (pythonnet) is not available, load the SDC shims
-from . import experiment
 from . import pump
+# from . import experiment
 
-try:
-    from . import position
-    from . import potentiostat
+# try:
+#     from . import position
+#     from . import potentiostat
 
-except ModuleNotFoundError:
+# except ModuleNotFoundError:
 
-    from .shims import pump
-    from .shims import position
-    from .shims import potentiostat
+#     from .shims import pump
+#     from .shims import position
+#     from .shims import potentiostat
