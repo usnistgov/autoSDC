@@ -87,6 +87,15 @@ class Controller(scirc.SlackClient):
 
         return df, target_idx, experiment_idx
 
+    def get_next_experiment(experiment_idx):
+
+        if len(self.experiments) == 1:
+            experiment = self.experiments[0]
+        else:
+            experiment = self.experiments[experiment_idx]
+
+        return experiment
+
     @command
     async def go(self, ws, msgdata, args):
         """ keep track of target positions and experiment list
@@ -104,7 +113,7 @@ class Controller(scirc.SlackClient):
         print(target)
 
         experiment_idx = self.db['experiment'].count(flag=False)
-        experiment = self.experiments[experiment_idx]
+        experiment = self.get_next_experiment(experiment_idx)
         print(experiment)
 
         # send the move command -- message @sdc
@@ -119,7 +128,7 @@ class Controller(scirc.SlackClient):
         # the move was successful and we've had our chance to check the previous spot
         # reload the experiment in case flags have changed
         experiment_idx = self.db['experiment'].count(flag=False)
-        experiment = self.experiments[experiment_idx]
+        experiment = self.get_next_experiment(experiment_idx)
         print(experiment)
 
         # send the experiment command
