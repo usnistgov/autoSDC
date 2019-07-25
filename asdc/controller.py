@@ -87,7 +87,7 @@ class Controller(scirc.SlackClient):
 
         return df, target_idx, experiment_idx
 
-    def get_next_experiment(experiment_idx):
+    def get_next_experiment(self, experiment_idx):
 
         if len(self.experiments) == 1:
             experiment = self.experiments[0]
