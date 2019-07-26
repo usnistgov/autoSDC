@@ -25,6 +25,9 @@ class PumpArray():
         What is needed? concentrations and flow rates.
         Low level interface: set individual flow rates
         High level interface: set total flow rate and composition
+
+        TODO: look into using serial.tools.list_ports.comports to identify the correct COM port to connect to...
+        the id string should be something like 'USB serial port for Syringe Pump (COM*)'
         """
         self.config = config
 
@@ -42,18 +45,22 @@ class PumpArray():
             s = ser.read(100)
             print(s)
 
-    def eval(self, command, pump_id=0, override=False):
-
-        command = '{} {}'.format(pump_id, command)
-
+    def eval(self, command, pump_id=0, override=False, check_response=False):
+        """ evaluate a PumpChain command.
+        Currently establishes a new serial connection for every command.
+        TODO: consider batching commands together...
+        """
         if not override:
             if self.fast:
                 command = '@{}'.format(command)
 
+        command = '{} {}'.format(pump_id, command)
+
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
             ser.write(encode(command))
-            s = ser.read(self.buffer_size)
-            print(s)
+            if check_response:
+                s = ser.read(self.buffer_size)
+                print(s)
 
     def refresh_ui(self):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
