@@ -6,9 +6,21 @@ def encode(message):
     message = message + '\r\n'
     return message.encode()
 
+# placeholder config for development
+CONFIG = {
+    0: {
+        'solution': 'HCl',
+        'concentration': '1 molar',
+    },
+    1: {
+        'solution': 'HCl',
+        'concentration': '0.1 molar',
+    }
+}
+
 class PumpArray():
     """ KDS Legato pump array interface """
-    def __init__(self, config=None, port='COM7', baud=115200, timeout=1, output_buffer=100, fast=False):
+    def __init__(self, config=CONFIG, port='COM7', baud=115200, timeout=1, output_buffer=100, fast=False):
         """ pump array.
         What is needed? concentrations and flow rates.
         Low level interface: set individual flow rates
@@ -50,8 +62,16 @@ class PumpArray():
     def run(self, pump_id=0):
         self.eval('run', pump_id=pump_id)
 
+    def run_all(self):
+        for pump_id in self.config.keys():
+            self.run(pump_id=pump_id)
+
     def stop(self, pump_id=0):
         self.eval('stop', pump_id=pump_id)
+
+    def stop_all(self):
+        for pump_id in self.config.keys():
+            self.stop(pump_id=pump_id)
 
     def version(self, pump_id=0, verbose=False):
 
