@@ -10,4 +10,4 @@ def test_pump_array():
     print(p.print_config())
 
 if __name__ == '__main__':
-    print()
+    test_pump_array()
