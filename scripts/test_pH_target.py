@@ -11,7 +11,7 @@ def test_pump_array():
 
     p.run_all()
 
-    for setpoint in [3.0, 4.0, 5.0]:
+    for setpoint in [2.0, 3.0, 4.0, 5.0]:
         print('setpoint pH:', setpoint)
         p.set_pH(setpoint=setpoint)
 
