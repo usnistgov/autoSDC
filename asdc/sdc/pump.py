@@ -163,7 +163,7 @@ class PumpArray():
     def set_pH(self, setpoint=3.0):
         """ control pH -- limited to two pumps for now. """
 
-        x, r = optimize.brentq(target(setpoint), 0, 1, full_output=True)
+        x, r = optimize.brentq(pH_error(setpoint), 0, 1, full_output=True)
 
         self.infusion_rate(pump_id=0, rate=x*self.nominal_rate, units=self.flow_units)
         self.infusion_rate(pump_id=1, rate=(1-x)*self.nominal_rate, units=self.flow_units)
