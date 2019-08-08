@@ -168,5 +168,5 @@ class PumpArray():
 
         print(x)
 
-        self.infusion_rate(pump_id=0, rate=(1-x)*self.flow_rate, units=self.flow_units)
-        self.infusion_rate(pump_id=1, rate=x*self.flow_rate, units=self.flow_units)
+        self.infusion_rate(pump_id=0, rate=x*self.flow_rate, units=self.flow_units)
+        self.infusion_rate(pump_id=1, rate=(1-x)*self.flow_rate, units=self.flow_units)
