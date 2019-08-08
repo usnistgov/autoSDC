@@ -38,7 +38,7 @@ def sulfuric_eq_pH(solution, verbose=False):
     )
 
     nominal_sulfates = solution['CuSO4'] + solution['Na2SO4']
-    arr, info, sane = eqsys.root(defaultdict(float, {'H2O': 55.4, 'H2SO4': s['H2SO4'], 'SO4-2': nominal_sulfates}))
+    arr, info, sane = eqsys.root(defaultdict(float, {'H2O': 55.4, 'H2SO4': solution['H2SO4'], 'SO4-2': nominal_sulfates}))
     conc = dict(zip(eqsys.substances, arr))
 
     pH = -np.log10(conc['H+'])
