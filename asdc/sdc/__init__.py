@@ -2,10 +2,11 @@
 
 from __future__ import absolute_import
 
-try:
-    raise ModuleNotFoundError
-except NameError:
-    ModuleNotFoundError = ImportError
+# try:
+#     raise ModuleNotFoundError
+# except NameError:
+#     ModuleNotFoundError = ImportError
+
 
 # if clr module (pythonnet) is not available, load the SDC shims
 from . import pump
