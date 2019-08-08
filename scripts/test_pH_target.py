@@ -15,7 +15,7 @@ def test_pump_array():
         print('setpoint pH:', setpoint)
         p.set_pH(setpoint=2.0)
 
-        input("Press Enter to continue...")
+        input("Press enter to continue to the next pH setpoint...")
 
     p.stop_all()
 
