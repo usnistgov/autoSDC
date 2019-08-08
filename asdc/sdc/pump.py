@@ -56,7 +56,7 @@ def pH_error(target_pH, stock=CONFIG):
         """ perform linear mixing between just two solutions """
         s = mix(stock, [x, 1-x, 0])
         pH = second_order_eq(s, verbose=False)
-    return pH
+        return pH
 
     return lambda x: f(x) - target_pH
 
