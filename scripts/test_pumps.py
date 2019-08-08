@@ -5,8 +5,9 @@ sys.path.append('.')
 from asdc import sdc
 
 def test_pump_array():
+    print('connecting to pumps...')
     p = sdc.pump.PumpArray(port='COM6')
-    p.print_config()
+    print(p.print_config())
 
 if __name__ == '__main__':
     print()
