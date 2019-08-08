@@ -12,15 +12,9 @@ def encode(message):
 
 # placeholder config for development
 CONFIG = {
-    0: {
-        {'H2SO4': 0.1}
-    },
-    1: {
-        {'Na2SO4': 0.1}
-    },
-    2: {
-        {'CuSO4': 0.1}
-    }
+    0: {'H2SO4': 0.1},
+    1: {'Na2SO4': 0.1},
+    2: {'CuSO4': 0.1}
 }
 
 def mix(solutions, fraction):
