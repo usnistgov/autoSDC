@@ -7,7 +7,7 @@ from asdc import sdc
 def test_pump_array():
     print('connecting to pumps...')
     p = sdc.pump.PumpArray(port='COM6')
-    print(p.print_config())
+    p.print_config()
 
 if __name__ == '__main__':
     test_pump_array()

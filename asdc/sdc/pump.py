@@ -85,7 +85,7 @@ class PumpArray():
             print('connected')
             ser.write(encode('config'))
             s = ser.read(100)
-            print(s)
+            print(s.strip())
 
     def eval(self, command, pump_id=0, override=False, check_response=False):
         """ evaluate a PumpChain command.
