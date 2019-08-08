@@ -55,7 +55,7 @@ def pH_error(target_pH, stock=CONFIG):
     def f(x):
         """ perform linear mixing between just two solutions """
         s = mix(stock, [x, 1-x, 0])
-        pH = second_order_eq(s, verbose=False)
+        pH = sulfuric_eq_pH(s, verbose=False)
         return pH
 
     return lambda x: f(x) - target_pH
@@ -165,6 +165,8 @@ class PumpArray():
         """ control pH -- limited to two pumps for now. """
 
         x, r = optimize.brentq(pH_error(setpoint, stock=self.config), 0, 1, full_output=True)
+
+        print(x)
 
         self.infusion_rate(pump_id=0, rate=x*self.nominal_rate, units=self.flow_units)
         self.infusion_rate(pump_id=1, rate=(1-x)*self.nominal_rate, units=self.flow_units)
