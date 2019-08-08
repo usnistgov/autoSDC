@@ -1,6 +1,10 @@
 from __future__ import print_function
 
+import chempy
 import serial
+import numpy as np
+from chempy import equilibrium
+from collections import defaultdict
 
 def encode(message):
     message = message + '\r\n'
@@ -9,18 +13,60 @@ def encode(message):
 # placeholder config for development
 CONFIG = {
     0: {
-        'solution': 'HCl',
-        'concentration': '1 molar',
+        {'H2SO4': 0.1}
     },
     1: {
-        'solution': 'HCl',
-        'concentration': '0.1 molar',
+        {'Na2SO4': 0.1}
+    }
+    2: {
+        {'CuSO4': 0.1}
     }
 }
 
+def mix(solutions, fraction):
+    """ compute nominal compositions when mixing multiple solutions """
+
+    solution = defaultdict(float)
+    for sol, x in zip(solutions.values(), fraction):
+        for species, conc in sol.items():
+            solution[species] += x*conc
+    return solution
+
+def sulfuric_eq_pH(solution, verbose=False):
+
+    eqsys = equilibrium.EqSystem.from_string(
+        """
+        HSO4- = H+ + SO4-2; 10**-2
+        H2SO4 = H+ + HSO4-; 2.4e6
+        H2O = H+ + OH-; 10**-14/55.4
+        """
+    )
+
+    nominal_sulfates = solution['CuSO4'] + solution['Na2SO4']
+    arr, info, sane = eqsys.root(defaultdict(float, {'H2O': 55.4, 'H2SO4': s['H2SO4'], 'SO4-2': nominal_sulfates}))
+    conc = dict(zip(eqsys.substances, arr))
+
+    pH = -np.log10(conc['H+'])
+
+    if verbose:
+        print("pH: %.2f" % pH)
+        print()
+        pprint(conc)
+
+    return -np.log10(conc['H+'])
+
+def f(x):
+    """ perform linear mixing between just two solutions """
+    s = mix(stock, [x, 1-x, 0])
+    pH = second_order_eq(s, verbose=False)
+    return pH
+
+def pH_error(target_pH):
+    return lambda x: f(x) - target_pH
+
 class PumpArray():
     """ KDS Legato pump array interface """
-    def __init__(self, config=CONFIG, port='COM7', baud=115200, timeout=1, output_buffer=100, fast=False):
+    def __init__(self, config=CONFIG, port='COM7', baud=115200, timeout=1, output_buffer=100, fast=False, flow_rate=0.5, flow_units='ml/min'):
         """ pump array.
         What is needed? concentrations and flow rates.
         Low level interface: set individual flow rates
@@ -34,6 +80,8 @@ class PumpArray():
         self.timeout = 1
         self.buffer_size = output_buffer
         self.fast = fast
+        self.flow_rate = flow_rate
+        self.flow_units = flow_units
 
     def print_config(self):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
@@ -109,3 +157,11 @@ class PumpArray():
             command = 'irate'
 
         self.eval(command, pump_id=pump_id)
+
+    def set_pH(self, setpoint=3.0):
+        """ control pH -- limited to two pumps for now. """
+
+        x, r = optimize.brentq(target(setpoint), 0, 1, full_output=True)
+
+        self.infusion_rate(pump_id=0, rate=x*self.nominal_rate, units=self.flow_units)
+        self.infusion_rate(pump_id=1, rate=(1-x)*self.nominal_rate, units=self.flow_units)
