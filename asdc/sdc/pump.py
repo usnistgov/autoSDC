@@ -3,7 +3,7 @@ from __future__ import print_function
 import chempy
 import serial
 import numpy as np
-from chempy.equilibrium import EqSystem
+from chempy import equilibria
 from collections import defaultdict
 
 def encode(message):
@@ -34,7 +34,7 @@ def mix(solutions, fraction):
 
 def sulfuric_eq_pH(solution, verbose=False):
 
-    eqsys = EqSystem.from_string(
+    eqsys = equilibria.EqSystem.from_string(
         """
         HSO4- = H+ + SO4-2; 10**-2
         H2SO4 = H+ + HSO4-; 2.4e6
