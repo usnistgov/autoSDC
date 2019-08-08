@@ -3,6 +3,7 @@ from __future__ import print_function
 import chempy
 import serial
 import numpy as np
+from scipy import optimize
 from chempy import equilibria
 from collections import defaultdict
 
