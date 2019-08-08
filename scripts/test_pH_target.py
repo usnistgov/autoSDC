@@ -9,7 +9,7 @@ def test_pump_array():
     p = sdc.pump.PumpArray(port='COM6')
     p.print_config()
 
-    p.run_all()
+    # p.run_all()
 
     for setpoint in [2.0, 3.0, 4.0, 5.0]:
         print('setpoint pH:', setpoint)
