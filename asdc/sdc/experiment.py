@@ -3,6 +3,7 @@ import time
 import numpy as np
 from datetime import datetime
 
+from asdc import slack
 from .pump import PumpArray
 
 try:
@@ -161,9 +162,10 @@ def run(instructions, cell='INTERNAL', verbose=False):
                 print(f'waiting {hold_time} (s) for solution composition to reach steady state')
                 time.sleep(hold_time)
 
+
             _params.append(params)
 
-
+        slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
         pump_array.stop_all()
 
