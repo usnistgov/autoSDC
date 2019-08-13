@@ -3,13 +3,16 @@ import time
 import numpy as np
 from datetime import datetime
 
+from .pump import PumpArray
+
 try:
     from . import potentiostat
 except ModuleNotFoundError:
-    from.shims import potentiostat
+    from .shims import potentiostat
 
 # the 3F potentiostat
 potentiostat_id = 17109013
+pump_array_port = 'COM6'
 
 POLL_INTERVAL = 1
 MIN_SAMPLING_FREQUENCY = 1.0e-5
@@ -132,6 +135,8 @@ def setup_cv(pstat, data, cell='INTERNAL'):
 
 def run(instructions, cell='INTERNAL', verbose=False):
 
+    pump_array = PumpArray(port=pump_array_port)
+
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
         if type(instructions) is dict and instructions.get('op'):
@@ -149,11 +154,22 @@ def run(instructions, cell='INTERNAL', verbose=False):
             elif instruction.get('op') == 'corrosion_oc':
                 status, params = setup_corrosion_oc(pstat, instruction, cell=cell)
 
+            elif instruction.get('op') == 'set_pH':
+                print('setting the pH!')
+                pump_array.set_pH(setpoint=instruction.get('pH'))
+                pump_array.run_all()
+                hold_time = instruction.get('hold_time', 0)
+                print(f'waiting {hold_time} (s) for solution composition to reach steady state')
+                time.sleep(hold_time)
+
             _params.append(params)
 
+
         scan_data, metadata = run_experiment_sequence(pstat)
+        pump_array.stop_all()
 
     metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
     metadata['parameters'] = json.dumps(_params)
+    metadata['flow_setpoint'] = pump_array.flow_setpoint
 
     return scan_data, metadata

@@ -81,6 +81,7 @@ class PumpArray():
         self.fast = fast
         self.flow_rate = flow_rate
         self.flow_units = flow_units
+        self.flow_setpoint = {}
 
     def print_config(self):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
@@ -170,3 +171,5 @@ class PumpArray():
 
         self.infusion_rate(pump_id=0, rate=x*self.flow_rate, units=self.flow_units)
         self.infusion_rate(pump_id=1, rate=(1-x)*self.flow_rate, units=self.flow_units)
+
+        self.flow_setpoint = {0: x*self.flow_rate, 1: (1-x)*self.flow_rate}
