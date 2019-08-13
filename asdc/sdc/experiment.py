@@ -64,7 +64,8 @@ def setup_potentiostatic(pstat, data, cell='INTERNAL'):
         current_range='AUTO',
         e_filter='1HZ',
         i_filter='1HZ',
-        cell_to_use=cell
+        cell_to_use=cell,
+        current_range=data.get('current_range', 'AUTO')
     )
 
     return status, params
@@ -86,7 +87,8 @@ def setup_corrosion_oc(pstat, data, cell='INTERNAL'):
         current_range='AUTO',
         e_filter='1HZ',
         i_filter='1HZ',
-        cell_to_use=cell
+        cell_to_use=cell,
+        current_range=data.get('current_range', 'AUTO')
     )
 
     return status, params
@@ -121,7 +123,8 @@ def setup_cv(pstat, data, cell='INTERNAL'):
         cycles=data.get('cycles'),
         e_filter='1HZ',
         i_filter='1HZ',
-        cell_to_use=cell
+        cell_to_use=cell,
+        current_range=data.get('current_range', 'AUTO')
     )
 
     return status, params
