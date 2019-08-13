@@ -64,11 +64,10 @@ def setup_potentiostatic(pstat, data, cell='INTERNAL'):
         initial_potential=data.get('potential'),
         time_per_point=time_per_point,
         duration=duration,
-        current_range='AUTO',
+        current_range=data.get('current_range', 'AUTO')
         e_filter='1HZ',
         i_filter='1HZ',
-        cell_to_use=cell,
-        current_range=data.get('current_range', 'AUTO')
+        cell_to_use=cell
     )
 
     return status, params
@@ -87,11 +86,10 @@ def setup_corrosion_oc(pstat, data, cell='INTERNAL'):
     status, params = pstat.corrosion_open_circuit(
         time_per_point=time_per_point,
         duration=duration,
-        current_range='AUTO',
+        current_range=data.get('current_range', 'AUTO')
         e_filter='1HZ',
         i_filter='1HZ',
-        cell_to_use=cell,
-        current_range=data.get('current_range', 'AUTO')
+        cell_to_use=cell
     )
 
     return status, params
