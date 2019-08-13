@@ -165,7 +165,11 @@ class PumpArray():
     def set_pH(self, setpoint=3.0):
         """ control pH -- limited to two pumps for now. """
 
-        x, r = optimize.brentq(pH_error(setpoint, stock=self.config), 0, 1, full_output=True)
+        if setpoint == 7.0:
+            print('forcing Na2SO4-only run')
+            x = 1.0
+        else:
+            x, r = optimize.brentq(pH_error(setpoint, stock=self.config), 0, 1, full_output=True)
 
         print(x)
 
