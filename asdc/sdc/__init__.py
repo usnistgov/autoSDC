@@ -1,6 +1,15 @@
 """ SDC interface """
 
+from __future__ import absolute_import
+
+# try:
+#     raise ModuleNotFoundError
+# except NameError:
+#     ModuleNotFoundError = ImportError
+
+
 # if clr module (pythonnet) is not available, load the SDC shims
+from . import pump
 from . import experiment
 
 try:
@@ -9,5 +18,6 @@ try:
 
 except ModuleNotFoundError:
 
+    from .shims import pump
     from .shims import position
     from .shims import potentiostat
