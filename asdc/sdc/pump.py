@@ -13,8 +13,8 @@ def encode(message):
 
 # placeholder config for development
 CONFIG = {
-    0: {'Na2SO4': 0.1},
-    1: {'H2SO4': 0.1},
+    0: {'H2SO4': 0.1},
+    1: {'Na2SO4': 0.1},
     2: {'CuSO4': 0.1}
 }
 
@@ -167,7 +167,7 @@ class PumpArray():
 
         if setpoint == 7.0:
             print('forcing Na2SO4-only run')
-            x = 1.0
+            x = 0.0
         else:
             x, r = optimize.brentq(pH_error(setpoint, stock=self.config), 0, 1, full_output=True)
 
