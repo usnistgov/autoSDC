@@ -154,6 +154,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
 
             elif instruction.get('op') == 'set_pH':
                 print('setting the pH!')
+                params = f"pH={instruction.get('pH')}"
                 pump_array.set_pH(setpoint=instruction.get('pH'))
                 pump_array.run_all()
                 hold_time = instruction.get('hold_time', 0)
