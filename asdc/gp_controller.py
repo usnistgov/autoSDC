@@ -145,6 +145,11 @@ class Controller(scirc.SlackClient):
 
         return objective
 
+    def max_variance(self, model, candidates):
+        objective = np.zeros(candidates.shape[0])
+        mean, var = model.predict_y(candidates)
+        return np.sqrt(var).squeeze()
+
     def gp_acquisition(self):
 
         if self.notify:
@@ -185,7 +190,7 @@ class Controller(scirc.SlackClient):
         # don't drop the last input dimension with wafer position inputs...
         models = [
             emulation.model_ternary(X, (self.sgn*Y)[:, idx][:,None], reset_tf_graph=False, drop_last=False)
-            for idx in range(Y.shape[1])
+            for idx in range(len(self.objectives))
         ]
 
         # set up multiobjective acquisition...
@@ -207,7 +212,8 @@ class Controller(scirc.SlackClient):
 
         # evaluate the acquisition function on a grid
         # acq = criterion.evaluate(candidates)
-        acq = self.random_scalarization_cb(criterion, candidates, cb_beta)
+        # acq = self.random_scalarization_cb(criterion, candidates, cb_beta)
+        acq = self.max_variance(criterion.models[0], candidates, cb_beta)
 
         # plot the acquisition function...
         figpath = os.path.join(self.figure_dir, f'acquisition_plot_{t}.png')
