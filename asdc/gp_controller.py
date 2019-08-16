@@ -106,6 +106,15 @@ class Controller(scirc.SlackClient):
 
         return df, target_idx, experiment_idx
 
+    def get_next_experiment(self, experiment_idx):
+
+        if len(self.experiments) == 1:
+            experiment = self.experiments[0]
+        else:
+            experiment = self.experiments[experiment_idx]
+
+        return experiment
+
     def analyze_corrosion_features(self, segment=2):
 
         rtab = self.db.get_table('result', primary_id=False)
@@ -289,7 +298,8 @@ class Controller(scirc.SlackClient):
         # the move was successful and we've had our chance to check the previous spot
         # reload the experiment in case flags have changed
         experiment_idx = self.db['experiment'].count(flag=False)
-        experiment = self.experiments[experiment_idx]
+        # experiment = self.experiments[experiment_idx]
+        experiment = self.get_next_experiment(experiment_idx)
         print(experiment)
 
         # send the experiment command
