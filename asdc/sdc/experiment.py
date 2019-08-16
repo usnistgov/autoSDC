@@ -136,8 +136,6 @@ def setup_cv(pstat, data, cell='INTERNAL'):
 
 def run(instructions, cell='INTERNAL', verbose=False):
 
-    pump_array = PumpArray(port=pump_array_port)
-
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
         if type(instructions) is dict and instructions.get('op'):
@@ -156,6 +154,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
                 status, params = setup_corrosion_oc(pstat, instruction, cell=cell)
 
             elif instruction.get('op') == 'set_pH':
+                pump_array = PumpArray(port=pump_array_port)
                 print('setting the pH!')
                 params = f"pH={instruction.get('pH')}"
                 pump_array.set_pH(setpoint=instruction.get('pH'))
@@ -163,7 +162,6 @@ def run(instructions, cell='INTERNAL', verbose=False):
                 hold_time = instruction.get('hold_time', 0)
                 print(f'waiting {hold_time} (s) for solution composition to reach steady state')
                 time.sleep(hold_time)
-
 
             _params.append(params)
 
