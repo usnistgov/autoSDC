@@ -35,16 +35,18 @@ def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL):
             error_codes.add(overload_status)
 
     metadata['timestamp'] = datetime.now()
+    metadata['error_codes'] = list(map(int, error_codes)),
 
-    results = {
-        'current': pstat.current(),
-        'potential': pstat.potential(),
-        'elapsed_time': pstat.elapsed_time(),
-        'error_codes': list(map(int, error_codes)),
-        'applied_potential': pstat.applied_potential(),
-        'current_range': pstat.current_range_history(),
-        'segment': pstat.segment()
-    }
+    results = pd.DataFrame(
+        {
+            'current': pstat.current(),
+            'potential': pstat.potential(),
+            'elapsed_time': pstat.elapsed_time(),
+            'applied_potential': pstat.applied_potential(),
+            'current_range': pstat.current_range_history(),
+            'segment': pstat.segment()
+        }
+    )
 
     return results, metadata
 

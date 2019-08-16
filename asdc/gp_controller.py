@@ -115,7 +115,8 @@ class Controller(scirc.SlackClient):
                 continue
 
             d = {'id': row['id']}
-            data = analyze.split_data(json.loads(row['results']), segment=segment)
+            echem_data = pd.read_csv(os.path.join(self.data_dir, row['datafile']), index_col=0)
+            data = analyze.split_data(echem_data.to_dict(orient='list'), segment=segment)
             cv_features = analyze.extract_cv_features(data, shoulder_percentile=0.999)
 
             d.update(cv_features)

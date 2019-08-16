@@ -213,16 +213,6 @@ class SDC(scirc.SlackClient):
     async def run_experiment(self, ws, msgdata, args):
         """ run an SDC experiment """
 
-        # TODO: in the json-api rethink, args should now be a json array containing experiment steps....
-        # so cramming things into args is no longer appropriate, probably.
-        # unless args becomes a dictionary containing a list of ops to execute....
-        # expanding on this: autoprotocol uses structure like:
-        # {
-        #   "refs": {...},
-        #   "instructions": [{"op": "action1", ...}, {"op": "action2", ...}],
-        #   "constraints": {...}
-        # }
-
         # args should contain a sequence of SDC experiments -- basically the "instructions"
         # segment of an autoprotocol protocol
         # that comply with the SDC experiment schema (TODO: finalize and enforce schema)
@@ -245,7 +235,7 @@ class SDC(scirc.SlackClient):
             meta['id'] = tx['experiment'].insert(meta)
 
             stem = 'test'
-            datafile = '{}_data_{:03d}.json'.format(stem, meta['id'])
+            datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
 
             summary = '-'.join(step['op'] for step in instructions)
             _msg = f"experiment *{meta['id']}*:  {summary}"
@@ -282,16 +272,12 @@ class SDC(scirc.SlackClient):
                     )
 
             meta.update(metadata)
-            meta['results'] = json.dumps(results)
-
+            meta['datafile'] = datafile
             tx['experiment'].update(meta, ['id'])
 
-        # dump data (redundant with sqlite store)
-        with open(os.path.join(self.data_dir, datafile), 'w') as f:
-            for key, value in meta.items():
-                if type(value) == datetime:
-                    meta[key] = value.isoformat()
-            json.dump(args, f)
+            # store SDC results in external csv file
+            results.to_csv(os.path.join(self.data_dir, datafile))
+
 
         figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
         visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
