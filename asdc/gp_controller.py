@@ -73,12 +73,14 @@ class Controller(scirc.SlackClient):
         self.targets = pd.read_csv(config['target_file'], index_col=0)
         self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
 
+        self.results_log = os.path.join(self.data_dir, config['results_log'])
+
         # gpflowopt minimizes objectives...
         # UCB switches to maximizing objectives...
         # swap signs for things we want to minimize (everything but V_tp)
-        self.objectives = ('I_p', 'slope', 'V_oc', 'V_tp')
-        self.objective_alphas = [3,3,2,1]
-        self.sgn = np.array([-1,-1,-1,1])
+        self.objectives = ('overpotential')
+        self.objective_alphas = [1]
+        self.sgn = np.array([1])
 
 
     async def post(self, msg, ws, channel):
@@ -126,6 +128,27 @@ class Controller(scirc.SlackClient):
 
         return
 
+    def request_corrosion_features(self, column='overpotential'):
+        rtab = self.db.get_table('result', primary_id=False)
+        results = pd.read_csv(self.results_log).dropna()
+
+        for row in self.db['experiment'].all():
+
+            id = row['id']
+
+            # reload all data from excel...
+            # extract features for any data that's missing
+            if rtab.find_one(id=id):
+                continue
+
+            d = {'id': id}
+            d[column] = float(results[results['id'] == id]['overpotential'])
+            d['ts'] = datetime.now()
+
+            rtab.upsert(d, ['id'])
+
+        return
+
     def random_scalarization_cb(self, model_wrapper, candidates, cb_beta):
         """ random scalarization upper confidence bound acquisition policy function """
 
@@ -156,7 +179,7 @@ class Controller(scirc.SlackClient):
             slack.post_message(f'analyzing CV features...')
 
         # make sure all experiments are postprocessed and have values in the results table
-        self.analyze_corrosion_features()
+        self.request_corrosion_features()
 
         # load positions, compositions, and measured values from db
         df = pd.DataFrame(self.db['experiment'].all())
@@ -164,6 +187,9 @@ class Controller(scirc.SlackClient):
 
         X = df.loc[:,('x_combi', 'y_combi')].values
         Y = r.loc[:,self.objectives].values
+        if Y.ndim == 1:
+            Y = Y[:,None]
+
         candidates = self.targets.values
 
         # set confidence bound beta
