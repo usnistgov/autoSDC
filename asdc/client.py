@@ -286,6 +286,9 @@ class SDC(scirc.SlackClient):
             slack.post_message(f"finished experiment {meta['id']}: {summary}")
             slack.post_image(figpath, title=f"current vs time {meta['id']}")
 
+        if self.confirm:
+            slack.post_message(f"*reminder*: please evaluate data for experiment *{meta['id']}*")
+            await ainput(f"press enter after reporting results for experiment {meta['id']}", loop=self.loop)
         await self.dm_controller('<@UHNHM7198> go')
 
     @command
