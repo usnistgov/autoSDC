@@ -137,6 +137,8 @@ def setup_cv(pstat, data, cell='INTERNAL'):
 
 def run(instructions, cell='INTERNAL', verbose=False):
 
+    pump_array = None
+
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
         if type(instructions) is dict and instructions.get('op'):
@@ -168,10 +170,12 @@ def run(instructions, cell='INTERNAL', verbose=False):
 
         slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
-        pump_array.stop_all()
+        if pump_array:
+            pump_array.stop_all()
 
     metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
     metadata['parameters'] = json.dumps(_params)
-    # metadata['flow_setpoint'] = json.dumps(pump_array.flow_setpoint)
+    if pump_array:
+        metadata['flow_setpoint'] = json.dumps(pump_array.flow_setpoint)
 
     return scan_data, metadata
