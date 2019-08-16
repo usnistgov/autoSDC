@@ -172,6 +172,6 @@ def run(instructions, cell='INTERNAL', verbose=False):
 
     metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
     metadata['parameters'] = json.dumps(_params)
-    metadata['flow_setpoint'] = json.dumps(pump_array.flow_setpoint)
+    # metadata['flow_setpoint'] = json.dumps(pump_array.flow_setpoint)
 
     return scan_data, metadata
