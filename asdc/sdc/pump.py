@@ -178,7 +178,7 @@ class PumpArray():
 
         self.flow_setpoint = {0: x*self.flow_rate, 1: (1-x)*self.flow_rate}
 
-    def get_pump_id(q):
+    def get_pump_id(self, q):
         for key, value in self.solutions.items():
             if q in value:
                 return key
