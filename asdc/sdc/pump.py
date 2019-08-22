@@ -12,7 +12,7 @@ def encode(message):
     return message.encode()
 
 # placeholder config for development
-CONFIG = {
+SOLUTIONS = {
     0: {'H2SO4': 0.1},
     1: {'Na2SO4': 0.1},
     2: {'CuSO4': 0.1}
@@ -62,7 +62,7 @@ def pH_error(target_pH, stock=CONFIG):
 
 class PumpArray():
     """ KDS Legato pump array interface """
-    def __init__(self, config=CONFIG, port='COM7', baud=115200, timeout=1, output_buffer=100, fast=False, flow_rate=0.5, flow_units='ml/min'):
+    def __init__(self, solutions=SOLUTIONS, port='COM7', baud=115200, timeout=1, output_buffer=100, fast=False, flow_rate=0.5, flow_units='ml/min'):
         """ pump array.
         What is needed? concentrations and flow rates.
         Low level interface: set individual flow rates
@@ -71,7 +71,7 @@ class PumpArray():
         TODO: look into using serial.tools.list_ports.comports to identify the correct COM port to connect to...
         the id string should be something like 'USB serial port for Syringe Pump (COM*)'
         """
-        self.config = config
+        self.solutions = solutions
 
         # serial interface things
         self.port = port
@@ -115,14 +115,14 @@ class PumpArray():
         self.eval('run', pump_id=pump_id)
 
     def run_all(self):
-        for pump_id in self.config.keys():
+        for pump_id in self.solutions.keys():
             self.run(pump_id=pump_id)
 
     def stop(self, pump_id=0):
         self.eval('stop', pump_id=pump_id)
 
     def stop_all(self):
-        for pump_id in self.config.keys():
+        for pump_id in self.solutions.keys():
             self.stop(pump_id=pump_id)
 
     def version(self, pump_id=0, verbose=False):
@@ -169,7 +169,7 @@ class PumpArray():
             print('forcing Na2SO4-only run')
             x = 0.0
         else:
-            x, r = optimize.brentq(pH_error(setpoint, stock=self.config), 0, 1, full_output=True)
+            x, r = optimize.brentq(pH_error(setpoint, stock=self.solutions), 0, 1, full_output=True)
 
         print(x)
 
