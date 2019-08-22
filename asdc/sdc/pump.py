@@ -50,7 +50,7 @@ def sulfuric_eq_pH(solution, verbose=False):
 
     return -np.log10(conc['H+'])
 
-def pH_error(target_pH, stock=CONFIG):
+def pH_error(target_pH, stock=SOLUTIONS):
 
     def f(x):
         """ perform linear mixing between just two solutions """
