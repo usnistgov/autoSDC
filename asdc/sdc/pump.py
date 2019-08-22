@@ -199,3 +199,5 @@ class PumpArray():
             print(pump_id)
             self.flow_setpoint[pump_id] = setpoint * self.flow_rate
             self.infusion_rate(pump_id=pump_id, rate=setpoint*self.flow_rate, units=units)
+
+        print(self.flow_setpoint)
