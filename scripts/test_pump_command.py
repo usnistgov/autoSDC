@@ -8,7 +8,7 @@ solutions = {0: {'H2SO4': 1.0}, 1: {'Na2SO4': 1.0}, 2: {'KOH': 1.0}}
 
 def test_pump_array():
     print('connecting to pumps...')
-    p = sdc.pump.PumpArray(port='COM6')
+    p = sdc.pump.PumpArray(solutions, port='COM6')
     p.print_config()
 
     # p.set_pH(setpoint=2.0)

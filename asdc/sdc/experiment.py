@@ -139,6 +139,7 @@ def run(instructions, cell='INTERNAL', solutions=None, verbose=False):
     try:
         pump_array = PumpArray(solutions, port=pump_array_port)
     except:
+        print('could not connect to pump array')
         pump_array = None
 
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
