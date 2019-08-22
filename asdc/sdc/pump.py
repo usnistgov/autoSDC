@@ -81,7 +81,7 @@ class PumpArray():
         self.fast = fast
         self.flow_rate = flow_rate
         self.flow_units = flow_units
-        self.flow_setpoint = {}
+        self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
 
     def print_config(self):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
@@ -186,6 +186,11 @@ class PumpArray():
 
     def set_rates(self, setpoints, units='ml/min'):
         """ directly set relative flow rates """
+
+        # reset rates to 0
+        for pump_id in self.flow_setpoint.keys():
+            self.flow_setpoint[pump_id] = 0.0
+            self.infusion_rate(pump_id=pump_id, rate=setpoint*self.flow_rate, units=units)
 
         print(setpoints)
         for species, setpoint in setpoints.items():
