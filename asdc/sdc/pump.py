@@ -177,3 +177,16 @@ class PumpArray():
         self.infusion_rate(pump_id=1, rate=(1-x)*self.flow_rate, units=self.flow_units)
 
         self.flow_setpoint = {0: x*self.flow_rate, 1: (1-x)*self.flow_rate}
+
+    def get_pump_id(q):
+        for key, value in self.solutions.items():
+            if q in value:
+                return key
+
+    def set_rates(self, setpoints, units='ml/min'):
+        """ directly set relative flow rates """
+
+        print(setpoints)
+        for species, setpoint in setpoints.items():
+            pump_id = self.get_pump_id(species)
+            self.infusion_rate(pump_id=pump_id, rate=setpoint*self.flow_rate, units=units)

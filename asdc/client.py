@@ -51,6 +51,7 @@ class SDC(scirc.SlackClient):
         self.confirm = config.get('confirm', True)
         self.notify = config.get('notify_slack', True)
         self.test_delay = config.get('test', False)
+        self.solutions = config.get('solutions')
 
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
@@ -254,6 +255,7 @@ class SDC(scirc.SlackClient):
                 sdc.experiment.run,
                 instructions,
                 cell=self.cell,
+                solutions=self.solutions,
                 verbose=self.verbose
             )
             results, metadata = await self.loop.run_in_executor(None, f)

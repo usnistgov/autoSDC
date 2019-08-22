@@ -134,9 +134,12 @@ def setup_cv(pstat, data, cell='INTERNAL'):
     return status, params
 
 
-def run(instructions, cell='INTERNAL', verbose=False):
+def run(instructions, cell='INTERNAL', solutions=None, verbose=False):
 
-    pump_array = PumpArray(port=pump_array_port)
+    try:
+        pump_array = PumpArray(solutions, port=pump_array_port)
+    except:
+        pump_array = None
 
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
@@ -163,16 +166,27 @@ def run(instructions, cell='INTERNAL', verbose=False):
                 hold_time = instruction.get('hold_time', 0)
                 print(f'waiting {hold_time} (s) for solution composition to reach steady state')
                 time.sleep(hold_time)
-
+            elif instruction.get('op') == 'set_flow':
+                print('setting the flow rates directly!')
+                params = f"pH={instruction.get('rates')} {instruction.get('units')}"
+                pump_array.set_rates(instruction.get('rates'), instruction.get('units'))
+                pump_array.run_all()
+                hold_time = instruction.get('hold_time', 0)
+                print(f'waiting {hold_time} (s) for solution composition to reach steady state')
+                time.sleep(hold_time)
 
             _params.append(params)
 
         slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
-        pump_array.stop_all()
+        if pump_array:
+            pump_array.stop_all()
 
     metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
     metadata['parameters'] = json.dumps(_params)
-    metadata['flow_setpoint'] = json.dumps(pump_array.flow_setpoint)
+    if pump_array:
+        metadata['flow_setpoint'] = json.dumps(pump_array.flow_setpoint)
+    else:
+        metadata['flow_setpoint'] = None
 
     return scan_data, metadata
