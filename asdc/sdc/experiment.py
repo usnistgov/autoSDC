@@ -36,7 +36,7 @@ def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL):
             error_codes.add(overload_status)
 
     metadata['timestamp'] = datetime.now()
-    metadata['error_codes'] = list(map(int, error_codes)),
+    metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
 
     results = pd.DataFrame(
         {
