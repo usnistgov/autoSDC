@@ -116,7 +116,8 @@ class PumpArray():
 
     def run_all(self):
         for pump_id in self.solutions.keys():
-            self.run(pump_id=pump_id)
+            if self.flow_setpoint[pump_id] > 0:
+                self.run(pump_id=pump_id)
 
     def stop(self, pump_id=0):
         self.eval('stop', pump_id=pump_id)
@@ -189,4 +190,5 @@ class PumpArray():
         print(setpoints)
         for species, setpoint in setpoints.items():
             pump_id = self.get_pump_id(species)
+            self.flow_setpoint[pump_id] = setpoint * self.flow_rate
             self.infusion_rate(pump_id=pump_id, rate=setpoint*self.flow_rate, units=units)
