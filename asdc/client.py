@@ -238,8 +238,12 @@ class SDC(scirc.SlackClient):
             stem = 'test'
             datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
 
-            summary = '-'.join(step['op'] for step in instructions)
+            if instructions[0].get('op') == 'set_flow':
+                summary = instructions[0].get('rates')
+            else:
+                summary = '-'.join(step['op'] for step in instructions)
             _msg = f"experiment *{meta['id']}*:  {summary}"
+
             if self.confirm:
                 if self.notify:
                     slack.post_message(f'*confirm*: {_msg}')
