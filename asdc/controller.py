@@ -61,7 +61,7 @@ class Controller(scirc.SlackClient):
         self.db = dataset.connect(f'sqlite:///{self.db_file}')
         self.experiment_table = self.db['experiment']
 
-        self.targets = pd.read_csv(config['target_file'], index_col=0)
+        self.targets = pd.read_csv(config['target_file'], index_col=0, dtype={'x': np.float, 'y': np.float})
         self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
 
     async def post(self, msg, ws, channel):
