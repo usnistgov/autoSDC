@@ -116,8 +116,9 @@ class Controller(scirc.SlackClient):
 
             d = {'id': row['id']}
             echem_data = pd.read_csv(os.path.join(self.data_dir, row['datafile']), index_col=0)
+            autorange = echem_data['current_range'][echem_data['segment'] == segment].unique().size > 1
             data = analyze.split_data(echem_data.to_dict(orient='list'), segment=segment)
-            cv_features = analyze.extract_cv_features(data, shoulder_percentile=0.999)
+            cv_features = analyze.extract_cv_features(data, shoulder_percentile=0.999, autorange=autorange)
 
             d.update(cv_features)
             d['ts'] = datetime.now()

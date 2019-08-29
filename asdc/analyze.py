@@ -229,12 +229,12 @@ def split_data(data, segment=0, split=0):
     }
     return res
 
-def extract_cv_features(data, return_raw_data=False, shoulder_percentile=0.99):
+def extract_cv_features(data, return_raw_data=False, shoulder_percentile=0.99, autorange=True):
 
     I = data['current']
     V = data['potential']
 
-    if len(np.unique(data['current_range'])) > 1:
+    if autorange:
         # log_I = correct_autorange_artifacts(V, I)
         a = model_autorange_artifacts(V, I)
         log_I = np.log10(np.abs(I)) - a
