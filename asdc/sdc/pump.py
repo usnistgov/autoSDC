@@ -112,6 +112,7 @@ class PumpArray():
             ser.write(encode(''))
 
     def run(self, pump_id=0):
+        print(f'asking pump {pump_id} to run')
         self.eval('run', pump_id=pump_id)
 
     def run_all(self):

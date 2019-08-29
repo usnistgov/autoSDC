@@ -244,7 +244,6 @@ class SDC(scirc.SlackClient):
 
                 if instructions[0].get('op') == 'set_flow':
                     summary = instructions[0].get('rates')
-
                 else:
                     summary = '-'.join(step['op'] for step in instructions)
                 _msg = f"experiment *{meta['id']}*:  {summary}"
@@ -254,7 +253,7 @@ class SDC(scirc.SlackClient):
                         slack.post_message(f'*confirm*: {_msg}')
                     else:
                         print(f'*confirm*: {_msg}')
-                        await ainput('press enter to allow running the experiment...', loop=self.loop)
+                    await ainput('press enter to allow running the experiment...', loop=self.loop)
 
                 elif self.notify:
                     slack.post_message(_msg)
@@ -313,7 +312,7 @@ class SDC(scirc.SlackClient):
                     break
 
         try:
-            pump_array = sdc.pump.PumpArray(solutions, port=sdc.experiment.pump_array_port)
+            pump_array = sdc.pump.PumpArray(self.solutions, port=sdc.experiment.pump_array_port)
             pump_array.stop_all()
             time.sleep(60)
         except:
