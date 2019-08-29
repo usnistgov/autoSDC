@@ -191,14 +191,14 @@ class PumpArray():
         # reset rates to 0
         for pump_id in self.flow_setpoint.keys():
             self.flow_setpoint[pump_id] = 0.0
-            self.infusion_rate(pump_id=pump_id, rate=0.0, units=units)
 
         print(setpoints)
         for species, setpoint in setpoints.items():
             print(species, setpoint)
             pump_id = self.get_pump_id(species)
             print(pump_id)
-            self.flow_setpoint[pump_id] = setpoint * self.flow_rate
-            self.infusion_rate(pump_id=pump_id, rate=setpoint*self.flow_rate, units=units)
+            if setpoint > 0:
+                self.flow_setpoint[pump_id] = setpoint * self.flow_rate
+                self.infusion_rate(pump_id=pump_id, rate=setpoint*self.flow_rate, units=units)
 
         print(self.flow_setpoint)
