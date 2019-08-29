@@ -64,7 +64,7 @@ def plot_i(t, I, figpath='i.png'):
 def plot_cv(V, I, segment=None, segments=[2,3], figpath='cv.png'):
 
     for s in segments:
-        plt.plot(V[segment ==s], I[segment = s], label=s)
+        plt.plot(V[segment == s], I[segment == s], label=s)
 
     plt.xlabel('potential (V)')
     plt.ylabel('current (A)');
