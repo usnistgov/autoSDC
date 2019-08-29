@@ -229,17 +229,18 @@ def split_data(data, segment=0, split=0):
     }
     return res
 
-def extract_cv_features(data, return_raw_data=False, shoulder_percentile=0.99, autorange=True):
+def extract_cv_features(data, return_raw_data=False, shoulder_percentile=0.99, autorange=True, eps=1e-12):
 
     I = data['current']
     V = data['potential']
 
+    absval = np.abs(I)
+    log_I = np.log(np.clip(absval, absval[absval > 0].min(), np.inf))
+
     if autorange:
         # log_I = correct_autorange_artifacts(V, I)
         a = model_autorange_artifacts(V, I)
-        log_I = np.log10(np.abs(I)) - a
-    else:
-        log_I = np.log10(np.abs(I))
+        log_I = log_I - a
 
     _log_I, cv_features, fit_data = model_polarization_curve(
         V, log_I, bg_order=5, lm_method='huber', smooth=True, smooth_window=121, shoulder_percentile=shoulder_percentile
