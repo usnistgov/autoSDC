@@ -104,7 +104,7 @@ class Controller(scirc.SlackClient):
 
         return df, target_idx, experiment_idx
 
-    def analyze_corrosion_features(self, segment=2):
+    def analyze_corrosion_features(self, segment=3):
 
         rtab = self.db.get_table('result', primary_id=False)
 

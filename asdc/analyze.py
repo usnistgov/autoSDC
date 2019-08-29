@@ -234,9 +234,12 @@ def extract_cv_features(data, return_raw_data=False, shoulder_percentile=0.99):
     I = data['current']
     V = data['potential']
 
-    # log_I = correct_autorange_artifacts(V, I)
-    a = model_autorange_artifacts(V, I)
-    log_I = np.log10(np.abs(I)) - a
+    if len(np.unique(data['current_range'])) > 1:
+        # log_I = correct_autorange_artifacts(V, I)
+        a = model_autorange_artifacts(V, I)
+        log_I = np.log10(np.abs(I)) - a
+    else:
+        log_I = np.log10(np.abs(I))
 
     _log_I, cv_features, fit_data = model_polarization_curve(
         V, log_I, bg_order=5, lm_method='huber', smooth=True, smooth_window=121, shoulder_percentile=shoulder_percentile
