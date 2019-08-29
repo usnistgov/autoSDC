@@ -305,7 +305,7 @@ class SDC(scirc.SlackClient):
                         slack.post_image(figpath, title=f"CV {meta['id']}")
 
                 print(f'*confirm*: {_msg}')
-                await response = ainput('re-run the experiment? (y/N): ', loop=self.loop)
+                response = await ainput('re-run the experiment? (y/N): ', loop=self.loop)
                 if response == 'y':
                     tx.rollback()
                 else:
