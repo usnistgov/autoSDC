@@ -70,6 +70,8 @@ def plot_cv(V, I, segment=None, segments=[2,3], figpath='cv.png'):
     plt.ylabel('current (A)');
     plt.legend()
     plt.savefig(figpath, bbox_inches='tight')
+    plt.clf()
+    plt.close()
     return
 
 def make_circle(r):
