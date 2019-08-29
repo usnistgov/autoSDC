@@ -233,75 +233,90 @@ class SDC(scirc.SlackClient):
             'comment': ''
         }
 
-        # wrap the whole experiment in a transaction
-        # this way, if the experiment is cancelled, it's not committed to the db
-        with self.db as tx:
-            meta['id'] = tx['experiment'].insert(meta)
+        while True:
+            # wrap the whole experiment in a transaction
+            # this way, if the experiment is cancelled, it's not committed to the db
+            with self.db as tx:
+                meta['id'] = tx['experiment'].insert(meta)
 
-            stem = 'test'
-            datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
+                stem = 'test'
+                datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
 
-            if instructions[0].get('op') == 'set_flow':
-                summary = instructions[0].get('rates')
-            else:
-                summary = '-'.join(step['op'] for step in instructions)
-            _msg = f"experiment *{meta['id']}*:  {summary}"
-
-            if self.confirm:
-                if self.notify:
-                    slack.post_message(f'*confirm*: {_msg}')
+                if instructions[0].get('op') == 'set_flow':
+                    summary = instructions[0].get('rates')
                 else:
-                    print(f'*confirm*: {_msg}')
-                await ainput('press enter to allow running the experiment...', loop=self.loop)
+                    summary = '-'.join(step['op'] for step in instructions)
+                    _msg = f"experiment *{meta['id']}*:  {summary}"
 
-            elif self.notify:
-                slack.post_message(_msg)
+                if self.confirm:
+                    if self.notify:
+                        slack.post_message(f'*confirm*: {_msg}')
+                    else:
+                        print(f'*confirm*: {_msg}')
+                        await ainput('press enter to allow running the experiment...', loop=self.loop)
 
-            # TODO: replace this with asyncio.run?
-            f = functools.partial(
-                sdc.experiment.run,
-                instructions,
-                cell=self.cell,
-                solutions=self.solutions,
-                verbose=self.verbose
-            )
-            results, metadata = await self.loop.run_in_executor(None, f)
-            metadata['parameters'] = json.dumps(metadata['parameters'])
+                elif self.notify:
+                    slack.post_message(_msg)
 
-            if self.test_delay:
-                await self.loop.run_in_executor(None, time.sleep, 10)
+                # TODO: replace this with asyncio.run?
+                f = functools.partial(
+                    sdc.experiment.run,
+                    instructions,
+                    cell=self.cell,
+                    solutions=self.solutions,
+                    verbose=self.verbose
+                )
+                results, metadata = await self.loop.run_in_executor(None, f)
+                metadata['parameters'] = json.dumps(metadata['parameters'])
 
-            # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
-            # heuristic check for experimental error signals?
-            if np.median(np.abs(results['current'])) < self.current_threshold:
-                print(f'WARNING: median current below {self.current_threshold} threshold')
-                if self.notify:
-                    slack.post_message(
-                        f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
-                    )
+                if self.test_delay:
+                    await self.loop.run_in_executor(None, time.sleep, 10)
 
-            meta.update(metadata)
-            meta['datafile'] = datafile
-            tx['experiment'].update(meta, ['id'])
+                # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
+                # heuristic check for experimental error signals?
+                if np.median(np.abs(results['current'])) < self.current_threshold:
+                    print(f'WARNING: median current below {self.current_threshold} threshold')
+                    if self.notify:
+                        slack.post_message(
+                            f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
+                        )
 
-            # store SDC results in external csv file
-            results.to_csv(os.path.join(self.data_dir, datafile))
+                meta.update(metadata)
+                meta['datafile'] = datafile
+                tx['experiment'].update(meta, ['id'])
 
-        if self.plot_current:
-            figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
-            visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
+                # store SDC results in external csv file
+                results.to_csv(os.path.join(self.data_dir, datafile))
 
-            if self.notify:
-                slack.post_message(f"finished experiment {meta['id']}: {summary}")
-                slack.post_image(figpath, title=f"current vs time {meta['id']}")
+                if self.plot_current:
+                    figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
+                    visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
 
-        if self.plot_cv:
-            figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
-            visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
+                    if self.notify:
+                        slack.post_message(f"finished experiment {meta['id']}: {summary}")
+                        slack.post_image(figpath, title=f"current vs time {meta['id']}")
 
-            if self.notify:
-                slack.post_message(f"finished experiment {meta['id']}: {summary}")
-                slack.post_image(figpath, title=f"CV {meta['id']}")
+                if self.plot_cv:
+                    figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
+                    visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
+
+                    if self.notify:
+                        slack.post_message(f"finished experiment {meta['id']}: {summary}")
+                        slack.post_image(figpath, title=f"CV {meta['id']}")
+
+                print(f'*confirm*: {_msg}')
+                await response = ainput('re-run the experiment? (y/N): ', loop=self.loop)
+                if response == 'y':
+                    tx.rollback()
+                else:
+                    break
+
+        try:
+            pump_array = sdc.pump.PumpArray(solutions, port=sdc.experiment.pump_array_port)
+            pump_array.stop_all()
+            time.sleep(60)
+        except:
+            pass
 
         await self.dm_controller('<@UHNHM7198> go')
 

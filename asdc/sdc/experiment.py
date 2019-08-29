@@ -183,6 +183,7 @@ def run(instructions, cell='INTERNAL', solutions=None, verbose=False):
         scan_data, metadata = run_experiment_sequence(pstat)
         # if pump_array:
         #     pump_array.stop_all()
+        #     time.sleep(60)
 
     metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
     metadata['parameters'] = json.dumps(_params)
