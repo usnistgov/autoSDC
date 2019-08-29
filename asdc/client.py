@@ -50,6 +50,9 @@ class SDC(scirc.SlackClient):
         self.figure_dir = config.get('figure_dir', os.getcwd())
         self.confirm = config.get('confirm', True)
         self.notify = config.get('notify_slack', True)
+        self.plot_cv = config.get('plot_cv', False)
+        self.plot_current = config.get('plot_current', False)
+
         self.test_delay = config.get('test', False)
         self.solutions = config.get('solutions')
 
@@ -284,13 +287,21 @@ class SDC(scirc.SlackClient):
             # store SDC results in external csv file
             results.to_csv(os.path.join(self.data_dir, datafile))
 
+        if self.plot_current:
+            figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
+            visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
 
-        figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
-        visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
+            if self.notify:
+                slack.post_message(f"finished experiment {meta['id']}: {summary}")
+                slack.post_image(figpath, title=f"current vs time {meta['id']}")
 
-        if self.notify:
-            slack.post_message(f"finished experiment {meta['id']}: {summary}")
-            slack.post_image(figpath, title=f"current vs time {meta['id']}")
+        if self.plot_cv:
+            figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
+            visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
+
+            if self.notify:
+                slack.post_message(f"finished experiment {meta['id']}: {summary}")
+                slack.post_image(figpath, title=f"CV {meta['id']}")
 
         await self.dm_controller('<@UHNHM7198> go')
 

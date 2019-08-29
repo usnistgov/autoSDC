@@ -61,6 +61,17 @@ def plot_i(t, I, figpath='i.png'):
     plt.close()
     return
 
+def plot_cv(V, I, segment=None, segments=[2,3], figpath='cv.png'):
+
+    for s in segments:
+        plt.plot(V[segment ==s], I[segment = s], label=s)
+
+    plt.xlabel('potential (V)')
+    plt.ylabel('current (A)');
+    plt.legend()
+    plt.savefig(figpath, bbox_inches='tight')
+    return
+
 def make_circle(r):
     t = np.arange(0, np.pi * 2.0, 0.01)
     t = t.reshape((len(t), 1))
