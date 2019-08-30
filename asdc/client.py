@@ -314,7 +314,8 @@ class SDC(scirc.SlackClient):
         try:
             pump_array = sdc.pump.PumpArray(self.solutions, port=sdc.experiment.pump_array_port)
             pump_array.stop_all()
-            time.sleep(60)
+            # TODO: make this configurable
+            time.sleep(15)
         except:
             pass
 
