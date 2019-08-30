@@ -314,8 +314,18 @@ class SDC(scirc.SlackClient):
         try:
             pump_array = sdc.pump.PumpArray(self.solutions, port=sdc.experiment.pump_array_port)
             pump_array.stop_all()
-            # TODO: make this configurable
-            time.sleep(15)
+
+            cleanup_step_height = 0.0003 # 300 microns
+            async with self.position_controller(use_z_step=False) as pos:
+                f = functools.partial(pos.update_z, delta=cleanup_step_height)
+                await self.loop.run_in_executor(None, f)
+
+                # TODO: make this configurable
+                time.sleep(15)
+
+                f = functools.partial(pos.update_z, delta=-cleanup_step_height)
+                await self.loop.run_in_executor(None, f)
+
         except:
             pass
 
