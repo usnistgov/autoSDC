@@ -171,11 +171,20 @@ def run(instructions, cell='INTERNAL', solutions=None, verbose=False):
             elif instruction.get('op') == 'set_flow':
                 print('setting the flow rates directly!')
                 params = f"pH={instruction.get('rates')} {instruction.get('units')}"
+                hold_time = instruction.get('hold_time', 0)
+
+                # high nominal flow_rate for running out to steady state
+                pump_array.flow_rate = 0.5
                 pump_array.set_rates(instruction.get('rates'))
                 pump_array.run_all()
-                hold_time = instruction.get('hold_time', 0)
+
                 print(f'waiting {hold_time} (s) for solution composition to reach steady state')
                 time.sleep(hold_time)
+
+                # go to low nominal flow_rate for measurement
+                pump_array.flow_rate = 0.1
+                pump_array.set_rates(instruction.get('rates'))
+
 
             _params.append(params)
 

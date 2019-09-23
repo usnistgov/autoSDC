@@ -12,7 +12,7 @@ def test_pump_array():
     p.print_config()
 
     # p.set_pH(setpoint=2.0)
-    p.set_rates({'KOH': 1.0})
+    p.set_rates({'KOH': 1.0, 'H2SO4': 0.5})
 
 
 if __name__ == '__main__':

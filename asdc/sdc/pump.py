@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import time
 import chempy
 import serial
 import numpy as np
@@ -90,14 +91,14 @@ class PumpArray():
             s = ser.read(100)
             print(s.strip())
 
-    def eval(self, command, pump_id=0, override=False, check_response=False):
+    def eval(self, command, pump_id=0, check_response=False, fast=False):
         """ evaluate a PumpChain command.
         Currently establishes a new serial connection for every command.
         TODO: consider batching commands together...
         """
-        if not override:
-            if self.fast:
-                command = '@{}'.format(command)
+
+        if fast or self.fast:
+            command = '@{}'.format(command)
 
         command = '{} {}'.format(pump_id, command)
 
@@ -119,6 +120,11 @@ class PumpArray():
         for pump_id in self.solutions.keys():
             if self.flow_setpoint[pump_id] > 0:
                 self.run(pump_id=pump_id)
+
+    def refresh_all(self):
+        for pump_id in self.solutions.keys():
+            self.eval('status', pump_id=pump_id)
+            time.sleep(0.5)
 
     def stop(self, pump_id=0):
         self.eval('stop', pump_id=pump_id)
@@ -162,7 +168,7 @@ class PumpArray():
         else:
             command = 'irate'
 
-        self.eval(command, pump_id=pump_id)
+        self.eval(command, pump_id=pump_id, fast=True)
 
     def set_pH(self, setpoint=3.0):
         """ control pH -- limited to two pumps for now. """
@@ -201,4 +207,5 @@ class PumpArray():
                 self.flow_setpoint[pump_id] = setpoint * self.flow_rate
                 self.infusion_rate(pump_id=pump_id, rate=setpoint*self.flow_rate, units=units)
 
+        self.refresh_all()
         print(self.flow_setpoint)
