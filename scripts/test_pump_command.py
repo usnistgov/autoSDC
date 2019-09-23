@@ -1,4 +1,5 @@
 import sys
+import time
 import numpy as np
 
 sys.path.append('.')
@@ -12,7 +13,21 @@ def test_pump_array():
     p.print_config()
 
     # p.set_pH(setpoint=2.0)
-    p.set_rates({'KOH': 1.0, 'H2SO4': 0.5})
+    p.flow_rate = 0.1
+    # p.set_rates({'KOH': 2, 'H2SO4': 3})
+    print('set...')
+
+    p.eval('@irate 0.25 ml/min')
+    p.eval('1 @irate 0.25 ml/min')
+    p.eval('@irun')
+    #time.sleep(1)
+    # p.eval('status', check_response=True)
+    p.eval('1 @irun')
+
+    p.eval('status')
+    time.sleep(1)
+    p.eval('1 address', check_response=True)
+    # p.run_all(fast=False)
 
 
 if __name__ == '__main__':
