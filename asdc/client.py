@@ -49,6 +49,7 @@ class SDC(scirc.SlackClient):
         self.data_dir = config.get('data_dir', os.getcwd())
         self.figure_dir = config.get('figure_dir', os.getcwd())
         self.confirm = config.get('confirm', True)
+        self.confirm_experiment = config.get('confirm_experiment', True)
         self.notify = config.get('notify_slack', True)
         self.plot_cv = config.get('plot_cv', False)
         self.plot_current = config.get('plot_current', False)
@@ -248,7 +249,7 @@ class SDC(scirc.SlackClient):
                     summary = '-'.join(step['op'] for step in instructions)
                 _msg = f"experiment *{meta['id']}*:  {summary}"
 
-                if self.confirm:
+                if self.confirm_experiment:
                     if self.notify:
                         slack.post_message(f'*confirm*: {_msg}')
                     else:
