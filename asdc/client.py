@@ -60,6 +60,9 @@ class SDC(scirc.SlackClient):
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
 
+        # which wafer direction is aligned with position controller +x direction?
+        self.frame_orientation = config.get('frame_orientation', '-y')
+
         self.db_file = os.path.join(self.data_dir, config.get('db_file', 'test.db'))
         self.db = dataset.connect(f'sqlite:///{self.db_file}')
         self.experiment_table = self.db['experiment']
@@ -162,6 +165,31 @@ class SDC(scirc.SlackClient):
         self.msg_id += 1
         await ws.send_str(json.dumps(response))
 
+    def compute_position_update(self, dx, dy):
+        """ map wafer frame position update to the position controller frame
+        frame_orientation: which wafer direction is aligned with x_versastat?
+        """
+
+        if self.frame_orientation == '-y':
+            # default reference frame alignment
+            # x_vs is -y_c, y_vs is x_c
+            delta = np.array([-dy, -dx, 0.0])
+
+        elif self.frame_orientation == '-x':
+            # x_vs is -x_c, y_vs is y_c
+            delta = np.array([dx, dy, 0.0])
+
+        elif self.frame_orientation == '+y':
+            # x_vs is y_c, y_vs is x_c
+            delta = np.array([dy, dx, 0.0])
+
+        elif self.frame_orientation == '+x':
+            # x_vs is x_c, y_vs is -y_c
+            delta = np.array([dx, -dy, 0.0])
+
+        # convert from mm to m
+        return delta * 1e-3
+
     @command
     async def move(self, ws, msgdata, args):
 
@@ -175,9 +203,8 @@ class SDC(scirc.SlackClient):
         dx = args['x'] - self.c_position.x
         dy = args['y'] - self.c_position.y
 
-        # update position: convert from mm to m
-        # x_vs is -y_c, y_vs is x
-        delta = np.array([-dy, -dx, 0.0]) * 1e-3
+        # map position update to position controller frame
+        delta = compute_position_update(dx, dy)
 
         if (dx != 0) or (dy != 0):
             if self.verbose:
