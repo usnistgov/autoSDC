@@ -88,10 +88,17 @@ class SDC(scirc.SlackClient):
             disp_y = (y_versa - ref.y_versa)*1e3
 
             # keep track of the coordinate switch!
-            # x_combi ~ -y_versa
-            # y_combi ~ -x_versa
-            x_combi = ref.x_combi - disp_y
-            y_combi = ref.y_combi - disp_x
+            if self.frame_orientation == '-y':
+                # x_combi ~ -y_versa
+                # y_combi ~ -x_versa
+                x_combi = ref.x_combi - disp_y
+                y_combi = ref.y_combi - disp_x
+            elif self.frame_orientation == '+x':
+                # x_vs is -x_c, y_vs is y_c
+                x_combi = ref.x_combi - disp_x
+                y_combi = ref.y_combi + disp_y
+            else:
+                raise NotImplementedError
 
             self.initial_combi_position = pd.Series({'x': x_combi, 'y': y_combi})
             self.c_position = self.initial_combi_position
