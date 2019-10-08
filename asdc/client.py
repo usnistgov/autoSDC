@@ -93,7 +93,7 @@ class SDC(scirc.SlackClient):
                 # y_combi ~ -x_versa
                 x_combi = ref.x_combi - disp_y
                 y_combi = ref.y_combi - disp_x
-            elif self.frame_orientation == '+x':
+            elif self.frame_orientation == '-x':
                 # x_vs is -x_c, y_vs is y_c
                 x_combi = ref.x_combi - disp_x
                 y_combi = ref.y_combi + disp_y
