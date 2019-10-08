@@ -61,6 +61,8 @@ class SDC(scirc.SlackClient):
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
 
+        self.initialize_z_position = True
+
         # which wafer direction is aligned with position controller +x direction?
         self.frame_orientation = config.get('frame_orientation', '-y')
 
@@ -236,6 +238,14 @@ class SDC(scirc.SlackClient):
                 print(pos.current_position())
                 print(self.c_position)
 
+        if self.initialize_z_position:
+            # reset the z baseline after the first move
+            if self.notify:
+                slack.post_message(f'*initialize z position*')
+
+            await ainput('*initialize z position*: press enter to continue...', loop=self.loop)
+            self.initialize_z_position = False
+
         # @ctl
         await self.dm_controller('<@UHNHM7198> update position is set.')
         time.sleep(1)
@@ -360,6 +370,16 @@ class SDC(scirc.SlackClient):
                 pass
 
         await self.dm_controller('<@UHNHM7198> go')
+
+    @command
+    async def checkpoint(self, ws, msgdata, args):
+        """ hold until user input is given to allow experiment to proceed """
+
+        if self.notify:
+            slack.post_message('*checkpoint reached*')
+
+        await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
+        return await self.dm_controller('<@UHNHM7198> go')
 
     @command
     async def flag(self, ws, msgdata, args):
