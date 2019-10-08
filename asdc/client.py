@@ -207,7 +207,7 @@ class SDC(scirc.SlackClient):
         dy = args['y'] - self.c_position.y
 
         # map position update to position controller frame
-        delta = compute_position_update(dx, dy)
+        delta = self.compute_position_update(dx, dy)
 
         if (dx != 0) or (dy != 0):
             if self.verbose:
