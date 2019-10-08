@@ -43,6 +43,7 @@ class SDC(scirc.SlackClient):
         self.initial_versastat_position = initial_versastat_position
         self.initial_combi_position = pd.Series(config['initial_combi_position'])
         self.step_height = config.get('step_height', 0.0)
+        self.cleanup_pause = config.get('cleanup_pause', 0)
         self.compress_dz = config.get('compress_dz', 0.0)
         self.cell = config.get('cell', 'INTERNAL')
         self.speed = config.get('speed', 1e-3)
@@ -339,23 +340,24 @@ class SDC(scirc.SlackClient):
                 else:
                     break
 
-        try:
-            pump_array = sdc.pump.PumpArray(self.solutions, port=sdc.experiment.pump_array_port)
-            pump_array.stop_all()
+        if self.cleanup_pause > 0:
+            try:
+                pump_array = sdc.pump.PumpArray(self.solutions, port=sdc.experiment.pump_array_port)
+                pump_array.stop_all()
 
-            cleanup_step_height = 0.0001 # 100 microns
-            async with self.position_controller(use_z_step=False) as pos:
-                f = functools.partial(pos.update_z, delta=cleanup_step_height)
-                await self.loop.run_in_executor(None, f)
+                cleanup_step_height = 0.0001 # 100 microns
+                async with self.position_controller(use_z_step=False) as pos:
+                    f = functools.partial(pos.update_z, delta=cleanup_step_height)
+                    await self.loop.run_in_executor(None, f)
 
-                # TODO: make this configurable
-                time.sleep(15)
+                    # TODO: make this configurable
+                    time.sleep(self.cleanup_pause)
 
-                f = functools.partial(pos.update_z, delta=-cleanup_step_height)
-                await self.loop.run_in_executor(None, f)
+                    f = functools.partial(pos.update_z, delta=-cleanup_step_height)
+                    await self.loop.run_in_executor(None, f)
 
-        except:
-            pass
+            except:
+                pass
 
         await self.dm_controller('<@UHNHM7198> go')
 
