@@ -108,9 +108,9 @@ class PumpArray():
                 s = ser.read(self.buffer_size)
                 print(s)
 
-    def refresh_ui(self):
+    def refresh_ui(self, pump_id=0):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
-            ser.write(encode(''))
+            ser.write(encode('ver'))
 
     def run(self, pump_id=0):
         print(f'asking pump {pump_id} to run')
