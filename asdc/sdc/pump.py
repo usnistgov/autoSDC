@@ -84,17 +84,9 @@ class PumpArray():
         self.flow_units = flow_units
         self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
 
-    def print_config(self):
-        with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
-            print('connected')
-            ser.write(encode('config'))
-            s = ser.read(100)
-            print(s.strip())
-
-    def eval(self, command, pump_id=0, check_response=False, fast=False):
+    def eval(self, command, pump_id=0, ser=None, check_response=False, fast=False):
         """ evaluate a PumpChain command.
-        Currently establishes a new serial connection for every command.
-        TODO: consider batching commands together...
+        consider batches commands together using connection `ser`
         """
 
         if fast or self.fast:
@@ -102,55 +94,47 @@ class PumpArray():
 
         command = '{} {}'.format(pump_id, command)
 
-        with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
+        if ser is not None:
             ser.write(encode(command))
+
             if check_response:
                 s = ser.read(self.buffer_size)
                 print(s)
+        else:
+            with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
+                ser.write(encode(command))
+                if check_response:
+                    s = ser.read(self.buffer_size)
+                    print(s)
 
     def refresh_ui(self, pump_id=0):
-        with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
-            ser.write(encode('ver'))
+        """ for whatever reason, 'ver' refreshes the pump UI when other commands do not """
+        self.eval('ver', pump_id=pump_id)
 
     def run(self, pump_id=0):
         print(f'asking pump {pump_id} to run')
         self.eval('run', pump_id=pump_id)
 
     def run_all(self):
-        for pump_id in self.solutions.keys():
-            if self.flow_setpoint[pump_id] > 0:
-                self.run(pump_id=pump_id)
+        with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
+            for pump_id in self.solutions.keys():
+                if self.flow_setpoint[pump_id] > 0:
+                    self.eval('run', pump_id=pump_id, ser=ser)
+                    time.sleep(0.05)
 
     def refresh_all(self):
-        for pump_id in self.solutions.keys():
-            self.eval('status', pump_id=pump_id)
-            time.sleep(0.5)
+        with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
+            for pump_id in self.solutions.keys():
+                self.eval('ver', pump_id=pump_id, ser=ser)
+                time.sleep(0.05)
 
     def stop(self, pump_id=0):
         self.eval('stop', pump_id=pump_id)
 
     def stop_all(self):
-        for pump_id in self.solutions.keys():
-            self.stop(pump_id=pump_id)
-
-    def version(self, pump_id=0, verbose=False):
-
-        if verbose:
-            self.eval('version', pump_id=pump_id)
-        else:
-            self.eval('ver', pump_id=0)
-
-    def address(self, pump_id=0, new_id=None):
-
-        if new_id is not None:
-            command = 'address {}'.format(new_id)
-        else:
-            command = 'address'
-
-        self.eval(command, pump_id=pump_id)
-
-    def crate(self, pump_id=0):
-        self.eval('crate', pump_id=pump_id)
+        with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
+            for pump_id in self.solutions.keys():
+                self.eval('stop', pump_id=pump_id, ser=ser)
 
     def diameter(self, pump_id=0, setpoint=None):
 
@@ -161,14 +145,14 @@ class PumpArray():
 
         self.eval(command, pump_id=pump_id)
 
-    def infusion_rate(self, pump_id=0, rate=None, units='ml/min'):
+    def infusion_rate(self, ser=None, pump_id=0, rate=None, units='ml/min'):
 
         if rate is not None:
             command = 'irate {} {}'.format(rate, units)
         else:
             command = 'irate'
 
-        self.eval(command, pump_id=pump_id, fast=True)
+        self.eval(command, pump_id=pump_id, ser=ser, fast=True)
 
     def set_pH(self, setpoint=3.0):
         """ control pH -- limited to two pumps for now. """
@@ -198,14 +182,16 @@ class PumpArray():
         for pump_id in self.flow_setpoint.keys():
             self.flow_setpoint[pump_id] = 0.0
 
-        print(setpoints)
-        for species, setpoint in setpoints.items():
-            print(species, setpoint)
-            pump_id = self.get_pump_id(species)
-            print(pump_id)
-            if setpoint > 0:
-                self.flow_setpoint[pump_id] = setpoint * self.flow_rate
-                self.infusion_rate(pump_id=pump_id, rate=setpoint*self.flow_rate, units=units)
+        with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
+            print(setpoints)
+            for species, setpoint in setpoints.items():
+                print(species, setpoint)
+                pump_id = self.get_pump_id(species)
+                print(pump_id)
+                if setpoint > 0:
+                    self.flow_setpoint[pump_id] = setpoint * self.flow_rate
+                    self.infusion_rate(pump_id=pump_id, ser=ser, rate=setpoint*self.flow_rate, units=units)
+                    time.sleep(0.05)
 
-        self.refresh_all()
+            self.refresh_all()
         print(self.flow_setpoint)
