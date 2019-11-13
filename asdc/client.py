@@ -282,13 +282,13 @@ class SDC(scirc.SlackClient):
             'y_versa': self.v_position[1],
             'z_versa': self.v_position[2],
             'flag': False,
-            'comment': ''
         }
 
         while True:
             # wrap the whole experiment in a transaction
             # this way, if the experiment is cancelled, it's not committed to the db
             with self.db as tx:
+
                 meta['id'] = tx['experiment'].insert(meta)
 
                 stem = 'asdc'

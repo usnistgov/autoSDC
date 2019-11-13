@@ -12,6 +12,8 @@ import pandas as pd
 from ruamel import yaml
 from aioconsole import ainput
 
+import matplotlib.pyplot as plt
+
 import gpflow
 import gpflowopt
 from gpflowopt import acquisition
@@ -162,7 +164,7 @@ class Controller(scirc.SlackClient):
         # gpflowopt minimizes objectives...
         # UCB switches to maximizing objectives...
         # swap signs for things we want to minimize (just I_p)
-        self.objectives = ('I_p', 'pr', 'coverage')
+        self.objectives = ('I_p', 'passive_region', 'coverage')
         self.objective_alphas = [3,3,5]
         self.sgn = np.array([-1,1,1])
 
@@ -207,7 +209,7 @@ class Controller(scirc.SlackClient):
 
         rtab = self.db.get_table('result', primary_id=False)
 
-        for row in self.db['experiment'].all():
+        for row in self.db['experiment'].all(intent='corrosion'):
 
             # extract features for any data that's missing
             if rtab.find_one(id=row['id']):
@@ -245,7 +247,7 @@ class Controller(scirc.SlackClient):
 
         return objective
 
-    def gp_acquisition(self):
+    def gp_acquisition(self, resolution=100):
 
         if self.notify:
             slack.post_message(f'analyzing CV features...')
@@ -270,8 +272,10 @@ class Controller(scirc.SlackClient):
 
         X = r.loc[:,('flow_rate', 'potential')].values
         Y = r.loc[:,self.objectives].values
+        print('x:', X)
+        print('y:', r.loc[:,self.objectives])
 
-        candidates = gpflowopt.design.FactorialDesign(100, self.domain).generate()
+        candidates = gpflowopt.design.FactorialDesign(resolution, self.domain).generate()
 
         # set confidence bound beta
         t = X.shape[0]
@@ -326,7 +330,7 @@ class Controller(scirc.SlackClient):
         # plot the acquisition function...
         plt.figure(figsize=(4,4))
         figpath = os.path.join(self.figure_dir, f'acquisition_plot_{t}.png')
-        extent = (ctl.domain.lower[0], ctl.domain.upper[0], ctl.domain.lower[1], ctl.domain.upper[1])
+        extent = (self.domain.lower[0], self.domain.upper[0], self.domain.lower[1], self.domain.upper[1])
         plt.imshow(acq.reshape((resolution, resolution)), cmap='Blues', extent=extent)
         plt.scatter(guess[0], guess[1], color='r')
         plt.xlim(extent[0], extent[1])
@@ -364,7 +368,7 @@ class Controller(scirc.SlackClient):
 
         experiment_phase = exp_id(self.db)
 
-        if experiment_phase in (0, 1):
+        if experiment_phase in (-1, 0, 1):
             # march through target positions sequentially
             # need to be more subtle here: filter experiment conditions on 'ok' or 'flag'
             # but also: filter everything on wafer_id, and maybe session_id?
