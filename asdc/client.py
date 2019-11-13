@@ -268,7 +268,13 @@ class SDC(scirc.SlackClient):
         # that comply with the SDC experiment schema (TODO: finalize and enforce schema)
         instructions = json.loads(args)
 
+        # check for an instruction group name/intent
+        intent = instructions[0].get('intent')
+        if intent is not None:
+            instructions = instructions[1:]
+
         meta = {
+            'intent': intent,
             'instructions': json.dumps(instructions),
             'x_combi': float(self.c_position.x),
             'y_combi': float(self.c_position.y),
@@ -285,7 +291,7 @@ class SDC(scirc.SlackClient):
             with self.db as tx:
                 meta['id'] = tx['experiment'].insert(meta)
 
-                stem = 'test'
+                stem = 'asdc'
                 datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
 
                 if instructions[0].get('op') == 'set_flow':
@@ -397,6 +403,20 @@ class SDC(scirc.SlackClient):
 
         with self.db as tx:
             tx['experiment'].update({'id': primary_key, 'flag': True}, ['id'])
+
+    @command
+    async def coverage(self, ws, msgdata, args):
+        """ log deposition coverage on (0.0,1.0). """
+
+        coverage_estimate = float(args)
+
+        if coverage_estimate < 0.0 or coverage_estimate > 1.0:
+            slack.post_message(
+                f':terriblywrong: *error:* coverage estimate should be in the range (0.0, 1.0)'
+            )
+        else:
+            with self.db as tx:
+                tx['experiment'].update({'id': primary_key, 'coverage': coverage_estimate}, ['id'])
 
     @command
     async def comment(self, ws, msgdata, args):

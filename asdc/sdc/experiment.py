@@ -170,7 +170,7 @@ def run(instructions, cell='INTERNAL', solutions=None, verbose=False):
                 time.sleep(hold_time)
             elif instruction.get('op') == 'set_flow':
                 print('setting the flow rates directly!')
-                params = f"pH={instruction.get('rates')} {instruction.get('units')}"
+                params = f"rates={instruction.get('rates')} {instruction.get('units')}"
                 hold_time = instruction.get('hold_time', 0)
 
                 # high nominal flow_rate for running out to steady state

@@ -63,6 +63,39 @@ def model_ternary(composition, target, reset_tf_graph=True, drop_last=True, opti
     m.compile()
     return m
 
+def model_synth(X, y, dx=1.0):
+    D = X.shape[1]
+
+    with gpflow.defer_build():
+        model = gpflow.models.GPR(
+            X, y,
+            kern=gpflow.kernels.RBF(D, ARD=True) + gpflow.kernels.Constant(D),
+        )
+
+        model.kern.kernels[0].variance.prior = gpflow.priors.Gamma(2,1/2)
+        model.kern.kernels[0].lengthscales.prior = gpflow.priors.Gamma(2.0, 2*dx/3)
+        model.likelihood.variance = 0.01
+
+    model.compile()
+    return model
+
+def model_bounded(X, y, dx=1.0):
+    D = X.shape[1]
+    with gpflow.defer_build():
+        model = gpflow.models.VGP(
+            X, y,
+            kern=gpflow.kernels.RBF(2, ARD=True, lengthscales=[1.0, 1.0]),
+            likelihood=gpflow.likelihoods.Beta()
+        )
+
+        model.kern.variance.prior = gpflow.priors.Gamma(2,2)
+        model.kern.lengthscales.prior = gpflow.priors.Gamma(1.0, 2*dx/3)
+        model.likelihood.variance = 0.1
+
+    model.compile()
+    return model
+
+
 class ExperimentEmulator():
     def __init__(self, db_file, components=['Ni', 'Al', 'Ti'], targets = ['V_oc', 'I_p', 'V_tp', 'slope', 'fwhm'], optimize_noise_variance=True):
         """ fit independent GP models for each target -- read compositions and targets from a csv file... """
