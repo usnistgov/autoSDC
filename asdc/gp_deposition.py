@@ -333,6 +333,7 @@ class Controller(scirc.SlackClient):
         extent = (self.domain.lower[0], self.domain.upper[0], self.domain.lower[1], self.domain.upper[1])
         plt.imshow(acq.reshape((resolution, resolution)), cmap='Blues', extent=extent)
         plt.scatter(guess[0], guess[1], color='r')
+        plt.scatter(X[:,0], X[:,1], color='k')
         plt.xlim(extent[0], extent[1])
         plt.ylim(extent[2], extent[3])
         plt.xlabel('flow rate')
