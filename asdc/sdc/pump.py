@@ -148,14 +148,14 @@ class PumpArray():
 
         self.eval(command, pump_id=pump_id)
 
-    def infusion_rate(self, ser=None, pump_id=0, rate=None, units='ml/min'):
+    def infusion_rate(self, ser=None, pump_id=0, rate=None, units='ml/min', fast=False):
 
         if rate is not None:
             command = 'irate {} {}'.format(rate, units)
         else:
             command = 'irate'
 
-        self.eval(command, pump_id=pump_id, ser=ser, fast=True)
+        self.eval(command, pump_id=pump_id, ser=ser, fast=fast)
 
     def set_pH(self, setpoint=3.0):
         """ control pH -- limited to two pumps for now. """
@@ -187,6 +187,7 @@ class PumpArray():
 
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
             print(setpoints)
+            time.sleep(0.05)
             for species, setpoint in setpoints.items():
                 print(species, setpoint)
                 pump_id = self.get_pump_id(species)

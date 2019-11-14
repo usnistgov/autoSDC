@@ -143,6 +143,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
 
         _params = []
         for instruction in instructions:
+            params = None
             if instruction.get('op') == 'potentiostatic':
                 status, params = setup_potentiostatic(pstat, instruction, cell=cell)
 
@@ -152,7 +153,8 @@ def run(instructions, cell='INTERNAL', verbose=False):
             elif instruction.get('op') == 'corrosion_oc':
                 status, params = setup_corrosion_oc(pstat, instruction, cell=cell)
 
-            _params.append(params)
+            if params:
+                _params.append(params)
 
             # elif instruction.get('op') == 'set_pH':
             #     print('setting the pH!')
