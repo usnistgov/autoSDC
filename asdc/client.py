@@ -228,9 +228,10 @@ class SDC(scirc.SlackClient):
         """
 
         if self.frame_orientation == '-y':
+            # NOTE: this one has been updated.
             # default reference frame alignment
-            # x_vs is -y_c, y_vs is x_c
-            delta = np.array([-dy, dx, 0.0])
+            # x_vs is -y_c, y_vs is -x_c
+            delta = np.array([-dy, -dx, 0.0])
 
         elif self.frame_orientation == '-x':
             # x_vs is -x_c, y_vs is -y_c
