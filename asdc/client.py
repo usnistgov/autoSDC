@@ -323,9 +323,9 @@ class SDC(scirc.SlackClient):
             slack.post_message(f"set_flow to {line_flush_rates} ml/min")
         if self.confirm:
             await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
-        pump_array.set_rates(line_flush_rates)
+        self.pump_array.set_rates(line_flush_rates)
         time.sleep(1)
-        pump_array.run_all()
+        self.pump_array.run_all()
 
         print(f'waiting {hold_time} (s) for solution composition to reach steady state')
         time.sleep(hold_time)
@@ -335,7 +335,7 @@ class SDC(scirc.SlackClient):
         if self.confirm:
             await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
         # go to low nominal flow_rate for measurement
-        pump_array.set_rates(rates)
+        self.pump_array.set_rates(rates)
 
     @command
     async def run_experiment(self, ws, msgdata, args):
@@ -373,7 +373,7 @@ class SDC(scirc.SlackClient):
                 datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
 
                 if instructions[0].get('op') == 'set_flow':
-                    async with self.z_step(height=0.0001):
+                    async with self.z_step(height=0.0005):
                         await self.set_flow(instructions[0])
 
                 summary = '-'.join(step['op'] for step in instructions)
