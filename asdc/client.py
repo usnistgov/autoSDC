@@ -306,7 +306,7 @@ class SDC(scirc.SlackClient):
         if self.notify:
             slack.post_message(f'moved dx={dx}, dy={dy} (delta={delta})')
 
-    def set_flow(self, instruction, nominal_rate=0.5):
+    async def set_flow(self, instruction, nominal_rate=0.5):
         """ nominal rate in ml/min """
         print('setting the flow rates directly!')
         params = f"rates={instruction.get('rates')} {instruction.get('units')}"
@@ -373,7 +373,7 @@ class SDC(scirc.SlackClient):
 
                 if instructions[0].get('op') == 'set_flow':
                     with self.z_step(height=0.0001):
-                        self.set_flow(instructions[0])
+                        await self.set_flow(instructions[0])
 
                 summary = '-'.join(step['op'] for step in instructions)
                 _msg = f"experiment *{meta['id']}*:  {summary}"
