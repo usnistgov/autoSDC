@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime
 
 from asdc import slack
-from .pump import PumpArray
+# from .pump import PumpArray
 
 try:
     from . import potentiostat
@@ -14,8 +14,6 @@ except ModuleNotFoundError:
 
 # the 3F potentiostat
 potentiostat_id = 17109013
-pump_array_port = 'COM6'
-
 POLL_INTERVAL = 1
 MIN_SAMPLING_FREQUENCY = 1.0e-5
 
@@ -135,13 +133,7 @@ def setup_cv(pstat, data, cell='INTERNAL'):
     return status, params
 
 
-def run(instructions, cell='INTERNAL', solutions=None, verbose=False):
-
-    try:
-        pump_array = PumpArray(solutions, port=pump_array_port)
-    except:
-        print('could not connect to pump array')
-        pump_array = None
+def run(instructions, cell='INTERNAL', verbose=False):
 
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
@@ -160,37 +152,16 @@ def run(instructions, cell='INTERNAL', solutions=None, verbose=False):
             elif instruction.get('op') == 'corrosion_oc':
                 status, params = setup_corrosion_oc(pstat, instruction, cell=cell)
 
-            elif instruction.get('op') == 'set_pH':
-                print('setting the pH!')
-                params = f"pH={instruction.get('pH')}"
-                pump_array.set_pH(setpoint=instruction.get('pH'))
-                pump_array.run_all()
-                hold_time = instruction.get('hold_time', 0)
-                print(f'waiting {hold_time} (s) for solution composition to reach steady state')
-                time.sleep(hold_time)
-            elif instruction.get('op') == 'set_flow':
-                print('setting the flow rates directly!')
-                params = f"rates={instruction.get('rates')} {instruction.get('units')}"
-                hold_time = instruction.get('hold_time', 0)
-
-                rates = instruction.get('rates')
-
-                # high nominal flow_rate for running out to steady state
-                nominal_rate = 0.5 # ml/min
-                total_rate = sum(rates.values())
-                line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates}
-                pump_array.set_rates(line_flush_rates)
-                time.sleep(1)
-                pump_array.run_all()
-
-                print(f'waiting {hold_time} (s) for solution composition to reach steady state')
-                time.sleep(hold_time)
-
-                # go to low nominal flow_rate for measurement
-                pump_array.set_rates(rates)
-
-
             _params.append(params)
+
+            # elif instruction.get('op') == 'set_pH':
+            #     print('setting the pH!')
+            #     params = f"pH={instruction.get('pH')}"
+            #     pump_array.set_pH(setpoint=instruction.get('pH'))
+            #     pump_array.run_all()
+            #     hold_time = instruction.get('hold_time', 0)
+            #     print(f'waiting {hold_time} (s) for solution composition to reach steady state')
+            #     time.sleep(hold_time)
 
         slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
@@ -200,9 +171,5 @@ def run(instructions, cell='INTERNAL', solutions=None, verbose=False):
 
     metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
     metadata['parameters'] = json.dumps(_params)
-    if pump_array:
-        metadata['flow_setpoint'] = json.dumps(pump_array.flow_setpoint)
-    else:
-        metadata['flow_setpoint'] = None
 
     return scan_data, metadata

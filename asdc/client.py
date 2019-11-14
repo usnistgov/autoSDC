@@ -24,6 +24,7 @@ from asdc import visualization
 asdc_channel = 'CDW5JFZAR'
 BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
 CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
+PUMP_ARRAY_PORT = 'COM6'
 
 class SDC(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
@@ -73,37 +74,47 @@ class SDC(scirc.SlackClient):
         self.current_threshold = 1e-5
 
         self.resume = resume
+
         if self.resume:
-            # load last known combi position and update internal state accordingly
-            refs = pd.DataFrame(self.experiment_table.all())
+            self.align_coordinate_systems()
 
-            # arbitrarily grab the first position
-            # TODO: verify that this record comes from the current session...
-            ref = refs.iloc[0]
-            x_versa, y_versa = self.v_position[0], self.v_position[1]
+        try:
+            pump_array = sdc.pump.PumpArray(self.solutions, port=PUMP_ARRAY_PORT)
+        except:
+            print('could not connect to pump array')
+            pump_array = None
 
-            # get the offset
-            # convert versa -> combi (m -> mm)
-            disp_x = (x_versa - ref.x_versa)*1e3
-            disp_y = (y_versa - ref.y_versa)*1e3
+    def align_coordinate_systems(self):
+        # load last known combi position and update internal state accordingly
+        refs = pd.DataFrame(self.experiment_table.all())
 
-            # keep track of the coordinate switch!
-            if self.frame_orientation == '-y':
-                # x_combi ~ -y_versa
-                # y_combi ~ -x_versa
-                x_combi = ref.x_combi - disp_y
-                y_combi = ref.y_combi - disp_x
-            elif self.frame_orientation == '-x':
-                # x_vs is -x_c, y_vs is y_c
-                x_combi = ref.x_combi - disp_x
-                y_combi = ref.y_combi + disp_y
-            else:
-                raise NotImplementedError
+        # arbitrarily grab the first position
+        # TODO: verify that this record comes from the current session...
+        ref = refs.iloc[0]
+        x_versa, y_versa = self.v_position[0], self.v_position[1]
 
-            self.initial_combi_position = pd.Series({'x': x_combi, 'y': y_combi})
-            self.c_position = self.initial_combi_position
-            if self.verbose:
-                print(f"initial combi position: {self.c_position}")
+        # get the offset
+        # convert versa -> combi (m -> mm)
+        disp_x = (x_versa - ref.x_versa)*1e3
+        disp_y = (y_versa - ref.y_versa)*1e3
+
+        # keep track of the coordinate switch!
+        if self.frame_orientation == '-y':
+            # x_combi ~ -y_versa
+            # y_combi ~ x_versa
+            x_combi = ref.x_combi - disp_y
+            y_combi = ref.y_combi + disp_x
+        elif self.frame_orientation == '-x':
+            # x_vs is -x_c, y_vs is -y_c
+            x_combi = ref.x_combi - disp_x
+            y_combi = ref.y_combi - disp_y
+        else:
+            raise NotImplementedError
+
+        self.initial_combi_position = pd.Series({'x': x_combi, 'y': y_combi})
+        self.c_position = self.initial_combi_position
+        if self.verbose:
+            print(f"initial combi position: {self.c_position}")
 
     @asynccontextmanager
     async def position_controller(self, use_z_step=False):
@@ -163,6 +174,42 @@ class SDC(scirc.SlackClient):
                 if self.verbose:
                     c = pos.current_position()
                     await aprint('3', c)
+
+                if _cancel_self_on_exit:
+                    current_task = asyncio.current_task()
+                    current_task.cancel()
+                    raise asyncio.CancelledError
+
+    @asynccontextmanager
+    async def z_step(self, height=None):
+        """ wrap position controller context manager
+        perform a vertical step with no horizontal movement
+        """
+        if height is None:
+            height = self.step_height
+        height = max(0, height)
+
+        _cancel_self_on_exit = False
+        step = 0
+        with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
+
+            start_position = pos.current_position()
+            baseline_z = start_position[2]
+            try:
+                f = functools.partial(pos.update_z, delta=height)
+                await self.loop.run_in_executor(None, f)
+
+                yield
+
+            finally:
+
+                # go back to baseline
+                current_position = pos.current_position()
+                current_z = current_position[2]
+                dz = baseline_z - current_z
+
+                f = functools.partial(pos.update_z, delta=dz)
+                await self.loop.run_in_executor(None, f)
 
                 if _cancel_self_on_exit:
                     current_task = asyncio.current_task()
@@ -259,6 +306,27 @@ class SDC(scirc.SlackClient):
         if self.notify:
             slack.post_message(f'moved dx={dx}, dy={dy} (delta={delta})')
 
+    def set_flow(self, instruction, nominal_rate=0.5):
+        """ nominal rate in ml/min """
+        print('setting the flow rates directly!')
+        params = f"rates={instruction.get('rates')} {instruction.get('units')}"
+        hold_time = instruction.get('hold_time', 0)
+
+        rates = instruction.get('rates')
+
+        # high nominal flow_rate for running out to steady state
+        total_rate = sum(rates.values())
+        line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates}
+        pump_array.set_rates(line_flush_rates)
+        time.sleep(1)
+        pump_array.run_all()
+
+        print(f'waiting {hold_time} (s) for solution composition to reach steady state')
+        time.sleep(hold_time)
+
+        # go to low nominal flow_rate for measurement
+        pump_array.set_rates(rates)
+
     @command
     async def run_experiment(self, ws, msgdata, args):
         """ run an SDC experiment """
@@ -295,9 +363,10 @@ class SDC(scirc.SlackClient):
                 datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
 
                 if instructions[0].get('op') == 'set_flow':
-                    summary = instructions[0].get('rates')
-                else:
-                    summary = '-'.join(step['op'] for step in instructions)
+                    with self.z_step(height=0.0001):
+                        self.set_flow(instructions[0])
+
+                summary = '-'.join(step['op'] for step in instructions)
                 _msg = f"experiment *{meta['id']}*:  {summary}"
 
                 if self.confirm_experiment:
@@ -315,11 +384,12 @@ class SDC(scirc.SlackClient):
                     sdc.experiment.run,
                     instructions,
                     cell=self.cell,
-                    solutions=self.solutions,
                     verbose=self.verbose
                 )
                 results, metadata = await self.loop.run_in_executor(None, f)
                 metadata['parameters'] = json.dumps(metadata['parameters'])
+                if self.pump_array:
+                    metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
 
                 if self.test_delay:
                     await self.loop.run_in_executor(None, time.sleep, 10)
@@ -365,19 +435,11 @@ class SDC(scirc.SlackClient):
 
         if self.cleanup_pause > 0:
             try:
-                pump_array = sdc.pump.PumpArray(self.solutions, port=sdc.experiment.pump_array_port)
-                pump_array.stop_all()
-
-                cleanup_step_height = 0.0001 # 100 microns
-                async with self.position_controller(use_z_step=False) as pos:
-                    f = functools.partial(pos.update_z, delta=cleanup_step_height)
-                    await self.loop.run_in_executor(None, f)
-
+                self.pump_array.stop_all()
+                # 100 microns
+                with self.z_step(height=0.0001):
                     # TODO: make this configurable
                     time.sleep(self.cleanup_pause)
-
-                    f = functools.partial(pos.update_z, delta=-cleanup_step_height)
-                    await self.loop.run_in_executor(None, f)
 
             except:
                 pass
