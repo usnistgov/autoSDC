@@ -317,6 +317,11 @@ class SDC(scirc.SlackClient):
         # high nominal flow_rate for running out to steady state
         total_rate = sum(rates.values())
         line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates}
+
+        if self.notify:
+            slack.post_message(f"set_flow to {line_flush_rates} ml/min")
+        if self.confirm:
+            await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
         pump_array.set_rates(line_flush_rates)
         time.sleep(1)
         pump_array.run_all()
@@ -324,6 +329,10 @@ class SDC(scirc.SlackClient):
         print(f'waiting {hold_time} (s) for solution composition to reach steady state')
         time.sleep(hold_time)
 
+        if self.notify:
+            slack.post_message(f"set_flow to {rates} ml/min")
+        if self.confirm:
+            await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
         # go to low nominal flow_rate for measurement
         pump_array.set_rates(rates)
 
