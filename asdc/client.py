@@ -373,7 +373,7 @@ class SDC(scirc.SlackClient):
                 datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
 
                 if instructions[0].get('op') == 'set_flow':
-                    with self.z_step(height=0.0001):
+                    async with self.z_step(height=0.0001):
                         await self.set_flow(instructions[0])
 
                 summary = '-'.join(step['op'] for step in instructions)
