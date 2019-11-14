@@ -41,12 +41,12 @@ def deposition_instructions(query):
         },
         {
             "op": "set_flow",
-            "rates": {"Co": query["flow_rate"]},
+            "rates": {"CuSO4": query["flow_rate"]},
         },
         {
             "op": "potentiostatic",
             "potential": query["potential"],
-            "duration": 180
+            "duration": 300
         }
     ]
     return instructions
@@ -67,7 +67,7 @@ CORROSION_INSTRUCTIONS = [
     },
     {
         "op": "set_flow",
-        "rates": {"H2SO4": 1.0},
+        "rates": {"H2SO4": 0.1},
     },
     {
         "op": "corrosion_oc",
