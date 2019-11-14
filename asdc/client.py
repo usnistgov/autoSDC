@@ -79,10 +79,10 @@ class SDC(scirc.SlackClient):
             self.align_coordinate_systems()
 
         try:
-            pump_array = sdc.pump.PumpArray(self.solutions, port=PUMP_ARRAY_PORT)
+            self.pump_array = sdc.pump.PumpArray(self.solutions, port=PUMP_ARRAY_PORT)
         except:
             print('could not connect to pump array')
-            pump_array = None
+            self.pump_array = None
 
     def align_coordinate_systems(self):
         # load last known combi position and update internal state accordingly
