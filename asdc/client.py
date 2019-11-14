@@ -317,7 +317,7 @@ class SDC(scirc.SlackClient):
 
         # high nominal flow_rate for running out to steady state
         total_rate = sum(rates.values())
-        line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates}
+        line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
         if self.notify:
             slack.post_message(f"set_flow to {line_flush_rates} ml/min")
