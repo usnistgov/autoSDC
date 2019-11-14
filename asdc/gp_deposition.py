@@ -42,6 +42,7 @@ def deposition_instructions(query):
         {
             "op": "set_flow",
             "rates": {"CuSO4": query["flow_rate"]},
+            "hold_time": 120
         },
         {
             "op": "potentiostatic",
@@ -71,13 +72,13 @@ CORROSION_INSTRUCTIONS = [
     },
     {
         "op": "corrosion_oc",
-        "duration": 120
+        "duration": 30
     },
     {
         "op": "cv",
         "initial_potential": 0.0,
         "vertex_potential_1": -1.0,
-        "vertex_potential_2": 1.2,
+        "vertex_potential_2": 0.2,
         "final_potential": 0.0,
         "scan_rate": 0.075,
         "cycles": 2
