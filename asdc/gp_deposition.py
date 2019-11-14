@@ -135,8 +135,9 @@ def load_experiment_json(experiment_files, dir='.'):
 
     experiments = None
     for experiment_file in experiment_files:
-        if os.path.isfile(experiment_file):
-            with open(os.path.join(dir, experiment_file), 'r') as f:
+        p = os.path.join(dir, experiment_file)
+        if os.path.isfile(p):
+            with open(p, 'r') as f:
                 if experiments is None:
                     experiments = json.load(f)
                 else:
