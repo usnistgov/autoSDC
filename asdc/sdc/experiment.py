@@ -173,17 +173,21 @@ def run(instructions, cell='INTERNAL', solutions=None, verbose=False):
                 params = f"rates={instruction.get('rates')} {instruction.get('units')}"
                 hold_time = instruction.get('hold_time', 0)
 
+                rates = instruction.get('rates')
+
                 # high nominal flow_rate for running out to steady state
-                pump_array.flow_rate = 0.5
-                pump_array.set_rates(instruction.get('rates'))
+                nominal_rate = 0.5 # ml/min
+                total_rate = sum(rates.values())
+                line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates}
+                pump_array.set_rates(line_flush_rates)
+                time.sleep(1)
                 pump_array.run_all()
 
                 print(f'waiting {hold_time} (s) for solution composition to reach steady state')
                 time.sleep(hold_time)
 
                 # go to low nominal flow_rate for measurement
-                pump_array.flow_rate = 0.1
-                pump_array.set_rates(instruction.get('rates'))
+                pump_array.set_rates(rates)
 
 
             _params.append(params)

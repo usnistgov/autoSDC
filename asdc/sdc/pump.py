@@ -121,6 +121,9 @@ class PumpArray():
                 if self.flow_setpoint[pump_id] > 0:
                     self.eval('run', pump_id=pump_id, ser=ser)
                     time.sleep(0.05)
+                else:
+                    self.eval('stop', pump_id=pump_id, ser=ser)
+                    time.sleep(0.05)
 
     def refresh_all(self):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
@@ -189,9 +192,8 @@ class PumpArray():
                 pump_id = self.get_pump_id(species)
                 print(pump_id)
                 if setpoint > 0:
-                    self.flow_setpoint[pump_id] = setpoint * self.flow_rate
-                    self.infusion_rate(pump_id=pump_id, ser=ser, rate=setpoint*self.flow_rate, units=units)
+                    self.flow_setpoint[pump_id] = setpoint
+                    self.infusion_rate(pump_id=pump_id, ser=ser, rate=setpoint, units=units)
                     time.sleep(0.05)
 
-            self.refresh_all()
         print(self.flow_setpoint)

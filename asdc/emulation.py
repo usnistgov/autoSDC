@@ -84,7 +84,7 @@ def model_bounded(X, y, dx=1.0):
     with gpflow.defer_build():
         model = gpflow.models.VGP(
             X, y,
-            kern=gpflow.kernels.RBF(2, ARD=True, lengthscales=[1.0, 1.0]),
+            kern=gpflow.kernels.RBF(D, ARD=True),
             likelihood=gpflow.likelihoods.Beta()
         )
 

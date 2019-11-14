@@ -118,10 +118,14 @@ def deposition_potential(ins):
 
 def load_experiment_files(csv_files, dir='.'):
     dir, _ = os.path.split(dir)
-    experiments = pd.concat(
-        (pd.read_csv(os.path.join(dir, csv_file), index_col=0) for csv_file in csv_files),
-        ignore_index=True
-    )
+    file = os.path.join(dir, csv_file)
+    if os.path.isfile(file):
+        experiments = pd.concat(
+            (pd.read_csv(file, index_col=0) for csv_file in csv_files),
+            ignore_index=True
+        )
+    else:
+        experiments = []
     return experiments
 
 def load_experiment_json(experiment_files, dir='.'):
@@ -130,11 +134,15 @@ def load_experiment_json(experiment_files, dir='.'):
 
     experiments = None
     for experiment_file in experiment_files:
-        with open(os.path.join(dir, experiment_file), 'r') as f:
-            if experiments is None:
-                experiments = json.load(f)
-            else:
-                experiments.append(json.load(f))
+        if os.path.isfile(experiment_file):
+            with open(os.path.join(dir, experiment_file), 'r') as f:
+                if experiments is None:
+                    experiments = json.load(f)
+                else:
+                    experiments.append(json.load(f))
+        else:
+            experiments = []
+
 
     return experiments
 
@@ -159,7 +167,7 @@ class Controller(scirc.SlackClient):
         self.experiment_table = self.db['experiment']
 
         self.targets = pd.read_csv(config['target_file'], index_col=0)
-        # self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
+        self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
 
         # gpflowopt minimizes objectives...
         # UCB switches to maximizing objectives...
@@ -179,6 +187,15 @@ class Controller(scirc.SlackClient):
                 domain = _d
             else:
                 domain += _d
+        dmn = domain_data['domain']['x0']
+        self.levels = [
+            np.array([0.030, 0.050, 0.10, 0.30]),
+            np.linspace(dmn['min'], dmn['max'], 100)
+        ]
+        self.ndim = [len(l) for l in self.levels][::-1]
+        self.extent = [np.min(self.levels[0]), np.max(self.levels[0]), np.min(self.levels[1]), np.max(self.levels[1])]
+        xx, yy = np.meshgrid(self.levels[0], self.levels[1])
+        self.candidates = np.c_[xx.flatten(),yy.flatten()]
 
         self.domain = domain
 
@@ -275,7 +292,7 @@ class Controller(scirc.SlackClient):
         print('x:', X)
         print('y:', r.loc[:,self.objectives])
 
-        candidates = gpflowopt.design.FactorialDesign(resolution, self.domain).generate()
+        # candidates = gpflowopt.design.FactorialDesign(resolution, self.domain).generate()
 
         # set confidence bound beta
         t = X.shape[0]
@@ -290,9 +307,9 @@ class Controller(scirc.SlackClient):
         # set up models
         # don't drop the last input dimension with wafer position inputs...
         models = [
-            emulation.model_synth(X, (self.sgn*Y)[:, 0][:,None]),
-            emulation.model_synth(X, (self.sgn*Y)[:, 1][:,None]),
-            emulation.model_bounded(X, Y[:, 2][:,None])
+            emulation.model_synth(X, (self.sgn*Y)[:, 0][:,None], dx=np.ptp(self.candidates)),
+            emulation.model_synth(X, (self.sgn*Y)[:, 1][:,None], dx=np.ptp(self.candidates)),
+            emulation.model_bounded(X, Y[:, 2][:,None], dx=np.ptp(self.candidates))
         ]
 
         # set up multiobjective acquisition...
@@ -314,10 +331,10 @@ class Controller(scirc.SlackClient):
 
         # evaluate the acquisition function on a grid
         # acq = criterion.evaluate(candidates)
-        acq = self.random_scalarization_cb(model_wrapper, candidates, cb_beta)
+        acq = self.random_scalarization_cb(model_wrapper, self.candidates, cb_beta)
 
         # remove previously measured candidates
-        mindist = spatial.distance.cdist(X, candidates).min(axis=0)
+        mindist = spatial.distance.cdist(X, self.candidates).min(axis=0)
         acq[mindist < 1e-5] = acq.min()
 
         # visualization.scatter_wafer(candidates*scale_factor, acq, label='acquisition', figpath=figpath)
@@ -325,13 +342,14 @@ class Controller(scirc.SlackClient):
         #     slack.post_image(figpath, title=f"acquisition at t={t}")
 
         query_idx = np.argmax(acq)
-        guess = candidates[query_idx]
+        guess = self.candidates[query_idx]
 
         # plot the acquisition function...
         plt.figure(figsize=(4,4))
         figpath = os.path.join(self.figure_dir, f'acquisition_plot_{t}.png')
-        extent = (self.domain.lower[0], self.domain.upper[0], self.domain.lower[1], self.domain.upper[1])
-        plt.imshow(acq.reshape((resolution, resolution)), cmap='Blues', extent=extent)
+        extent = self.extent
+        # extent = (self.domain.lower[0], self.domain.upper[0], self.domain.lower[1], self.domain.upper[1])
+        plt.imshow(acq.reshape(self.ndim), cmap='Blues', extent=extent)
         plt.scatter(guess[0], guess[1], color='r')
         plt.scatter(X[:,0], X[:,1], color='k')
         plt.xlim(extent[0], extent[1])
@@ -362,14 +380,32 @@ class Controller(scirc.SlackClient):
             """
             deps = db['experiment'].count(intent='deposition')
             cors = db['experiment'].count(intent='corrosion')
+
             if cors == 0:
-                return deps
+                phase = deps
             else:
-                return deps % cors
+                phase = deps % cors
 
-        experiment_phase = exp_id(self.db)
+            if phase in (0, 1):
+                intent = 'deposition'
+            else:
+                intent = 'corrosion'
+            if phase == 0:
+                fit_gp = True
+            else:
+                fit_gp = False
 
-        if experiment_phase in (-1, 0, 1):
+            return intent, fit_gp
+
+        if len(self.experiments) > 0:
+            instructions = self.experiments.pop(0)
+            intent = instructions[0].get('intent')
+            fit_gp = False
+        else:
+            instructions = None
+            intent, fit_gp = exp_id(self.db)
+
+        if intent == 'deposition':
             # march through target positions sequentially
             # need to be more subtle here: filter experiment conditions on 'ok' or 'flag'
             # but also: filter everything on wafer_id, and maybe session_id?
@@ -390,14 +426,14 @@ class Controller(scirc.SlackClient):
 
         print('get instructions')
         # get the next instruction set
-        if experiment_phase == 0:
+        if fit_gp:
             query = self.gp_acquisition()
             instructions = deposition_instructions(query)
-        elif experiment_phase == 1:
+        elif intent == 'deposition':
             previous_op = self.db['experiment'].find_one(self.db['experiment'].count())
             instructions = json.loads(previous_op['instructions'])
             instructions = instructions[1:] # skip the set_flow op...
-        elif experiment_phase == 2:
+        elif intent == 'corrosion':
             instructions = CORROSION_INSTRUCTIONS
 
         print(instructions)
