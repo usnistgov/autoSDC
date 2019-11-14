@@ -426,17 +426,19 @@ class Controller(scirc.SlackClient):
             # @sdc will message us with @ctl update position ...
             await self.update_event.wait()
 
-        print('get instructions')
-        # get the next instruction set
-        if fit_gp:
-            query = self.gp_acquisition()
-            instructions = deposition_instructions(query)
-        elif intent == 'deposition':
-            previous_op = self.db['experiment'].find_one(self.db['experiment'].count())
-            instructions = json.loads(previous_op['instructions'])
-            instructions = instructions[1:] # skip the set_flow op...
-        elif intent == 'corrosion':
-            instructions = CORROSION_INSTRUCTIONS
+        if instructions is None:
+
+            print('get instructions')
+            # get the next instruction set
+            if fit_gp:
+                query = self.gp_acquisition()
+                instructions = deposition_instructions(query)
+            elif intent == 'deposition':
+                previous_op = self.db['experiment'].find_one(self.db['experiment'].count())
+                instructions = json.loads(previous_op['instructions'])
+                instructions = instructions[1:] # skip the set_flow op...
+            elif intent == 'corrosion':
+                instructions = CORROSION_INSTRUCTIONS
 
         print(instructions)
         # send the experiment command
