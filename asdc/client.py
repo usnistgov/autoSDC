@@ -479,8 +479,9 @@ class SDC(scirc.SlackClient):
     @command
     async def coverage(self, ws, msgdata, args):
         """ log deposition coverage on (0.0,1.0). """
-
-        coverage_estimate = float(args)
+        primary_key, text = args.split(' ', 1)  # need to do format checking...
+        primary_key = int(primary_key)
+        coverage_estimate = float(text)
 
         if coverage_estimate < 0.0 or coverage_estimate > 1.0:
             slack.post_message(
