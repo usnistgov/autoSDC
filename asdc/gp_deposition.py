@@ -110,12 +110,18 @@ def deposition_flow_rate(ins):
     except KeyError:
         return None
 
-def deposition_potential(ins):
-    i = json.loads(ins)
-    try:
-        return i[1]['potential']
-    except KeyError:
-        return None
+def deposition_potential(df):
+    p = []
+    for idx, row in df.iterrows():
+
+        if row['intent'] == 'deposition':
+            instructions = json.loads(row['instructions'])
+            for instruction in json.loads(row['instructions']):
+                if instruction.get('op') == 'potentiostatic':
+                    p.append(instruction.get('potential'))
+        elif row['intent'] == 'corrosion':
+            p.append(None)
+    return p
 
 def load_experiment_files(csv_files, dir='.'):
     dir, _ = os.path.split(dir)
@@ -281,7 +287,7 @@ class Controller(scirc.SlackClient):
         # fuse deposition and corrosion metadata
         dep = pd.DataFrame({
             'flow_rate': df['instructions'].apply(deposition_flow_rate),
-            'potential': df['instructions'].apply(deposition_potential),
+            'potential': deposition_potential(df),
             'coverage': df['coverage']
         }).fillna(method='ffill')
 
