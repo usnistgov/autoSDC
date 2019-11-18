@@ -48,21 +48,12 @@ def deposition_instructions(query):
         {
             "op": "potentiostatic",
             "potential": query["potential"],
-            "duration": 300
+            "duration": 300,
+            "current_range": "20MA"
         }
     ]
     return instructions
 
-instructions_2 = [
-    {
-        "intent": "deposition"
-    },
-    {
-        "op": "potentiostatic",
-        "potential": 0.5,
-        "duration": 300
-    }
-]
 CORROSION_INSTRUCTIONS = [
     {
         "intent": "corrosion"
@@ -82,7 +73,8 @@ CORROSION_INSTRUCTIONS = [
         "vertex_potential_2": 0.2,
         "final_potential": 0.0,
         "scan_rate": 0.075,
-        "cycles": 2
+        "cycles": 2,
+        "current_range": "20MA"
     }
 ]
 
