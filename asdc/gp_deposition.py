@@ -63,17 +63,9 @@ CORROSION_INSTRUCTIONS = [
         "rates": {"H2SO4": 0.1},
     },
     {
-        "op": "corrosion_oc",
-        "duration": 30
-    },
-    {
-        "op": "cv",
-        "initial_potential": 0.0,
-        "vertex_potential_1": -1.0,
-        "vertex_potential_2": 0.2,
-        "final_potential": 0.0,
-        "scan_rate": 0.075,
-        "cycles": 2,
+        "op": "potentiostatic",
+        "potential": -0.8,
+        "duration": 120,
         "current_range": "20MA"
     }
 ]
