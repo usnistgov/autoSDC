@@ -238,7 +238,7 @@ class Controller(scirc.SlackClient):
             # d['passive_region'] = d['V_tp'] - d['V_pass']
 
             V, I, t = load_cv(row, data_dir=self.data_dir, segment=segment, log=False, half=False)
-            d['integral_current'] = integrate.trapz(I, t)
+            d['integral_current'] = np.abs(integrate.trapz(I, t))
 
             d['ts'] = datetime.now()
             rtab.upsert(d, ['id'])
