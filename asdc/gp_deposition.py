@@ -64,7 +64,7 @@ CORROSION_INSTRUCTIONS = [
     },
     {
         "op": "potentiostatic",
-        "potential": -0.8,
+        "potential": 0.1,
         "duration": 120,
         "current_range": "20MA"
     }
