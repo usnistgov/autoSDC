@@ -19,6 +19,7 @@ import gpflowopt
 from gpflowopt import acquisition
 from scipy import stats
 from scipy import spatial
+from scipy import integrate
 from datetime import datetime
 
 sys.path.append('../scirc')
@@ -86,22 +87,25 @@ CORROSION_INSTRUCTIONS = [
 ]
 
 import cycvolt
-def load_cv(row, data_dir='data', segment=2):
+def load_cv(row, data_dir='data', segment=2, half=True, log=True):
     """ load CV data and process it... """
     cv = pd.read_csv(os.path.join(data_dir, row['datafile']), index_col=0)
 
     sel = cv['segment'] == segment
     I = cv['current'][sel].values
     V = cv['potential'][sel].values
+    t = cv['elapsed_time'][sel].values
 
-    # grab the length of the polarization curve
-    n = I.size // 2
-    I = I[:n]
-    V = V[:n]
+    if half:
+        # grab the length of the polarization curve
+        n = I.size // 2
+        I = I[:n]
+        V = V[:n]
 
-    log_I = cycvolt.analyze.log_abs_current(I)
+    if log:
+        I = cycvolt.analyze.log_abs_current(I)
 
-    return V, log_I
+    return V, I, t - t[0]
 
 def deposition_flow_rate(ins):
     i = json.loads(ins)
@@ -179,10 +183,10 @@ class Controller(scirc.SlackClient):
 
         # gpflowopt minimizes objectives...
         # UCB switches to maximizing objectives...
-        # swap signs for things we want to minimize (just I_p)
-        self.objectives = ('I_p', 'passive_region', 'coverage')
-        self.objective_alphas = [3,3,5]
-        self.sgn = np.array([-1,1,1])
+        # swap signs for things we want to minimize (just integral current)
+        self.objectives = ('integral_current', 'coverage')
+        self.objective_alphas = [3,5]
+        self.sgn = np.array([-1,1])
 
         # set up the optimization domain
         with open(os.path.join(self.data_dir, os.pardir, self.domain_file), 'r') as f:
@@ -230,7 +234,7 @@ class Controller(scirc.SlackClient):
 
         return df, target_idx, experiment_idx
 
-    def analyze_corrosion_features(self, segment=3):
+    def analyze_corrosion_features(self, segment=0):
 
         rtab = self.db.get_table('result', primary_id=False)
 
@@ -241,14 +245,18 @@ class Controller(scirc.SlackClient):
                 continue
 
             d = {'id': row['id']}
-            V, log_I = load_cv(row, data_dir=self.data_dir, segment=segment)
-            cv_features, fit_data = cycvolt.analyze.model_polarization_curve(
-                V, log_I, smooth=False, lm_method=None, shoulder_percentile=0.99
-            )
+            # V, log_I, t = load_cv(row, data_dir=self.data_dir, segment=segment)
+            # cv_features, fit_data = cycvolt.analyze.model_polarization_curve(
+            #     V, log_I, smooth=False, lm_method=None, shoulder_percentile=0.99
+            # )
 
-            d.update(cv_features)
+            # d.update(cv_features)
+            # d['passive_region'] = d['V_tp'] - d['V_pass']
+
+            V, I, t = load_cv(row, data_dir=self.data_dir, segment=segment, log=False, half=False)
+            d['integral_current'] = integrate.trapz(I, t)
+
             d['ts'] = datetime.now()
-            d['passive_region'] = d['V_tp'] - d['V_pass']
             rtab.upsert(d, ['id'])
 
         return
@@ -313,11 +321,9 @@ class Controller(scirc.SlackClient):
             slack.post_message(f'fitting GP models')
 
         # set up models
-        # don't drop the last input dimension with wafer position inputs...
         models = [
             emulation.model_synth(X, (self.sgn*Y)[:, 0][:,None], dx=np.ptp(self.candidates)),
-            emulation.model_synth(X, (self.sgn*Y)[:, 1][:,None], dx=np.ptp(self.candidates)),
-            emulation.model_bounded(X, Y[:, 2][:,None], dx=np.ptp(self.candidates))
+            emulation.model_bounded(X, Y[:, 1][:,None], dx=np.ptp(self.candidates))
         ]
 
         # set up multiobjective acquisition...
@@ -367,6 +373,9 @@ class Controller(scirc.SlackClient):
         plt.tight_layout()
         plt.savefig(figpath, bbox_inches='tight')
         plt.clf()
+        if self.notify:
+            slack.post_image(figpath, title=f"acquisition at t={t}")
+
 
         query = pd.Series({'flow_rate': guess[0], 'potential': guess[1]})
         print(query)
