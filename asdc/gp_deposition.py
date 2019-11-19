@@ -139,7 +139,6 @@ def load_experiment_json(experiment_files, dir='.'):
         else:
             experiments = []
 
-
     return experiments
 
 class Controller(scirc.SlackClient):
@@ -164,6 +163,14 @@ class Controller(scirc.SlackClient):
 
         self.targets = pd.read_csv(config['target_file'], index_col=0)
         self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
+
+        # remove experiments if there are records in the database
+        num_prev = self.db['experiment'].count()
+        self.targets = self.targets.iloc[num_prev:]
+        if num_prev < len(self.experiments):
+            self.experiments = self.experiments[num_prev:]
+        else:
+            self.experiments = []
 
         # gpflowopt minimizes objectives...
         # UCB switches to maximizing objectives...
