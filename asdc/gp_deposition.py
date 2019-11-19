@@ -184,14 +184,14 @@ class Controller(scirc.SlackClient):
         with open(os.path.join(self.data_dir, os.pardir, self.domain_file), 'r') as f:
             domain_data = json.load(f)
 
-        domain = None
-        for key, dim in domain_data['domain'].items():
-            _d = gpflowopt.domain.ContinuousParameter(dim['name'], dim['min'], dim['max'])
-            if domain is None:
-                domain = _d
-            else:
-                domain += _d
-        dmn = domain_data['domain']['x0']
+        # domain = None
+        # for key, dim in domain_data['domain'].items():
+        #     _d = gpflowopt.domain.ContinuousParameter(dim['name'], dim['min'], dim['max'])
+        #     if domain is None:
+        #         domain = _d
+        #     else:
+        #         domain += _d
+        dmn = domain_data['domain']['x1']
         self.levels = [
             np.array([0.030, 0.050, 0.10, 0.30]),
             np.linspace(dmn['min'], dmn['max'], 100)
@@ -201,7 +201,7 @@ class Controller(scirc.SlackClient):
         xx, yy = np.meshgrid(self.levels[0], self.levels[1])
         self.candidates = np.c_[xx.flatten(),yy.flatten()]
 
-        self.domain = domain
+        # self.domain = domain
 
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
