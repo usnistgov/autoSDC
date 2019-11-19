@@ -439,7 +439,7 @@ class Controller(scirc.SlackClient):
                 query = self.gp_acquisition()
                 instructions = deposition_instructions(query)
             elif intent == 'deposition':
-                previous_op = self.db['experiment'].find_one(self.db['experiment'].count())
+                previous_op = self.db['experiment'].find_one(id=self.db['experiment'].count())
                 instructions = json.loads(previous_op['instructions'])
                 instructions = instructions[1:] # skip the set_flow op...
             elif intent == 'corrosion':
