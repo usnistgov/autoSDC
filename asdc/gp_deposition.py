@@ -94,7 +94,7 @@ def load_cv(row, data_dir='data', segment=2, half=True, log=True):
 def deposition_flow_rate(ins):
     i = json.loads(ins)
     try:
-        return i[0]['rates']['Co']
+        return i[0]['rates']['CuSO4']
     except KeyError:
         return None
 
