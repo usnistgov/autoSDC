@@ -175,7 +175,7 @@ class Controller(scirc.SlackClient):
         # UCB switches to maximizing objectives...
         # swap signs for things we want to minimize (just integral current)
         self.objectives = ('integral_current', 'coverage')
-        self.objective_alphas = [1,4]
+        self.objective_alphas = [1,1]
         self.sgn = np.array([-1,1])
 
         # set up the optimization domain
@@ -302,7 +302,7 @@ class Controller(scirc.SlackClient):
 
         # set confidence bound beta
         t = X.shape[0]
-        cb_beta = 0.125 * np.log(2*t + 1)
+        cb_beta = 0.25 * np.log(2*t + 1)
 
         # reset tf graph -- long-running program!
         gpflow.reset_default_graph_and_session()
