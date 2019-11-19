@@ -61,6 +61,7 @@ CORROSION_INSTRUCTIONS = [
     {
         "op": "set_flow",
         "rates": {"H2SO4": 0.1},
+        "hold_time": 120
     },
     {
         "op": "potentiostatic",
