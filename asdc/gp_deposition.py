@@ -165,8 +165,9 @@ class Controller(scirc.SlackClient):
         self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
 
         # remove experiments if there are records in the database
+        num_prev_spots = self.db['experiment'].count(intent='deposition')
         num_prev = self.db['experiment'].count()
-        self.targets = self.targets.iloc[num_prev:]
+        self.targets = self.targets.iloc[num_prev_spots:]
         if num_prev < len(self.experiments):
             self.experiments = self.experiments[num_prev:]
         else:
