@@ -100,10 +100,11 @@ class SDC(scirc.SlackClient):
 
         # keep track of the coordinate switch!
         if self.frame_orientation == '-y':
+            # note: this one has been updated...
             # x_combi ~ -y_versa
-            # y_combi ~ x_versa
+            # y_combi ~ -x_versa
             x_combi = ref.x_combi - disp_y
-            y_combi = ref.y_combi + disp_x
+            y_combi = ref.y_combi - disp_x
         elif self.frame_orientation == '-x':
             # x_vs is -x_c, y_vs is -y_c
             x_combi = ref.x_combi - disp_x
