@@ -442,6 +442,7 @@ class Controller(scirc.SlackClient):
                 previous_op = self.db['experiment'].find_one(id=self.db['experiment'].count())
                 instructions = json.loads(previous_op['instructions'])
                 instructions = instructions[1:] # skip the set_flow op...
+                instructions = [{'intent': 'deposition'}] + instructions
             elif intent == 'corrosion':
                 instructions = CORROSION_INSTRUCTIONS
 
