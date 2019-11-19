@@ -177,7 +177,7 @@ class Controller(scirc.SlackClient):
         # UCB switches to maximizing objectives...
         # swap signs for things we want to minimize (just integral current)
         self.objectives = ('integral_current', 'coverage')
-        self.objective_alphas = [3,5]
+        self.objective_alphas = [1,4]
         self.sgn = np.array([-1,1])
 
         # set up the optimization domain
