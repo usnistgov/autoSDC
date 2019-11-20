@@ -84,6 +84,10 @@ class PumpArray():
         self.flow_units = flow_units
         self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
 
+    def relative_rates(self):
+        total_rate = sum(self.flow_setpoint.values())
+        return {key: rate / total_rate for key, rate in self.flow_setpoint.items()}
+
     def eval(self, command, pump_id=0, ser=None, check_response=False, fast=False):
         """ evaluate a PumpChain command.
         consider batches commands together using connection `ser`

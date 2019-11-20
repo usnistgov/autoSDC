@@ -318,26 +318,34 @@ class SDC(scirc.SlackClient):
 
     async def set_flow(self, instruction, nominal_rate=0.5):
         """ nominal rate in ml/min """
+
+        def relative_flow(rates):
+            total = sum(rates.values())
+            return {key: rate / total for key, rate in rates.items()}
+
         print('setting the flow rates directly!')
         params = f"rates={instruction.get('rates')} {instruction.get('units')}"
         hold_time = instruction.get('hold_time', 0)
 
         rates = instruction.get('rates')
 
-        # high nominal flow_rate for running out to steady state
-        total_rate = sum(rates.values())
-        line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
+        # if relative flow rates don't match, purge solution
+        if relative_flow(rates) != relative_flow(self.pump_array.flow_setpoint):
 
-        if self.notify:
-            slack.post_message(f"set_flow to {line_flush_rates} ml/min")
-        if self.confirm:
-            await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
-        self.pump_array.set_rates(line_flush_rates)
-        time.sleep(1)
-        self.pump_array.run_all()
+            # high nominal flow_rate for running out to steady state
+            total_rate = sum(rates.values())
+            line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
-        print(f'waiting {hold_time} (s) for solution composition to reach steady state')
-        time.sleep(hold_time)
+            if self.notify:
+                slack.post_message(f"set_flow to {line_flush_rates} ml/min")
+            if self.confirm:
+                await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
+            self.pump_array.set_rates(line_flush_rates)
+            time.sleep(1)
+            self.pump_array.run_all()
+
+            print(f'waiting {hold_time} (s) for solution composition to reach steady state')
+            time.sleep(hold_time)
 
         if self.notify:
             slack.post_message(f"set_flow to {rates} ml/min")
@@ -345,6 +353,36 @@ class SDC(scirc.SlackClient):
             await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
         # go to low nominal flow_rate for measurement
         self.pump_array.set_rates(rates)
+
+    async def optical_inspect(self, x_combi=31, y_combi=0, delta_z=0.002):
+        """ move for optical inspection
+        delta_z should be specified in meters...
+        """
+
+        # make sure delta_z is positive (actually, greater than 500 microns...)
+        delta_z = max(0.0005, delta_z)
+
+        # specify target positions in combi reference frame
+        dx = x_combi - self.c_position.x
+        dy = y_combi - self.c_position.y
+
+        # map position update to position controller frame
+        delta = self.compute_position_update(dx, dy)
+
+        async with self.position_controller(use_z_step=True) as pos:
+
+            if self.confirm:
+                await ainput('press enter to move for optical inspection...', loop=self.loop)
+
+            f = functools.partial(pos.update_z, delta=height)
+            await self.loop.run_in_executor(None, f)
+
+            # move horizontally
+            f = functools.partial(pos.update, delta=delta)
+            await self.loop.run_in_executor(None, f)
+            self.c_position += np.array([dx, dy])
+
+        return
 
     @command
     async def run_experiment(self, ws, msgdata, args):
@@ -462,9 +500,15 @@ class SDC(scirc.SlackClient):
                 with self.z_step(height=0.0001):
                     # TODO: make this configurable
                     time.sleep(self.cleanup_pause)
-
             except:
                 pass
+
+        if intent == 'deposition':
+            if self.notify:
+                slack.post_message(f"inspect deposit quality")
+
+            await self.optical_inspect()
+            response = await ainput('take a moment to evaluate', loop=self.loop)
 
         await self.dm_controller('<@UHNHM7198> go')
 
