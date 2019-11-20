@@ -378,8 +378,8 @@ class Controller(scirc.SlackClient):
 
         # set up models
         models = [
-            emulation.model_synth(X_cor, Y_cor[:, 0][:,None], dx=np.ptp(self.candidates)),
-            emulation.model_bounded(X_dep, Y_dep[:,None], dx=np.ptp(self.candidates))
+            emulation.model_synth(X_cor, Y_cor[:, 0][:,None], dx=0.25*np.ptp(self.candidates)),
+            emulation.model_bounded(X_dep, Y_dep[:,None], dx=0.25*np.ptp(self.candidates))
         ]
 
         # set up multiobjective acquisition...
