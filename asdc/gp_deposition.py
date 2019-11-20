@@ -25,20 +25,24 @@ from datetime import datetime
 sys.path.append('../scirc')
 sys.path.append('.')
 import scirc
-
+import cycvolt
 from asdc import slack
 from asdc import analyze
 from asdc import emulation
 from asdc import visualization
 
+import enum
+Action = enum.Enum('Action', ['REPEAT', 'CORRODE', 'QUERY'])
+
 BOT_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 SDC_TOKEN = open('slacktoken.txt', 'r').read().strip()
 
-def deposition_instructions(query):
+def deposition_instructions(query, experiment_id=0):
     """ TODO: do something about deposition duration.... """
     instructions = [
         {
-            "intent": "deposition"
+            "intent": "deposition",
+            "experiment_id": experiment_id
         },
         {
             "op": "set_flow",
@@ -54,24 +58,87 @@ def deposition_instructions(query):
     ]
     return instructions
 
-CORROSION_INSTRUCTIONS = [
-    {
-        "intent": "corrosion"
-    },
-    {
-        "op": "set_flow",
-        "rates": {"H2SO4": 0.1},
-        "hold_time": 120
-    },
-    {
-        "op": "potentiostatic",
-        "potential": 0.1,
-        "duration": 120,
-        "current_range": "20MA"
-    }
-]
+def corrosion_instructions(experiment_id=0):
+    instructions = [
+        {
+            "intent": "corrosion",
+            "experiment_id": experiment_id
+        },
+        {
+            "op": "set_flow",
+            "rates": {"H2SO4": 0.1},
+            "hold_time": 120
+        },
+        {
+            "op": "potentiostatic",
+            "potential": 0.1,
+            "duration": 120,
+            "current_range": "20MA"
+        }
+    ]
+    return instructions
 
-import cycvolt
+def exp_id(db):
+    """ we're running two depositions followed by a corrosion experiment
+    return 0 if it's time for the first deposition
+           1 if it's time for  the second deposition
+           2 if it's time for corrosion
+    """
+    deps = db['experiment'].count(intent='deposition')
+    cors = db['experiment'].count(intent='corrosion')
+
+    if cors == 0:
+        phase = deps
+    else:
+        phase = deps % cors
+
+    if phase in (0, 1):
+        intent = 'deposition'
+    else:
+        intent = 'corrosion'
+    if phase == 0:
+        fit_gp = True
+    else:
+        fit_gp = False
+
+    return intent, fit_gp
+
+def select_action(db, threshold=0.9):
+    """ run two depositions, followed by a corrosion experiment if the deposits are acceptable.
+    """
+    prev_id = db['experiment'].count()
+
+    prev = db['experiment'].find_one(id=prev_id)
+
+    if prev['intent'] == 'corrosion':
+        return Action.QUERY
+
+    elif prev['intent'] == 'deposition':
+        n_repeats = db['experiment'].count(experiment_id=prev['experiment_id'])
+
+        if n_repeats == 1:
+            # logic to skip replicate based on quality goes here...
+            return Action.REPEAT
+
+        elif n_repeats == 2:
+            # if coverage is good enough, run a corrosion measurement.
+            session = pd.DataFrame(db['experiment'].find(experiment_id=prev['experiment_id']))
+            min_coverage = session['coverage'].min()
+
+            if min_coverage > threshold:
+                target = db['experiment'].find_one(experiment_id=prev['experiment_id'], has_bubble=False)
+                if target is None:
+                    print('no replicates without bubbles...')
+                    return Action.QUERY
+                else:
+                    print(f'good coverage ({min_coverage})')
+                    print('target', target['id'])
+                    pos = {'x': target['x_combi'], 'y': target['y_combi']}
+                    return Action.CORRODE
+            else:
+                print(f'poor coverage ({min_coverage})')
+                return Action.QUERY
+
 def load_cv(row, data_dir='data', segment=2, half=True, log=True):
     """ load CV data and process it... """
     cv = pd.read_csv(os.path.join(data_dir, row['datafile']), index_col=0)
@@ -380,30 +447,7 @@ class Controller(scirc.SlackClient):
         sqlite integer primary keys start at 1...
         """
 
-        def exp_id(db):
-            """ we're running two depositions followed by a corrosion experiment
-            return 0 if it's time for the first deposition
-                   1 if it's time for  the second deposition
-                   2 if it's time for corrosion
-            """
-            deps = db['experiment'].count(intent='deposition')
-            cors = db['experiment'].count(intent='corrosion')
-
-            if cors == 0:
-                phase = deps
-            else:
-                phase = deps % cors
-
-            if phase in (0, 1):
-                intent = 'deposition'
-            else:
-                intent = 'corrosion'
-            if phase == 0:
-                fit_gp = True
-            else:
-                fit_gp = False
-
-            return intent, fit_gp
+        previous_op = self.db['experiment'].find_one(id=self.db['experiment'].count())
 
         if len(self.experiments) > 0:
             instructions = self.experiments.pop(0)
@@ -411,41 +455,47 @@ class Controller(scirc.SlackClient):
             fit_gp = False
         else:
             instructions = None
-            intent, fit_gp = exp_id(self.db)
+            action, pos = select_action(self.db)
+            # intent, fit_gp = exp_id(self.db)
 
-        if intent == 'deposition':
+        if action in {Action.QUERY, Action.REPEAT}:
             # march through target positions sequentially
-            # need to be more subtle here: filter experiment conditions on 'ok' or 'flag'
-            # but also: filter everything on wafer_id, and maybe session_id?
-            # also: how to allow cancelling tasks and adding combi spots to a queue to redo?
             target_idx = self.db['experiment'].count(intent='deposition')
             target = self.targets.iloc[target_idx]
-            print(target)
+            pos = {'x': target.x, 'y': target.y}
 
-            # send the move command -- message @sdc
-            self.update_event.clear()
-            args = {'x': target.x, 'y': target.y}
-            await self.dm_sdc(f'<@UHT11TM6F> move {json.dumps(args)}')
+        # if action is Action.CORRODE, select a target without a bubble to corrode
+        if action == Action.CORRODE:
+            target = self.db['experiment'].find_one(experiment_id=previous_op['experiment_id'], has_bubble=False)
+            pos = {'x': target['x_combi'], 'y': target['y_combi']}
 
-            print('waiting for ok')
-            # wait for the ok
-            # @sdc will message us with @ctl update position ...
-            await self.update_event.wait()
+        # send the move command -- message @sdc
+        self.update_event.clear()
+        print(pos)
+        await self.dm_sdc(f'<@UHT11TM6F> move {json.dumps(pos)}')
+        print('waiting for ok')
+        # wait for the ok -- @sdc will message us with `@ctl update position`...
+        await self.update_event.wait()
 
         if instructions is None:
 
+            if action in {Action.REPEAT, Action.CORRODE}:
+                experiment_id = previous_op.get('experiment_id')
+            else:
+                # action == Action.QUERY
+                experiment_id = previous_op.get('experiment_id') + 1
+
             print('get instructions')
             # get the next instruction set
-            if fit_gp:
+            if action == Action.QUERY:
                 query = self.gp_acquisition()
-                instructions = deposition_instructions(query)
-            elif intent == 'deposition':
-                previous_op = self.db['experiment'].find_one(id=self.db['experiment'].count())
+                instructions = deposition_instructions(query, experiment_id=experiment_id)
+            elif action == Action.REPEAT:
                 instructions = json.loads(previous_op['instructions'])
                 instructions = instructions[1:] # skip the set_flow op...
-                instructions = [{'intent': 'deposition'}] + instructions
-            elif intent == 'corrosion':
-                instructions = CORROSION_INSTRUCTIONS
+                instructions = [{'intent': 'deposition', 'experiment_id': experiment_id}] + instructions
+            elif action == Action.CORRODE:
+                instructions = corrosion_instructions(experiment_id=experiment_id)
 
         print(instructions)
         # send the experiment command
