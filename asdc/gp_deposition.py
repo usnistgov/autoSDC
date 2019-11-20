@@ -319,7 +319,7 @@ class Controller(scirc.SlackClient):
 
         return
 
-    def random_scalarization_cb(self, model_wrapper, candidates, cb_beta):
+    def random_scalarization_cb(self, model_wrapper, candidates, cb_beta=0.25):
         """ random scalarization upper confidence bound acquisition policy function """
 
         objective = np.zeros(candidates.shape[0])
@@ -332,8 +332,12 @@ class Controller(scirc.SlackClient):
             slack.post_message(f'sampled objective fn weights: {weights}')
 
         for model, weight in zip(model_wrapper.models, weights):
+            # set per-model confidence bound beta
+            t = model.X.shape[0]
+            cb_weight = cb_beta * np.log(2*t + 1)
+
             mean, var = model.predict_y(candidates)
-            ucb = mean + cb_beta*np.sqrt(var)
+            ucb = mean + cb_weight*np.sqrt(var)
             objective += weight * ucb.squeeze()
 
         return objective
@@ -346,51 +350,46 @@ class Controller(scirc.SlackClient):
         # make sure all experiments are postprocessed and have values in the results table
         self.analyze_corrosion_features()
 
+        if self.notify:
+            slack.post_message(f'fitting GP models')
+
         # load positions, compositions, and measured values from db
-        df = pd.DataFrame(self.db['experiment'].all())
+        d = pd.DataFrame(self.db['experiment'].all())
         r = pd.DataFrame(self.db['result'].all())
 
-        # fuse deposition and corrosion metadata
-        dep = pd.DataFrame({
-            'flow_rate': df['instructions'].apply(deposition_flow_rate),
-            'potential': deposition_potential(df),
-            'coverage': df['coverage']
-        }).fillna(method='ffill')
+        # get deposition metadata from instructions...
+        d['flow_rate'] = d['instructions'].apply(deposition_flow_rate)
+        d['potential'] = deposition_potential(d)
+        d[['flow_rate', 'potential']] = d[['flow_rate','potential']].fillna(method='ffill')
 
-        dep = dep[df['intent'] == 'corrosion']
-        dep.index = r.index
-        r = dep.join(r)
+        # split records into deposition and corrosion subsets...
+        dep = d.loc[d['intent'] == 'deposition', ('id', 'flow_rate', 'potential', 'coverage')]
+        cor = d.loc[d['intent'] == 'corrosion', ('id', 'flow_rate', 'potential')]
+        cor = cor.merge(r, on='id')
 
-        X = r.loc[:,('flow_rate', 'potential')].values
-        Y = r.loc[:,self.objectives].values
-        print('x:', X)
-        print('y:', r.loc[:,self.objectives])
+        X_dep = dep.loc[:,('flow_rate', 'potential')].values
+        Y_dep = dep['coverage'].values
 
-        # candidates = gpflowopt.design.FactorialDesign(resolution, self.domain).generate()
-
-        # set confidence bound beta
-        t = X.shape[0]
-        cb_beta = 0.25 * np.log(2*t + 1)
+        X_cor = cor.loc[:,('flow_rate', 'potential')].values
+        Y_cor = cor['integral_current'].values
 
         # reset tf graph -- long-running program!
         gpflow.reset_default_graph_and_session()
 
-        if self.notify:
-            slack.post_message(f'fitting GP models')
-
         # set up models
         models = [
-            emulation.model_synth(X, (self.sgn*Y)[:, 0][:,None], dx=np.ptp(self.candidates)),
-            emulation.model_bounded(X, Y[:, 1][:,None], dx=np.ptp(self.candidates))
+            emulation.model_synth(X_cor, Y_cor[:, 0][:,None], dx=np.ptp(self.candidates)),
+            emulation.model_bounded(X_dep, Y_dep[:,None], dx=np.ptp(self.candidates))
         ]
 
         # set up multiobjective acquisition...
         # use this as a convenient model wrapper for now...
         model_wrapper = acquisition.HVProbabilityOfImprovement(models)
 
-        # rescale model outputs to balance objectives...
         for model in model_wrapper.models:
-            model.normalize_output = True
+            # rescale model outputs to balance objectives...
+            # skip this for now, for flexibility scaling things later...
+            model.normalize_output = False
         model_wrapper.root._needs_setup = True
         model_wrapper.optimize_restarts = 1
 
@@ -403,10 +402,10 @@ class Controller(scirc.SlackClient):
 
         # evaluate the acquisition function on a grid
         # acq = criterion.evaluate(candidates)
-        acq = self.random_scalarization_cb(model_wrapper, self.candidates, cb_beta)
+        acq = self.random_scalarization_cb(model_wrapper, self.candidates)
 
         # remove previously measured candidates
-        mindist = spatial.distance.cdist(X, self.candidates).min(axis=0)
+        mindist = spatial.distance.cdist(X_dep, self.candidates).min(axis=0)
         acq[mindist < 1e-5] = acq.min()
 
         # visualization.scatter_wafer(candidates*scale_factor, acq, label='acquisition', figpath=figpath)
@@ -423,7 +422,8 @@ class Controller(scirc.SlackClient):
         # extent = (self.domain.lower[0], self.domain.upper[0], self.domain.lower[1], self.domain.upper[1])
         plt.imshow(acq.reshape(self.ndim), cmap='Blues', extent=extent)
         plt.scatter(guess[0], guess[1], color='r')
-        plt.scatter(X[:,0], X[:,1], color='k')
+        plt.scatter(X_dep[:,0], X_dep[:,1], color='k')
+        plt.scatter(X_cor[:,0], X_cor[:,1], color='k')
         plt.xlim(extent[0], extent[1])
         plt.ylim(extent[2], extent[3])
         plt.xlabel('flow rate')
@@ -433,7 +433,6 @@ class Controller(scirc.SlackClient):
         plt.clf()
         if self.notify:
             slack.post_image(figpath, title=f"acquisition at t={t}")
-
 
         query = pd.Series({'flow_rate': guess[0], 'potential': guess[1]})
         print(query)
