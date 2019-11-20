@@ -76,7 +76,7 @@ class SDC(scirc.SlackClient):
         self.resume = resume
 
         if self.resume:
-            self.align_coordinate_systems()
+            self.sync_coordinate_systems(register_initial=True)
 
         try:
             self.pump_array = sdc.pump.PumpArray(self.solutions, port=PUMP_ARRAY_PORT)
@@ -84,14 +84,18 @@ class SDC(scirc.SlackClient):
             print('could not connect to pump array')
             self.pump_array = None
 
-    def align_coordinate_systems(self):
+    def sync_coordinate_systems(self, register_initial=False):
         # load last known combi position and update internal state accordingly
         refs = pd.DataFrame(self.experiment_table.all())
 
         # arbitrarily grab the first position
         # TODO: verify that this record comes from the current session...
         ref = refs.iloc[0]
-        x_versa, y_versa = self.v_position[0], self.v_position[1]
+
+        with sdc.position.controller(ip='192.168.10.11') as pos:
+            current_versastat_position = pos.current_position()
+
+        x_versa, y_versa = current_versastat_position[0], current_versastat_position[1]
 
         # get the offset
         # convert versa -> combi (m -> mm)
@@ -112,10 +116,12 @@ class SDC(scirc.SlackClient):
         else:
             raise NotImplementedError
 
-        self.initial_combi_position = pd.Series({'x': x_combi, 'y': y_combi})
-        self.c_position = self.initial_combi_position
-        if self.verbose:
-            print(f"initial combi position: {self.c_position}")
+        self.c_position = pd.Series({'x': x_combi, 'y': y_combi})
+
+        if register_initial:
+            self.initial_combi_position = self.c_position
+            if self.verbose:
+                print(f"initial combi position: {self.c_position}")
 
     @asynccontextmanager
     async def position_controller(self, use_z_step=False):
@@ -257,6 +263,8 @@ class SDC(scirc.SlackClient):
         if self.verbose:
             print(args)
 
+        self.sync_coordinate_systems()
+
         # specify target positions in combi reference frame
         # update this in the ctx manager even if things get cancelled...
         dx = args['x'] - self.c_position.x
@@ -349,11 +357,14 @@ class SDC(scirc.SlackClient):
 
         # check for an instruction group name/intent
         intent = instructions[0].get('intent')
+        experiment_id = instructions[0].get('experiment_id')
+
         if intent is not None:
             instructions = instructions[1:]
 
         meta = {
             'intent': intent,
+            'experiment': experiment_id,
             'instructions': json.dumps(instructions),
             'x_combi': float(self.c_position.x),
             'y_combi': float(self.c_position.y),
