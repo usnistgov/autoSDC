@@ -63,7 +63,7 @@ def model_ternary(composition, target, reset_tf_graph=True, drop_last=True, opti
     m.compile()
     return m
 
-def model_synth(X, y, dx=1.0):
+def model_property(X, y, dx=1.0):
     D = X.shape[1]
 
     with gpflow.defer_build():
@@ -79,13 +79,21 @@ def model_synth(X, y, dx=1.0):
     model.compile()
     return model
 
-def model_bounded(X, y, dx=1.0):
+def model_quality(X, y, dx=1.0, likelihood='beta'):
+
+    if likelihood == 'beta':
+        # bounded regression
+        lik = gpflow.likelihoods.Beta()
+    elif likelihood == 'bernoulli':
+        # classification
+        lik = gpflow.likelihoods.Bernoulli()
+
     D = X.shape[1]
     with gpflow.defer_build():
         model = gpflow.models.VGP(
             X, y,
             kern=gpflow.kernels.RBF(D, ARD=True),
-            likelihood=gpflow.likelihoods.Beta()
+            likelihood=lik
         )
 
         model.kern.variance.prior = gpflow.priors.Gamma(2,2)
@@ -94,6 +102,8 @@ def model_bounded(X, y, dx=1.0):
 
     model.compile()
     return model
+
+
 
 
 class ExperimentEmulator():

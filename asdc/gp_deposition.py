@@ -224,6 +224,7 @@ class Controller(scirc.SlackClient):
         self.data_dir = config.get('data_dir', os.getcwd())
         self.figure_dir = config.get('figure_dir', os.getcwd())
         self.domain_file = config.get('domain_file')
+        self.coverage_threshold = config.get('coverage_threshold', 0.9)
 
         self.db_file = os.path.join(self.data_dir, config.get('db_file', 'test.db'))
         self.db = dataset.connect(f'sqlite:///{self.db_file}')
@@ -241,22 +242,17 @@ class Controller(scirc.SlackClient):
 
         # gpflowopt minimizes objectives...
         # UCB switches to maximizing objectives...
-        # swap signs for things we want to minimize (just integral current)
+        # classification criterion: minimization
+        # confidence bound using LCB variant
+        # swap signs for things we want to maximize (just coverage...)
         self.objectives = ('integral_current', 'coverage')
         self.objective_alphas = [1,1]
-        self.sgn = np.array([-1,1])
+        self.sgn = np.array([1,-1])
 
         # set up the optimization domain
         with open(os.path.join(self.data_dir, os.pardir, self.domain_file), 'r') as f:
             domain_data = json.load(f)
 
-        # domain = None
-        # for key, dim in domain_data['domain'].items():
-        #     _d = gpflowopt.domain.ContinuousParameter(dim['name'], dim['min'], dim['max'])
-        #     if domain is None:
-        #         domain = _d
-        #     else:
-        #         domain += _d
         dmn = domain_data['domain']['x1']
         self.levels = [
             np.array([0.030, 0.050, 0.10, 0.30]),
@@ -266,8 +262,6 @@ class Controller(scirc.SlackClient):
         self.extent = [np.min(self.levels[0]), np.max(self.levels[0]), np.min(self.levels[1]), np.max(self.levels[1])]
         xx, yy = np.meshgrid(self.levels[0], self.levels[1])
         self.candidates = np.c_[xx.flatten(),yy.flatten()]
-
-        # self.domain = domain
 
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
@@ -319,8 +313,26 @@ class Controller(scirc.SlackClient):
 
         return
 
+    def confidence_bound(model, candidates, sign=1):
+        # set per-model confidence bound beta
+        t = model.X.shape[0]
+        cb_weight = cb_beta * np.log(2*t + 1)
+
+        mean, var = model.predict_y(candidates)
+        criterion = (sign*mean) - cb_weight*np.sqrt(var)
+        return criterion
+
+    def classification_criterion(model, candidates):
+        """ compute the classification criterion from 10.1007/s11263-009-0268-3 """
+        loc, scale = model.predict_f(candidates)
+        criterion = np.abs(loc) / np.sqrt(scale+0.001)
+        return criterion
+
     def random_scalarization_cb(self, model_wrapper, candidates, cb_beta=0.25):
-        """ random scalarization upper confidence bound acquisition policy function """
+        """ random scalarization acquisition policy function
+        depending on model likelihood, use different policy functions for different outputs
+        each criterion should be framed as a minimization problem...
+        """
 
         objective = np.zeros(candidates.shape[0])
 
@@ -331,14 +343,28 @@ class Controller(scirc.SlackClient):
         if self.notify:
             slack.post_message(f'sampled objective fn weights: {weights}')
 
-        for model, weight in zip(model_wrapper.models, weights):
-            # set per-model confidence bound beta
-            t = model.X.shape[0]
-            cb_weight = cb_beta * np.log(2*t + 1)
+        mask = None
+        criteria = []
+        for idx, (model, weight) in enumerate(model_wrapper.models):
 
-            mean, var = model.predict_y(candidates)
-            ucb = mean + cb_weight*np.sqrt(var)
-            objective += weight * ucb.squeeze()
+            sign = self.sgn[idx]
+
+            if model.likelihood.name in ('Gaussian', 'Beta'):
+                criterion = confidence_bound(model, candidates, sign=sign)
+            elif model.likelihood.name == 'Bernoulli':
+                criterion = classification_criterion(model, candidates)
+                y_loc, _ = model.predict_y(candidates)
+                mask = (y_loc > 0.5).squeeze()
+
+            criteria.append(criterion.squeeze())
+
+        objective = np.zeros_like(criteria[0])
+        for weight, criterion in zip(weights, criteria):
+            if mask:
+                criterion[mask] = np.inf
+            drange = np.ptp(criterion[np.isfinite(criterion)])
+            criterion = (criterion - criterion.min()) / drange
+            objective += weight*criterion
 
         return objective
 
@@ -368,7 +394,7 @@ class Controller(scirc.SlackClient):
         cor = cor.merge(r, on='id')
 
         X_dep = dep.loc[:,('flow_rate', 'potential')].values
-        Y_dep = dep['coverage'].values
+        Y_dep = dep['coverage'].values > self.coverage_threshold
 
         X_cor = cor.loc[:,('flow_rate', 'potential')].values
         Y_cor = cor['integral_current'].values
@@ -379,7 +405,7 @@ class Controller(scirc.SlackClient):
         # set up models
         models = [
             emulation.model_synth(X_cor, Y_cor[:, 0][:,None], dx=0.25*np.ptp(self.candidates)),
-            emulation.model_bounded(X_dep, Y_dep[:,None], dx=0.25*np.ptp(self.candidates))
+            emulation.model_quality(X_dep, Y_dep[:,None], dx=0.25*np.ptp(self.candidates), likelihood='bernoulli')
         ]
 
         # set up multiobjective acquisition...
@@ -412,7 +438,7 @@ class Controller(scirc.SlackClient):
         # if self.notify:
         #     slack.post_image(figpath, title=f"acquisition at t={t}")
 
-        query_idx = np.argmax(acq)
+        query_idx = np.argmin(acq)
         guess = self.candidates[query_idx]
 
         # plot the acquisition function...
@@ -454,7 +480,7 @@ class Controller(scirc.SlackClient):
             fit_gp = False
         else:
             instructions = None
-            action, pos = select_action(self.db)
+            action, pos = select_action(self.db, threshold=self.coverage_threshold)
             # intent, fit_gp = exp_id(self.db)
 
         if action in {Action.QUERY, Action.REPEAT}:
