@@ -56,6 +56,7 @@ class SDC(scirc.SlackClient):
         self.plot_cv = config.get('plot_cv', False)
         self.plot_current = config.get('plot_current', False)
 
+        self.test = config.get('test', False)
         self.test_delay = config.get('test', False)
         self.solutions = config.get('solutions')
 
@@ -423,8 +424,11 @@ class SDC(scirc.SlackClient):
                 datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
 
                 if instructions[0].get('op') == 'set_flow':
-                    async with self.z_step(height=0.0005):
-                        await self.set_flow(instructions[0])
+                    if self.test:
+                        slack.post_message(f'we would set_flow here')
+                    else:
+                        async with self.z_step(height=0.0005):
+                            await self.set_flow(instructions[0])
 
                 summary = '-'.join(step['op'] for step in instructions)
                 _msg = f"experiment *{meta['id']}*:  {summary}"
@@ -446,13 +450,15 @@ class SDC(scirc.SlackClient):
                     cell=self.cell,
                     verbose=self.verbose
                 )
-                results, metadata = await self.loop.run_in_executor(None, f)
-                metadata['parameters'] = json.dumps(metadata['parameters'])
+                if self.test:
+                    slack.post_message(f"we would run the experiment here...")
+                    await self.loop.run_in_executor(None, time.sleep, 10)
+                else:
+                    results, metadata = await self.loop.run_in_executor(None, f)
+                    break
+                metadata['parameters'] = json.dumps(metadata.get('parameters'))
                 if self.pump_array:
                     metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
-
-                if self.test_delay:
-                    await self.loop.run_in_executor(None, time.sleep, 10)
 
                 # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
                 # heuristic check for experimental error signals?
