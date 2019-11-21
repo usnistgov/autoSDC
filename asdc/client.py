@@ -453,9 +453,10 @@ class SDC(scirc.SlackClient):
                 if self.test:
                     slack.post_message(f"we would run the experiment here...")
                     await self.loop.run_in_executor(None, time.sleep, 10)
+                    break
                 else:
                     results, metadata = await self.loop.run_in_executor(None, f)
-                    break
+
                 metadata['parameters'] = json.dumps(metadata.get('parameters'))
                 if self.pump_array:
                     metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
