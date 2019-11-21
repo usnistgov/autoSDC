@@ -364,6 +364,8 @@ class SDC(scirc.SlackClient):
         delta_z = max(0.0005, delta_z)
 
         # specify target positions in combi reference frame
+        print(x_combi, y_combi)
+        print(self.c_position)
         dx = x_combi - self.c_position.x
         dy = y_combi - self.c_position.y
 
