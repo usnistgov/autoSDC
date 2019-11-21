@@ -63,7 +63,7 @@ def model_ternary(composition, target, reset_tf_graph=True, drop_last=True, opti
     m.compile()
     return m
 
-def model_property(X, y, dx=1.0):
+def model_property(X, y, dx=1.0, optimize=False):
     D = X.shape[1]
 
     with gpflow.defer_build():
@@ -77,9 +77,14 @@ def model_property(X, y, dx=1.0):
         model.likelihood.variance = 0.01
 
     model.compile()
+
+    if optimize:
+        opt = gpflow.train.ScipyOptimizer()
+        opt.minimize(model)
+
     return model
 
-def model_quality(X, y, dx=1.0, likelihood='beta'):
+def model_quality(X, y, dx=1.0, likelihood='beta', optimize=False):
 
     if likelihood == 'beta':
         # bounded regression
@@ -101,6 +106,11 @@ def model_quality(X, y, dx=1.0, likelihood='beta'):
         model.likelihood.variance = 0.1
 
     model.compile()
+
+    if optimize:
+        opt = gpflow.train.ScipyOptimizer()
+        opt.minimize(model)
+
     return model
 
 

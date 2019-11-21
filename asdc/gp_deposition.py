@@ -209,6 +209,21 @@ def load_experiment_json(experiment_files, dir='.'):
 
     return experiments
 
+def confidence_bound(model, candidates, sign=1, cb_beta=0.25):
+    # set per-model confidence bound beta
+    t = model.X.shape[0]
+    cb_weight = cb_beta * np.log(2*t + 1)
+
+    mean, var = model.predict_y(candidates)
+    criterion = (sign*mean) - cb_weight*np.sqrt(var)
+    return criterion
+
+def classification_criterion(model, candidates):
+    """ compute the classification criterion from 10.1007/s11263-009-0268-3 """
+    loc, scale = model.predict_f(candidates)
+    criterion = np.abs(loc) / np.sqrt(scale+0.001)
+    return criterion
+
 class Controller(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
 
@@ -313,22 +328,7 @@ class Controller(scirc.SlackClient):
 
         return
 
-    def confidence_bound(model, candidates, sign=1):
-        # set per-model confidence bound beta
-        t = model.X.shape[0]
-        cb_weight = cb_beta * np.log(2*t + 1)
-
-        mean, var = model.predict_y(candidates)
-        criterion = (sign*mean) - cb_weight*np.sqrt(var)
-        return criterion
-
-    def classification_criterion(model, candidates):
-        """ compute the classification criterion from 10.1007/s11263-009-0268-3 """
-        loc, scale = model.predict_f(candidates)
-        criterion = np.abs(loc) / np.sqrt(scale+0.001)
-        return criterion
-
-    def random_scalarization_cb(self, model_wrapper, candidates, cb_beta=0.25):
+    def random_scalarization_cb(self, models, candidates, cb_beta=0.25):
         """ random scalarization acquisition policy function
         depending on model likelihood, use different policy functions for different outputs
         each criterion should be framed as a minimization problem...
@@ -345,12 +345,12 @@ class Controller(scirc.SlackClient):
 
         mask = None
         criteria = []
-        for idx, (model, weight) in enumerate(model_wrapper.models):
+        for idx, model in enumerate(models):
 
             sign = self.sgn[idx]
 
             if model.likelihood.name in ('Gaussian', 'Beta'):
-                criterion = confidence_bound(model, candidates, sign=sign)
+                criterion = confidence_bound(model, candidates, sign=sign, cb_beta=cb_beta)
             elif model.likelihood.name == 'Bernoulli':
                 criterion = classification_criterion(model, candidates)
                 y_loc, _ = model.predict_y(candidates)
@@ -360,7 +360,7 @@ class Controller(scirc.SlackClient):
 
         objective = np.zeros_like(criteria[0])
         for weight, criterion in zip(weights, criteria):
-            if mask:
+            if mask is not None:
                 criterion[mask] = np.inf
             drange = np.ptp(criterion[np.isfinite(criterion)])
             criterion = (criterion - criterion.min()) / drange
@@ -368,7 +368,7 @@ class Controller(scirc.SlackClient):
 
         return objective
 
-    def gp_acquisition(self, resolution=100):
+    def gp_acquisition(self, resolution=100, t=0):
 
         if self.notify:
             slack.post_message(f'analyzing CV features...')
@@ -404,35 +404,20 @@ class Controller(scirc.SlackClient):
 
         # set up models
         models = [
-            emulation.model_property(X_cor, Y_cor[:, 0][:,None], dx=0.25*np.ptp(self.candidates)),
-            emulation.model_quality(X_dep, Y_dep[:,None], dx=0.25*np.ptp(self.candidates), likelihood='bernoulli')
+            emulation.model_property(X_cor, Y_cor[:, 0][:,None], dx=0.25*np.ptp(self.candidates), optimize=True),
+            emulation.model_quality(X_dep, Y_dep[:,None], dx=0.25*np.ptp(self.candidates), likelihood='bernoulli', optimize=True)
         ]
-
-        # set up multiobjective acquisition...
-        # use this as a convenient model wrapper for now...
-        model_wrapper = acquisition.HVProbabilityOfImprovement(models)
-
-        for model in model_wrapper.models:
-            # rescale model outputs to balance objectives...
-            # skip this for now, for flexibility scaling things later...
-            model.normalize_output = False
-        model_wrapper.root._needs_setup = True
-        model_wrapper.optimize_restarts = 1
-
-        # fit the surrogate models
-        # gpflowopt objective will optimize the full model list...
-        model_wrapper._optimize_models()
 
         if self.notify:
             slack.post_message(f'evaluating acquisition function')
 
         # evaluate the acquisition function on a grid
         # acq = criterion.evaluate(candidates)
-        acq = self.random_scalarization_cb(model_wrapper, self.candidates)
+        acq = self.random_scalarization_cb(models, self.candidates)
 
         # remove previously measured candidates
         mindist = spatial.distance.cdist(X_dep, self.candidates).min(axis=0)
-        acq[mindist < 1e-5] = acq.min()
+        acq[mindist < 1e-5] = np.inf
 
         # visualization.scatter_wafer(candidates*scale_factor, acq, label='acquisition', figpath=figpath)
         # if self.notify:
@@ -447,9 +432,9 @@ class Controller(scirc.SlackClient):
         extent = self.extent
         # extent = (self.domain.lower[0], self.domain.upper[0], self.domain.lower[1], self.domain.upper[1])
         plt.imshow(acq.reshape(self.ndim), cmap='Blues', extent=extent)
-        plt.scatter(guess[0], guess[1], color='r')
         plt.scatter(X_dep[:,0], X_dep[:,1], color='k')
         plt.scatter(X_cor[:,0], X_cor[:,1], color='k')
+        plt.scatter(guess[0], guess[1], color='r')
         plt.xlim(extent[0], extent[1])
         plt.ylim(extent[2], extent[3])
         plt.xlabel('flow rate')
@@ -515,7 +500,7 @@ class Controller(scirc.SlackClient):
             print('get instructions')
             # get the next instruction set
             if action == Action.QUERY:
-                query = self.gp_acquisition()
+                query = self.gp_acquisition(t=experiment_id)
                 instructions = deposition_instructions(query, experiment_id=experiment_id)
             elif action == Action.REPEAT:
                 instructions = json.loads(previous_op['instructions'])
