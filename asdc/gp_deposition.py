@@ -361,7 +361,7 @@ class Controller(scirc.SlackClient):
         objective = np.zeros_like(criteria[0])
         for weight, criterion in zip(weights, criteria):
             if mask is not None:
-                criterion[mask] = np.inf
+                criterion[~mask] = np.inf
             drange = np.ptp(criterion[np.isfinite(criterion)])
             criterion = (criterion - criterion.min()) / drange
             objective += weight*criterion
@@ -431,7 +431,8 @@ class Controller(scirc.SlackClient):
         figpath = os.path.join(self.figure_dir, f'acquisition_plot_{t}.png')
         extent = self.extent
         # extent = (self.domain.lower[0], self.domain.upper[0], self.domain.lower[1], self.domain.upper[1])
-        plt.imshow(acq.reshape(self.ndim), cmap='Blues', extent=extent)
+        plt.imshow(acq.reshape(self.ndim), cmap='Blues', extent=extent, origin='lower')
+        plt.colorbar()
         plt.scatter(X_dep[:,0], X_dep[:,1], color='k')
         plt.scatter(X_cor[:,0], X_cor[:,1], color='k')
         plt.scatter(guess[0], guess[1], color='r')
