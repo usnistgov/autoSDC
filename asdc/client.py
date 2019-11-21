@@ -374,12 +374,12 @@ class SDC(scirc.SlackClient):
 
         print(delta)
 
-        async with self.position_controller(use_z_step=True) as pos:
+        async with self.position_controller(use_z_step=False) as pos:
 
             if self.confirm:
                 await ainput('press enter to move for optical inspection...', loop=self.loop)
 
-            f = functools.partial(pos.update_z, delta=height)
+            f = functools.partial(pos.update_z, delta=delta_z)
             await self.loop.run_in_executor(None, f)
 
             # move horizontally
