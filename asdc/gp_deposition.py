@@ -289,7 +289,7 @@ class Controller(scirc.SlackClient):
         dmn = domain_data['domain']['x1']
         self.levels = [
             np.array([0.030, 0.050, 0.10, 0.30]),
-            np.linspace(dmn['min'], dmn['max'], 20)
+            np.linspace(dmn['min'], dmn['max'], 50)
         ]
         # self.levels = [
         #     np.linspace(0.030, 0.30, 100),
