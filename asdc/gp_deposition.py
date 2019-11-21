@@ -224,6 +224,24 @@ def classification_criterion(model, candidates):
     criterion = np.abs(loc) / np.sqrt(scale+0.001)
     return criterion
 
+def plot_map(vals, X, guess, extent, figpath):
+    plt.figure(figsize=(4,4))
+    plt.imshow(vals, cmap='Blues', extent=extent, origin='lower')
+    plt.colorbar()
+    plt.scatter(X[:,0], X[:,1], color='k')
+    plt.scatter(guess[0], guess[1], color='r')
+
+    if 'coverage' in figpath:
+        plt.contour(vals, levels=[0.5], extent=extent, colors='k', linestyles='--')
+
+    plt.xlim(extent[0], extent[1])
+    plt.ylim(extent[2], extent[3])
+    plt.xlabel('flow rate')
+    plt.ylabel('potential')
+    plt.tight_layout()
+    plt.savefig(figpath, bbox_inches='tight')
+    plt.clf()
+
 class Controller(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
 
@@ -343,6 +361,7 @@ class Controller(scirc.SlackClient):
         # sample one set of weights from a dirichlet distribution
         # that specifies our general preference on the objective weightings
         weights = stats.dirichlet.rvs(self.objective_alphas).squeeze()
+        # weights = [0.0, 1.0]
 
         if self.notify:
             slack.post_message(f'sampled objective fn weights: {weights}')
@@ -402,6 +421,7 @@ class Controller(scirc.SlackClient):
         # drop any corrosion experiments where the coverage was below spec
         cor = cor.merge(d.loc[:,('experiment_id', 'coverage')].groupby('experiment_id').min(), on='experiment_id')
         cor = cor[cor['coverage'] > self.coverage_threshold]
+        print(cor.shape)
 
         X_dep = dep.loc[:,('flow_rate', 'potential')].values
         Y_dep = (dep['coverage'].values > self.coverage_threshold).astype(float)
@@ -436,25 +456,21 @@ class Controller(scirc.SlackClient):
         query_idx = np.argmin(acq)
         guess = self.candidates[query_idx]
 
+        X = np.vstack((X_dep, X_cor))
+
         # plot the acquisition function...
-        plt.figure(figsize=(4,4))
         figpath = os.path.join(self.figure_dir, f'acquisition_plot_{t}.png')
         extent = self.extent
-        # extent = (self.domain.lower[0], self.domain.upper[0], self.domain.lower[1], self.domain.upper[1])
-        plt.imshow(acq.reshape(self.ndim), cmap='Blues', extent=extent, origin='lower')
-        plt.colorbar()
-        plt.scatter(X_dep[:,0], X_dep[:,1], color='k')
-        plt.scatter(X_cor[:,0], X_cor[:,1], color='k')
-        plt.scatter(guess[0], guess[1], color='r')
-        plt.xlim(extent[0], extent[1])
-        plt.ylim(extent[2], extent[3])
-        plt.xlabel('flow rate')
-        plt.ylabel('potential')
-        plt.tight_layout()
-        plt.savefig(figpath, bbox_inches='tight')
-        plt.clf()
+        plot_map(acq.reshape(self.ndim), X, guess, extent, figpath)
+
         if self.notify:
             slack.post_image(figpath, title=f"acquisition at t={t}")
+
+        for objective, model in zip(self.objectives, models):
+            loc, scale = model.predict_y(self.candidates)
+            vals = loc.reshape(self.ndim)
+            figpath = os.path.join(self.figure_dir, f'{objective}_plot_{t}.png')
+            plot_map(vals, X, guess, extent, figpath)
 
         query = pd.Series({'flow_rate': guess[0], 'potential': guess[1]})
         print(query)
