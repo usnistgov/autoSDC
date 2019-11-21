@@ -407,7 +407,7 @@ class SDC(scirc.SlackClient):
 
         meta = {
             'intent': intent,
-            'experiment': experiment_id,
+            'experiment_id': experiment_id,
             'instructions': json.dumps(instructions),
             'x_combi': float(self.c_position.x),
             'y_combi': float(self.c_position.y),
@@ -514,7 +514,9 @@ class SDC(scirc.SlackClient):
             except:
                 pass
 
-        if intent == 'deposition':
+        replicates = self.db['experiment'].count(experiment_id=experiment_id)
+        if (intent == 'deposition') and (replicates == 2):
+
             if self.notify:
                 slack.post_message(f"inspect deposit quality")
 
