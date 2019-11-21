@@ -287,14 +287,14 @@ class Controller(scirc.SlackClient):
             domain_data = json.load(f)
 
         dmn = domain_data['domain']['x1']
-        # self.levels = [
-        #     np.array([0.030, 0.050, 0.10, 0.30]),
-        #     np.linspace(dmn['min'], dmn['max'], 20)
-        # ]
         self.levels = [
-            np.linspace(0.030, 0.30, 100),
-            np.linspace(dmn['min'], dmn['max'], 100)
+            np.array([0.030, 0.050, 0.10, 0.30]),
+            np.linspace(dmn['min'], dmn['max'], 20)
         ]
+        # self.levels = [
+        #     np.linspace(0.030, 0.30, 100),
+        #     np.linspace(dmn['min'], dmn['max'], 100)
+        # ]
         self.ndim = [len(l) for l in self.levels][::-1]
         self.extent = [np.min(self.levels[0]), np.max(self.levels[0]), np.min(self.levels[1]), np.max(self.levels[1])]
         xx, yy = np.meshgrid(self.levels[0], self.levels[1])
