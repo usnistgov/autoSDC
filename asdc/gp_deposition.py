@@ -269,9 +269,13 @@ class Controller(scirc.SlackClient):
             domain_data = json.load(f)
 
         dmn = domain_data['domain']['x1']
+        # self.levels = [
+        #     np.array([0.030, 0.050, 0.10, 0.30]),
+        #     np.linspace(dmn['min'], dmn['max'], 20)
+        # ]
         self.levels = [
-            np.array([0.030, 0.050, 0.10, 0.30]),
-            np.linspace(dmn['min'], dmn['max'], 20)
+            np.linspace(0.030, 0.30, 100),
+            np.linspace(dmn['min'], dmn['max'], 100)
         ]
         self.ndim = [len(l) for l in self.levels][::-1]
         self.extent = [np.min(self.levels[0]), np.max(self.levels[0]), np.min(self.levels[1]), np.max(self.levels[1])]
@@ -381,6 +385,7 @@ class Controller(scirc.SlackClient):
 
         # load positions, compositions, and measured values from db
         d = pd.DataFrame(self.db['experiment'].all())
+        print(d.columns)
         r = pd.DataFrame(self.db['result'].all())
 
         # get deposition metadata from instructions...
@@ -389,9 +394,14 @@ class Controller(scirc.SlackClient):
         d[['flow_rate', 'potential']] = d[['flow_rate','potential']].fillna(method='ffill')
 
         # split records into deposition and corrosion subsets...
-        dep = d.loc[d['intent'] == 'deposition', ('id', 'flow_rate', 'potential', 'coverage')]
-        cor = d.loc[d['intent'] == 'corrosion', ('id', 'flow_rate', 'potential')]
+        dep = d.loc[d['intent'] == 'deposition', ('id', 'experiment_id', 'flow_rate', 'potential', 'coverage')]
+        cor = d.loc[d['intent'] == 'corrosion', ('id', 'experiment_id', 'flow_rate', 'potential')]
         cor = cor.merge(r, on='id')
+
+        # merge deposition quality into corrosion table...
+        # drop any corrosion experiments where the coverage was below spec
+        cor = cor.merge(d.loc[:,('experiment_id', 'coverage')].groupby('experiment_id').min(), on='experiment_id')
+        cor = cor[cor['coverage'] > self.coverage_threshold]
 
         X_dep = dep.loc[:,('flow_rate', 'potential')].values
         Y_dep = (dep['coverage'].values > self.coverage_threshold).astype(float)
