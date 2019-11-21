@@ -355,7 +355,7 @@ class SDC(scirc.SlackClient):
         # go to low nominal flow_rate for measurement
         self.pump_array.set_rates(rates)
 
-    async def optical_inspect(self, x_combi=31, y_combi=0, delta_z=0.002):
+    async def optical_inspect(self, x_combi=31.0, y_combi=0.0, delta_z=0.002):
         """ move for optical inspection
         delta_z should be specified in meters...
         """
@@ -371,6 +371,8 @@ class SDC(scirc.SlackClient):
 
         # map position update to position controller frame
         delta = self.compute_position_update(dx, dy)
+
+        print(delta)
 
         async with self.position_controller(use_z_step=True) as pos:
 
