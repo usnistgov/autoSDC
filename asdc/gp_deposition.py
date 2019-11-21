@@ -394,17 +394,17 @@ class Controller(scirc.SlackClient):
         cor = cor.merge(r, on='id')
 
         X_dep = dep.loc[:,('flow_rate', 'potential')].values
-        Y_dep = dep['coverage'].values > self.coverage_threshold
+        Y_dep = (dep['coverage'].values > self.coverage_threshold).astype(float)
 
         X_cor = cor.loc[:,('flow_rate', 'potential')].values
-        Y_cor = cor['integral_current'].values
+        Y_cor = cor['integral_current'].values[:,None]
 
         # reset tf graph -- long-running program!
         gpflow.reset_default_graph_and_session()
 
         # set up models
         models = [
-            emulation.model_synth(X_cor, Y_cor[:, 0][:,None], dx=0.25*np.ptp(self.candidates)),
+            emulation.model_property(X_cor, Y_cor[:, 0][:,None], dx=0.25*np.ptp(self.candidates)),
             emulation.model_quality(X_dep, Y_dep[:,None], dx=0.25*np.ptp(self.candidates), likelihood='bernoulli')
         ]
 
@@ -480,8 +480,10 @@ class Controller(scirc.SlackClient):
             fit_gp = False
         else:
             instructions = None
-            action, pos = select_action(self.db, threshold=self.coverage_threshold)
+            action = select_action(self.db, threshold=self.coverage_threshold)
+            print(action)
             # intent, fit_gp = exp_id(self.db)
+
 
         if action in {Action.QUERY, Action.REPEAT}:
             # march through target positions sequentially
