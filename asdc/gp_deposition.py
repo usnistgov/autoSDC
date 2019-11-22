@@ -125,12 +125,15 @@ def select_action(db, threshold=0.9):
             session = pd.DataFrame(db['experiment'].find(experiment_id=prev['experiment_id']))
             min_coverage = session['coverage'].min()
 
-            if min_coverage > threshold:
-                target = db['experiment'].find_one(experiment_id=prev['experiment_id'], has_bubble=False)
-                if target is None:
+            if min_coverage >= threshold:
+                target = db['experiment'].find(experiment_id=prev['experiment_id'])
+                target = target[~(target['has_bubble'] == True)]
+
+                if target.shape[0] == 0:
                     print('no replicates without bubbles...')
                     return Action.QUERY
                 else:
+                    target = target.iloc[0]
                     print(f'good coverage ({min_coverage})')
                     print('target', target['id'])
                     pos = {'x': target['x_combi'], 'y': target['y_combi']}
@@ -513,7 +516,9 @@ class Controller(scirc.SlackClient):
 
         # if action is Action.CORRODE, select a target without a bubble to corrode
         if action == Action.CORRODE:
-            target = self.db['experiment'].find_one(experiment_id=previous_op['experiment_id'], has_bubble=False)
+            targets = self.db['experiment'].find(experiment_id=previous_op['experiment_id'])
+            target = targets[~(targets['has_bubble'] == True)].iloc[0]
+
             pos = {'x': target['x_combi'], 'y': target['y_combi']}
 
         # send the move command -- message @sdc

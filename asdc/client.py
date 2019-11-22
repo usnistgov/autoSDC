@@ -581,6 +581,15 @@ class SDC(scirc.SlackClient):
                 tx['experiment'].update({'id': primary_key, 'reflectance': reflectance_readout}, ['id'])
 
     @command
+    async def bubble(self, ws, msgdata, args):
+        """ record a bubble in the deposit """
+        primary_key, text = args.split(' ', 1)  # need to do format checking...
+        primary_key = int(primary_key)
+
+        with self.db as tx:
+            tx['experiment'].update({'id': primary_key, 'has_bubble': True}, ['id'])
+
+    @command
     async def comment(self, ws, msgdata, args):
         """ add a comment """
         primary_key, text = args.split(' ', 1)  # need to do format checking...
