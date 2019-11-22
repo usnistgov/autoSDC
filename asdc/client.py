@@ -583,7 +583,7 @@ class SDC(scirc.SlackClient):
     @command
     async def bubble(self, ws, msgdata, args):
         """ record a bubble in the deposit """
-        primary_key, text = args.split(' ', 1)  # need to do format checking...
+        primary_key = args  # need to do format checking...
         primary_key = int(primary_key)
 
         with self.db as tx:

@@ -438,6 +438,9 @@ class Controller(scirc.SlackClient):
         X_ref = X_dep[ref_selection]
         Y_ref = dep['reflectance'].values[ref_selection][:,None]
 
+        print(X_ref)
+        print(Y_ref)
+
         # reset tf graph -- long-running program!
         gpflow.reset_default_graph_and_session()
 
