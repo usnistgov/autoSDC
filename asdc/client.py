@@ -572,7 +572,7 @@ class SDC(scirc.SlackClient):
         primary_key = int(primary_key)
         reflectance_readout = float(text)
 
-        if coverage_estimate < 0.0:
+        if reflectance_readout < 0.0:
             slack.post_message(
                 f':terriblywrong: *error:* reflectance readout should be positive'
             )
