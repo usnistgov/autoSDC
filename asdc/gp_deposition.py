@@ -278,9 +278,9 @@ class Controller(scirc.SlackClient):
         # classification criterion: minimization
         # confidence bound using LCB variant
         # swap signs for things we want to maximize (just coverage...)
-        self.objectives = ('integral_current', 'coverage')
-        self.objective_alphas = [1,1]
-        self.sgn = np.array([1,-1])
+        self.objectives = ('integral_current', 'coverage', 'reflectance')
+        self.objective_alphas = [1,1,1]
+        self.sgn = np.array([1, -1, -1])
 
         # set up the optimization domain
         with open(os.path.join(self.data_dir, os.pardir, self.domain_file), 'r') as f:
@@ -413,7 +413,7 @@ class Controller(scirc.SlackClient):
         d[['flow_rate', 'potential']] = d[['flow_rate','potential']].fillna(method='ffill')
 
         # split records into deposition and corrosion subsets...
-        dep = d.loc[d['intent'] == 'deposition', ('id', 'experiment_id', 'flow_rate', 'potential', 'coverage')]
+        dep = d.loc[d['intent'] == 'deposition', ('id', 'experiment_id', 'flow_rate', 'potential', 'coverage', 'reflectance')]
         cor = d.loc[d['intent'] == 'corrosion', ('id', 'experiment_id', 'flow_rate', 'potential')]
         cor = cor.merge(r, on='id')
 
@@ -429,13 +429,19 @@ class Controller(scirc.SlackClient):
         X_cor = cor.loc[:,('flow_rate', 'potential')].values
         Y_cor = cor['integral_current'].values[:,None]
 
+        # fit reflectance model only where coverage is good
+        X_ref = X_dep[Y_dep]
+        Y_ref = dep['reflectance'].values[Y_dep][:,None]
+
         # reset tf graph -- long-running program!
         gpflow.reset_default_graph_and_session()
 
         # set up models
+        dx = 0.25*np.ptp(self.candidates)
         models = [
-            emulation.model_property(X_cor, Y_cor[:, 0][:,None], dx=0.25*np.ptp(self.candidates), optimize=True),
-            emulation.model_quality(X_dep, Y_dep[:,None], dx=0.25*np.ptp(self.candidates), likelihood='bernoulli', optimize=True)
+            emulation.model_property(X_cor, Y_cor[:, 0][:,None], dx=dx, optimize=True),
+            emulation.model_quality(X_dep, Y_dep[:,None], dx=dx, likelihood='bernoulli', optimize=True),
+            emulation.model_property(X_ref, Y_ref[:, 0][:,None], dx=dx, optimize=True),
         ]
 
         if self.notify:
