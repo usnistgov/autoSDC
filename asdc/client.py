@@ -322,6 +322,8 @@ class SDC(scirc.SlackClient):
 
         def relative_flow(rates):
             total = sum(rates.values())
+            if total == 0.0:
+                return rates
             return {key: rate / total for key, rate in rates.items()}
 
         print('setting the flow rates directly!')
@@ -335,6 +337,9 @@ class SDC(scirc.SlackClient):
 
             # high nominal flow_rate for running out to steady state
             total_rate = sum(rates.values())
+            if total_rate <= 0.0:
+                total_rate = 1.0
+
             line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
             if self.notify:
