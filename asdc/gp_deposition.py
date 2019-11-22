@@ -211,6 +211,7 @@ def load_experiment_json(experiment_files, dir='.'):
 
 def confidence_bound(model, candidates, sign=1, cb_beta=0.25):
     # set per-model confidence bound beta
+    # default to lower confidence bound
     t = model.X.shape[0]
     cb_weight = cb_beta * np.log(2*t + 1)
 
@@ -430,8 +431,9 @@ class Controller(scirc.SlackClient):
         Y_cor = cor['integral_current'].values[:,None]
 
         # fit reflectance model only where coverage is good
-        X_ref = X_dep[Y_dep]
-        Y_ref = dep['reflectance'].values[Y_dep][:,None]
+        ref_selection = Y_dep == 1.0
+        X_ref = X_dep[ref_selection]
+        Y_ref = dep['reflectance'].values[ref_selection][:,None]
 
         # reset tf graph -- long-running program!
         gpflow.reset_default_graph_and_session()
