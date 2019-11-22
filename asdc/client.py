@@ -547,7 +547,7 @@ class SDC(scirc.SlackClient):
 
     @command
     async def coverage(self, ws, msgdata, args):
-        """ log deposition coverage on (0.0,1.0). """
+        """ record deposition coverage on (0.0,1.0). """
         primary_key, text = args.split(' ', 1)  # need to do format checking...
         primary_key = int(primary_key)
         coverage_estimate = float(text)
@@ -559,6 +559,21 @@ class SDC(scirc.SlackClient):
         else:
             with self.db as tx:
                 tx['experiment'].update({'id': primary_key, 'coverage': coverage_estimate}, ['id'])
+
+    @command
+    async def refl(self, ws, msgdata, args):
+        """ record the reflectance of the deposit (0.0,inf). """
+        primary_key, text = args.split(' ', 1)  # need to do format checking...
+        primary_key = int(primary_key)
+        reflectance_readout = float(text)
+
+        if coverage_estimate < 0.0:
+            slack.post_message(
+                f':terriblywrong: *error:* reflectance readout should be positive'
+            )
+        else:
+            with self.db as tx:
+                tx['experiment'].update({'id': primary_key, 'reflectance': reflectance_readout}, ['id'])
 
     @command
     async def comment(self, ws, msgdata, args):
