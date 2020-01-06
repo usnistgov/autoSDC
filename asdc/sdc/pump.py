@@ -8,9 +8,7 @@ from scipy import optimize
 from chempy import equilibria
 from collections import defaultdict
 
-def encode(message):
-    message = message + '\r\n'
-    return message.encode()
+from asdc.sdc.utils import encode
 
 # placeholder config for development
 SOLUTIONS = {
