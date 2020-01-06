@@ -56,6 +56,7 @@ class SDC(scirc.SlackClient):
         self.plot_current = config.get('plot_current', False)
 
         self.test = config.get('test', False)
+        self.test_cell = config.get('test_cell', False)
         self.test_delay = config.get('test', False)
         self.solutions = config.get('solutions')
 
@@ -469,7 +470,7 @@ class SDC(scirc.SlackClient):
                     cell=self.cell,
                     verbose=self.verbose
                 )
-                if self.test:
+                if self.test_cell:
                     slack.post_message(f"we would run the experiment here...")
                     await self.loop.run_in_executor(None, time.sleep, 10)
                     break
