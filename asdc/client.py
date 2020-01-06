@@ -99,8 +99,8 @@ class SDC(scirc.SlackClient):
 
             init = self.initial_combi_position
             ref = pd.DataFrame({
-                'x_versa': x, 'y_versa': y,
-                'x_combi': init.x_combi, 'y_combi': init.y_combi
+                'x_versa': x_versa, 'y_versa': y_versa,
+                'x_combi': init.x, 'y_combi': init.y
             })
         else:
             # arbitrarily grab the first position
