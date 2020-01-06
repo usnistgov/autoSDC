@@ -57,8 +57,13 @@ class PeristalticPump():
         """ start pumping """
         return self.eval({"op": "stop"})
 
-    def set_flow(rate):
+    def set_flow(self, rate):
         """ set pumping rate to counterbalance a nominal target flow rate in ml/min """
 
         ismatec_proportion = flow_to_proportion(rate)
         self.eval({"op": "set_flow", "rate": ismatec_proportion})
+
+
+    def set_flow_proportion(self, proportion):
+        """ set proportional flow rate """
+        self.eval({"op": "set_flow", "rate": proportion})
