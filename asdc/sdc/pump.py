@@ -61,7 +61,17 @@ def pH_error(target_pH, stock=SOLUTIONS):
 
 class PumpArray():
     """ KDS Legato pump array interface """
-    def __init__(self, solutions=SOLUTIONS, port='COM7', baud=115200, timeout=1, output_buffer=100, fast=False, flow_rate=0.5, flow_units='ml/min'):
+    def __init__(
+            self,
+            solutions=SOLUTIONS,
+            port='COM7',
+            baud=115200,
+            timeout=1,
+            output_buffer=100,
+            fast=False,
+            flow_rate=0.5,
+            flow_units='ml/min',
+            counterpump_ratio=0.95):
         """ pump array.
         What is needed? concentrations and flow rates.
         Low level interface: set individual flow rates
@@ -81,6 +91,9 @@ class PumpArray():
         self.flow_rate = flow_rate
         self.flow_units = flow_units
         self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
+
+        self.counterpump = peristaltic.PeristalticPump()
+        self.counterpump_ratio = counterpump_ratio
 
     def relative_rates(self):
         total_rate = sum(self.flow_setpoint.values())
@@ -180,16 +193,23 @@ class PumpArray():
             if q in value:
                 return key
 
-    def set_rates(self, setpoints, units='ml/min'):
-        """ directly set relative flow rates
+    def set_rates(self, setpoints, units='ml/min', counterpump_ratio=None):
+        """ directly set absolute flow rates
 
+        flow_setpoint is a dict containing absolute flow rates for each syringe
         TODO: incorporate peristaltic pump here and set rates appropriately? need to set rates separately sometimes.
         """
+
+        if counterpump_ratio is None:
+            counterpump_ratio = self.counterpump_ratio
+
+        total_setpoint = sum(setpoints.values())
 
         # reset rates to 0
         for pump_id in self.flow_setpoint.keys():
             self.flow_setpoint[pump_id] = 0.0
 
+        # set flowrates for the syringe pump array
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
             print(setpoints)
             time.sleep(0.05)
@@ -203,3 +223,7 @@ class PumpArray():
                     time.sleep(0.05)
 
         print(self.flow_setpoint)
+
+        # set counterbalance pumping rate
+        self.counterpump.set_flow(total_setpoint)
+        self.counterpump.start()
