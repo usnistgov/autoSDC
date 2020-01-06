@@ -86,10 +86,17 @@ class SDC(scirc.SlackClient):
             self.pump_array = None
 
     def sync_coordinate_systems(self, register_initial=False):
+
+        with sdc.position.controller(ip='192.168.10.11') as pos:
+            current_versastat_position = pos.current_position()
+
+        x_versa, y_versa = current_versastat_position[0], current_versastat_position[1]
+
+
         # load last known combi position and update internal state accordingly
         refs = pd.DataFrame(self.experiment_table.all())
         if refs.size == 0:
-            x_versa, y_versa = current_versastat_position[0], current_versastat_position[1]
+
             init = self.initial_combi_position
             ref = pd.DataFrame({
                 'x_versa': x_versa, 'y_versa': y_versa,
@@ -100,10 +107,6 @@ class SDC(scirc.SlackClient):
             # TODO: verify that this record comes from the current session...
             ref = refs.iloc[0]
 
-        with sdc.position.controller(ip='192.168.10.11') as pos:
-            current_versastat_position = pos.current_position()
-
-        x_versa, y_versa = current_versastat_position[0], current_versastat_position[1]
 
         # get the offset
         # convert versa -> combi (m -> mm)
