@@ -283,7 +283,8 @@ class Controller(scirc.SlackClient):
         # confidence bound using LCB variant
         # swap signs for things we want to maximize (just coverage...)
         self.objectives = ('integral_current', 'coverage', 'reflectance')
-        self.objective_alphas = [1,1,1]
+        self.objective_alphas = [3, 2, 1]
+        # self.objective_alphas = [1, 1, 1]
         self.sgn = np.array([1, -1, -1])
 
         # set up the optimization domain
@@ -291,14 +292,14 @@ class Controller(scirc.SlackClient):
             domain_data = json.load(f)
 
         dmn = domain_data['domain']['x1']
-        self.levels = [
-            np.array([0.030, 0.050, 0.10, 0.30]),
-            np.linspace(dmn['min'], dmn['max'], 50)
-        ]
         # self.levels = [
-        #     np.linspace(0.030, 0.30, 100),
-        #     np.linspace(dmn['min'], dmn['max'], 100)
+        #     np.array([0.030, 0.050, 0.10, 0.30]),
+        #     np.linspace(dmn['min'], dmn['max'], 50)
         # ]
+        self.levels = [
+            np.linspace(0.030, 0.30, 100),
+            np.linspace(dmn['min'], dmn['max'], 100)
+        ]
         self.ndim = [len(l) for l in self.levels][::-1]
         self.extent = [np.min(self.levels[0]), np.max(self.levels[0]), np.min(self.levels[1]), np.max(self.levels[1])]
         xx, yy = np.meshgrid(self.levels[0], self.levels[1])
@@ -509,7 +510,6 @@ class Controller(scirc.SlackClient):
             action = select_action(self.db, threshold=self.coverage_threshold)
             print(action)
             # intent, fit_gp = exp_id(self.db)
-
 
         if action in {Action.QUERY, Action.REPEAT}:
             # march through target positions sequentially

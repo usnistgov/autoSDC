@@ -2,6 +2,7 @@ import gpflow
 import dataset
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 
 def simplex_grid(n=3, buffer=0.1):
     """ construct a regular grid on the ternary simplex """
@@ -113,8 +114,51 @@ def model_quality(X, y, dx=1.0, likelihood='beta', optimize=False):
 
     return model
 
+class NiTiAlEmulator():
+    def __init__(self, composition, df, components=['Ni', 'Al', 'Ti'], targets = ['V_oc', 'I_p', 'V_tp', 'slope', 'fwhm'], dx=1.0):
+        """ fit independent GP models for each target -- read compositions and targets from a csv file... """
 
+        self.composition = composition
+        self.components = list(composition.columns)
+        self.df = df
+        self.targets = targets
+        # self.composition = self.df.loc[:,self.components].values
+        self.dx = dx
 
+        self.models = {}
+        self.session = gpflow.get_default_session()
+        self.opt = gpflow.training.ScipyOptimizer()
+
+        self.fit()
+
+    def fit(self):
+        print(self.composition.shape)
+        with self.session.as_default():
+            for target in self.targets:
+
+                model = model_property(self.composition.values[:,:-1], self.df[target].values[:,None], dx=self.dx)
+                self.opt.minimize(model)
+                self.models[target] = model
+
+    def likelihood_variance(self, target=None):
+        return self.models[target].likelihood.variance.value.item()
+
+    def __call__(self, composition, target=None, return_var=False, sample_posterior=False, n_samples=1, seed=None):
+        """ evaluate GP models on compositions """
+        model = self.models[target]
+
+        with self.session.as_default():
+            if sample_posterior:
+                if seed is not None:
+                    tf.set_random_seed(seed)
+                mu = model.predict_f_samples(composition[:,:-1], n_samples)
+                return mu.squeeze()
+            else:
+                mu, var = model.predict_y(composition[:,:-1])
+                if return_var:
+                    return mu, var
+                else:
+                    return mu.squeeze()
 
 class ExperimentEmulator():
     def __init__(self, db_file, components=['Ni', 'Al', 'Ti'], targets = ['V_oc', 'I_p', 'V_tp', 'slope', 'fwhm'], optimize_noise_variance=True):
