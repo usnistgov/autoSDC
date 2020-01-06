@@ -505,6 +505,7 @@ class Controller(scirc.SlackClient):
             instructions = self.experiments.pop(0)
             intent = instructions[0].get('intent')
             fit_gp = False
+            action = Action.QUERY
         else:
             instructions = None
             action = select_action(self.db, threshold=self.coverage_threshold)
