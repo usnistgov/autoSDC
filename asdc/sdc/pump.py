@@ -181,7 +181,10 @@ class PumpArray():
                 return key
 
     def set_rates(self, setpoints, units='ml/min'):
-        """ directly set relative flow rates """
+        """ directly set relative flow rates
+
+        TODO: incorporate peristaltic pump here and set rates appropriately? need to set rates separately sometimes.
+        """
 
         # reset rates to 0
         for pump_id in self.flow_setpoint.keys():
