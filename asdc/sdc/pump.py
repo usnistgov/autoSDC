@@ -9,6 +9,7 @@ from chempy import equilibria
 from collections import defaultdict
 
 from asdc.sdc.utils import encode
+from asdc.sdc.peristaltic import PeristalticPump
 
 # placeholder config for development
 SOLUTIONS = {
@@ -92,7 +93,7 @@ class PumpArray():
         self.flow_units = flow_units
         self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
 
-        self.counterpump = peristaltic.PeristalticPump()
+        self.counterpump = PeristalticPump()
         self.counterpump_ratio = counterpump_ratio
 
     def relative_rates(self):
