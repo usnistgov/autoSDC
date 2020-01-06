@@ -98,7 +98,7 @@ class SDC(scirc.SlackClient):
         if refs.size == 0:
 
             init = self.initial_combi_position
-            ref = pd.DataFrame({
+            ref = pd.Series({
                 'x_versa': x_versa, 'y_versa': y_versa,
                 'x_combi': init.x, 'y_combi': init.y
             })
