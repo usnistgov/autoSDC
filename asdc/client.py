@@ -24,7 +24,6 @@ from asdc import visualization
 asdc_channel = 'CDW5JFZAR'
 BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
 CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
-PUMP_ARRAY_PORT = 'COM6'
 
 class SDC(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
@@ -79,8 +78,9 @@ class SDC(scirc.SlackClient):
         if self.resume:
             self.sync_coordinate_systems(register_initial=True)
 
+        pump_array_port = config.get('pump_array_port', 'COM6')
         try:
-            self.pump_array = sdc.pump.PumpArray(self.solutions, port=PUMP_ARRAY_PORT)
+            self.pump_array = sdc.pump.PumpArray(self.solutions, port=pump_array_port)
         except:
             print('could not connect to pump array')
             self.pump_array = None
