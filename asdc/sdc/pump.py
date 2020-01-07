@@ -201,12 +201,16 @@ class PumpArray():
         TODO: incorporate peristaltic pump here and set rates appropriately? need to set rates separately sometimes.
         """
 
+        total_setpoint = sum(setpoints.values())
+
         if counterpump_ratio is None:
             counterpump_ratio = self.counterpump_ratio
             counterpump_ratio = max(0, counterpump_ratio)
             counterpump_ratio = min(counterpump_ratio, 1.0)
-
-        total_setpoint = sum(setpoints.values())
+            counterbalance_setpoint = counterpump_ratio * total_setpoint
+        elif counterpump_ratio == 'max':
+            # set to 1 mL/min
+            counterbalance_setpoint = 1.0
 
         # reset rates to 0
         for pump_id in self.flow_setpoint.keys():
@@ -228,6 +232,5 @@ class PumpArray():
         print(self.flow_setpoint)
 
         # set counterbalance pumping rate
-        counterbalance_setpoint = counterpump_ratio * total_setpoint
         self.counterpump.set_flow(counterbalance_setpoint)
         self.counterpump.start()
