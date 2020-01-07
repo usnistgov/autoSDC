@@ -620,7 +620,7 @@ class SDC(scirc.SlackClient):
             with self.db as tx:
                 tx['experiment'].update({'id': primary_key, 'reflectance': reflectance_readout}, ['id'])
 
-    async def reflectance_linescan():
+    async def reflectance_linescan(self):
         reflectance_data = self.reflectometer.collect()
         mean, var = np.mean(reflectance_data), np.var(reflectance_data)
         return mean, var
