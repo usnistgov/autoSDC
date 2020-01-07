@@ -11,5 +11,5 @@ class Reflectometer(MicrocontrollerInterface):
     """
 
     def collect(self):
-        """ start pumping """
-        return self.eval({"op": "laser"})
+        """ collect reading from laser reflectance setup """
+        return self.eval({"op": "laser"}, timeout=0.5)
