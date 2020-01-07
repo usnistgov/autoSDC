@@ -203,8 +203,8 @@ class PumpArray():
 
         if counterpump_ratio is None:
             counterpump_ratio = self.counterpump_ratio
-            counterpump_ration = max(0, counterpump_ratio)
-            counterpump_ration = min(counterpump_ratio, 1.0)
+            counterpump_ratio = max(0, counterpump_ratio)
+            counterpump_ratio = min(counterpump_ratio, 1.0)
 
         total_setpoint = sum(setpoints.values())
 
