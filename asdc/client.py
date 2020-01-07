@@ -620,7 +620,7 @@ class SDC(scirc.SlackClient):
             with self.db as tx:
                 tx['experiment'].update({'id': primary_key, 'reflectance': reflectance_readout}, ['id'])
 
-    async def reflectance_linescan(self, stepsize=0.00025, n_steps=20):
+    async def reflectance_linescan(self, stepsize=0.0002, n_steps=20):
 
         mean, var = [], []
         with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as stage:
