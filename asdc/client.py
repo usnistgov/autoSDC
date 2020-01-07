@@ -620,11 +620,15 @@ class SDC(scirc.SlackClient):
             with self.db as tx:
                 tx['experiment'].update({'id': primary_key, 'reflectance': reflectance_readout}, ['id'])
 
+    async def reflectance_linescan():
+        reflectance_data = self.reflectometer.collect()
+        mean, var = np.mean(reflectance_data), np.var(reflectance_data)
+        return mean, var
+
     @command
-    async def reflectivity(self, ws, msgdata, args):
+    async def reflectance(self, ws, msgdata, args):
         """ record the reflectance of the deposit (0.0,inf). """
-        reflectivity_data = self.reflectometer.collect()
-        mean, var = np.mean(reflectivity_data), np.var(reflectivity_data)
+        mean, var = await self.reflectance_linescan()
         print(mean, var)
 
     @command
