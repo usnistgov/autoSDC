@@ -72,6 +72,7 @@ class PumpArray():
             fast=False,
             flow_rate=0.5,
             flow_units='ml/min',
+            counterpump_port=None,
             counterpump_ratio=0.95):
         """ pump array.
         What is needed? concentrations and flow rates.
@@ -93,7 +94,7 @@ class PumpArray():
         self.flow_units = flow_units
         self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
 
-        self.counterpump = PeristalticPump()
+        self.counterpump = PeristalticPump(port=counterpump_port)
         self.counterpump_ratio = counterpump_ratio
 
     def relative_rates(self):
