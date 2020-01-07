@@ -13,6 +13,9 @@ from datetime import datetime
 from aioconsole import ainput, aprint
 from contextlib import asynccontextmanager
 
+import cv2
+from skimage import io
+
 sys.path.append('../scirc')
 sys.path.append('.')
 import scirc
@@ -641,6 +644,16 @@ class SDC(scirc.SlackClient):
         """ record the reflectance of the deposit (0.0,inf). """
         mean, var = await self.reflectance_linescan()
         print(mean, var)
+
+    @command
+    async def imagecap(self, ws, msgdata, args):
+        """ capture an image from the webcam """
+
+        camera = cv2.VideoCapture(0)
+        status, frame = camera.read()
+        camera.release()
+
+        io.imsave(os.path.join(self.data_dir, 'test-image.png'), frame)
 
     @command
     async def bubble(self, ws, msgdata, args):
