@@ -25,6 +25,13 @@ asdc_channel = 'CDW5JFZAR'
 BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
 CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 
+def relative_flow(rates):
+    """ convert a dictionary of flow rates to ratios of each component """
+    total = sum(rates.values())
+    if total == 0.0:
+        return rates
+    return {key: rate / total for key, rate in rates.items()}
+
 class SDC(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
 
@@ -332,11 +339,6 @@ class SDC(scirc.SlackClient):
     async def set_flow(self, instruction, nominal_rate=0.5):
         """ nominal rate in ml/min """
 
-        def relative_flow(rates):
-            total = sum(rates.values())
-            if total == 0.0:
-                return rates
-            return {key: rate / total for key, rate in rates.items()}
 
         print('setting the flow rates directly!')
         params = f"rates={instruction.get('rates')} {instruction.get('units')}"
@@ -370,6 +372,24 @@ class SDC(scirc.SlackClient):
         if self.confirm:
             await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
         # go to low nominal flow_rate for measurement
+        self.pump_array.set_rates(rates)
+
+    async def bump_flow(self, instruction, nominal_rate=0.5, bump_duration=5):
+        """ briefly increase the flow rate to make sure the cell gets filled
+
+        TODO: maybe make this configurable by adding an argument to the set_flow op?
+        """
+
+        rates = instruction.get('rates')
+        cell_fill_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
+
+        if self.notify:
+            slack.post_message(f"bump_flow to {line_flush_rates} ml/min")
+
+        self.pump_array.set_rates(cell_fill_rates, counterpump_ratio='max')
+        time.sleep(0.5)
+        self.pump_array.run_all()
+        time.sleep(bump_duration)
         self.pump_array.set_rates(rates)
 
     async def optical_inspect(self, x_combi=31.0, y_combi=0.0, delta_z=0.020):
@@ -450,6 +470,7 @@ class SDC(scirc.SlackClient):
                     else:
                         async with self.z_step(height=0.0005):
                             await self.set_flow(instructions[0])
+                        await bump_flow(instructions[0])
 
                 summary = '-'.join(step['op'] for step in instructions)
                 _msg = f"experiment *{meta['id']}*:  {summary}"
