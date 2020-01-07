@@ -381,10 +381,11 @@ class SDC(scirc.SlackClient):
         """
 
         rates = instruction.get('rates')
+        total_rate = sum(rates.values())
         cell_fill_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
         if self.notify:
-            slack.post_message(f"bump_flow to {line_flush_rates} ml/min")
+            slack.post_message(f"bump_flow to {cell_fill_rates} ml/min")
 
         self.pump_array.set_rates(cell_fill_rates, counterpump_ratio='max')
         time.sleep(0.5)
