@@ -11,6 +11,7 @@ from __future__ import absolute_import
 # if clr module (pythonnet) is not available, load the SDC shims
 from . import pump
 from . import experiment
+from . import reflectivity
 
 try:
     from . import position
