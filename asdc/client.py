@@ -632,6 +632,7 @@ class SDC(scirc.SlackClient):
                 var.append(np.var(reflectance_data))
 
                 stage.update_y(-stepsize)
+                time.sleep(0.25)
 
         return mean, var
 
