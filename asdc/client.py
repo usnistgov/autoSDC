@@ -624,13 +624,8 @@ class SDC(scirc.SlackClient):
     async def reflectivity(self, ws, msgdata, args):
         """ record the reflectance of the deposit (0.0,inf). """
         reflectivity_data = self.reflectometer.collect()
-        print(reflectivity_data)
-
-    @command
-    async def reflectivity_hello(self, ws, msgdata, args):
-        """ record the reflectance of the deposit (0.0,inf). """
-        reflectivity_data = self.reflectometer.eval({"op": "hello"})
-        print(reflectivity_data)
+        mean, var = np.mean(reflectivity_data), np.var(reflectivity_data)
+        print(mean, var)
 
     @command
     async def bubble(self, ws, msgdata, args):

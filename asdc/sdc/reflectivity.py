@@ -12,4 +12,9 @@ class Reflectometer(MicrocontrollerInterface):
 
     def collect(self):
         """ collect reading from laser reflectance setup """
-        return self.eval({"op": "laser"}, timeout=0.5)
+        response = self.eval({"op": "laser"}, timeout=0.5)
+
+        # TODO: check response content / add response status info
+        reflectance_data = json.loads(response[1])
+
+        return reflectance_data
