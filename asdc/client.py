@@ -210,18 +210,19 @@ class SDC(scirc.SlackClient):
 
         _cancel_self_on_exit = False
         step = 0
-        with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
+        try:
+            with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
 
-            start_position = pos.current_position()
-            baseline_z = start_position[2]
-            try:
+                start_position = pos.current_position()
+                baseline_z = start_position[2]
+
                 f = functools.partial(pos.update_z, delta=height)
                 await self.loop.run_in_executor(None, f)
 
-                yield
+            yield
 
-            finally:
-
+        finally:
+            with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
                 # go back to baseline
                 current_position = pos.current_position()
                 current_z = current_position[2]
