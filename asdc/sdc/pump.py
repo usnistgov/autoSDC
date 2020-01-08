@@ -161,6 +161,12 @@ class PumpArray():
             self.counterpump.set_flow(1.0)
             self.counterpump.start()
 
+        elif counterbalance == 'off':
+            self.counterpump.stop()
+
+        else:
+            self.counterpump.stop()
+
     def diameter(self, pump_id=0, setpoint=None):
 
         if setpoint is not None:

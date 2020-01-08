@@ -670,6 +670,11 @@ class SDC(scirc.SlackClient):
         )
 
     @command
+    async def stop_pumps(self, ws, msgdata, args):
+        """ shut off the syringe and counterbalance pumps """
+        self.pump_array.stop_all(counterbalance='off')
+
+    @command
     async def abort_running_handlers(self, ws, msgdata, args):
         """ cancel all currently running task handlers...
 
