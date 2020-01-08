@@ -223,7 +223,11 @@ class SDC(scirc.SlackClient):
                 dz = baseline_z - current_z
 
                 f = functools.partial(pos.update_z, delta=dz)
-                await self.loop.run_in_executor(None, f)
+                try:
+                    await self.loop.run_in_executor(None, f)
+                except RuntimeError:
+                    print('asyncio loop failed again...')
+                    raise
 
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
