@@ -309,12 +309,7 @@ class SDC(scirc.SlackClient):
             if self.notify:
                 slack.post_message(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})')
 
-            if self.step_height == 0.0:
-                use_z_step = False
-            else:
-                use_z_step = True
-
-            async with self.position_controller(use_z_step=use_z_step) as pos:
+            async with self.position_controller() as pos:
 
                 if self.confirm:
                     await ainput('press enter to allow lateral cell motion...', loop=self.loop)
@@ -332,7 +327,7 @@ class SDC(scirc.SlackClient):
                 print(self.c_position)
 
         if self.initialize_z_position:
-            # reset the z baseline after the first move
+            # TODO: define the lower z baseline after the first move
             if self.notify:
                 slack.post_message(f'*initialize z position*')
 
@@ -547,11 +542,12 @@ class SDC(scirc.SlackClient):
 
         if self.cleanup_pause > 0:
             try:
-                self.pump_array.stop_all()
-                # 100 microns
-                with self.z_step(height=0.0001):
+                # 500 microns
+                with self.z_step(height=0.0005):
+                    self.pump_array.stop_all(counterbalance='full')
                     # TODO: make this configurable
                     time.sleep(self.cleanup_pause)
+                    self.pump_array.counterpump.stop()
             except:
                 pass
 

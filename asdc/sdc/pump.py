@@ -151,10 +151,15 @@ class PumpArray():
     def stop(self, pump_id=0):
         self.eval('stop', pump_id=pump_id)
 
-    def stop_all(self):
+    def stop_all(self, counterbalance='off'):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
             for pump_id in self.solutions.keys():
                 self.eval('stop', pump_id=pump_id, ser=ser)
+
+        if counterbalance == 'full':
+            # set counterbalance pumping rate
+            self.counterpump.set_flow(1.0)
+            self.counterpump.start()
 
     def diameter(self, pump_id=0, setpoint=None):
 
