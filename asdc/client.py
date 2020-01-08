@@ -521,9 +521,8 @@ class SDC(scirc.SlackClient):
 
         if self.cleanup_pause > 0:
 
-            with self.z_step(height=self.step_height):
+            async with self.z_step(height=self.step_height):
                 self.pump_array.stop_all(counterbalance='full')
-                # TODO: make this configurable
                 time.sleep(self.cleanup_pause)
                 self.pump_array.counterpump.stop()
 
