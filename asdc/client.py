@@ -520,15 +520,12 @@ class SDC(scirc.SlackClient):
                         slack.post_image(figpath, title=f"CV {meta['id']}")
 
         if self.cleanup_pause > 0:
-            try:
-                # 500 microns
-                with self.z_step(height=self.step_height):
-                    self.pump_array.stop_all(counterbalance='full')
-                    # TODO: make this configurable
-                    time.sleep(self.cleanup_pause)
-                    self.pump_array.counterpump.stop()
-            except:
-                pass
+
+            with self.z_step(height=self.step_height):
+                self.pump_array.stop_all(counterbalance='full')
+                # TODO: make this configurable
+                time.sleep(self.cleanup_pause)
+                self.pump_array.counterpump.stop()
 
         replicates = self.db['experiment'].count(experiment_id=experiment_id)
         if (intent == 'deposition') and (replicates == 2):
