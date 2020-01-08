@@ -13,6 +13,8 @@ from datetime import datetime
 from aioconsole import ainput, aprint
 from contextlib import asynccontextmanager
 
+import traceback
+
 import cv2
 from skimage import io
 
@@ -199,6 +201,9 @@ class SDC(scirc.SlackClient):
                         try:
                             await ainput('press enter to step back down...', loop=self.loop)
                         except asyncio.CancelledError:
+
+                            print('recieved asyncio.CancelledError')
+                            traceback.print_exc()
                             _cancel_self_on_exit = True
 
                     f = functools.partial(pos.update_z, delta=dz)
@@ -211,6 +216,13 @@ class SDC(scirc.SlackClient):
                     await aprint('3', c)
 
                 if _cancel_self_on_exit:
+                    text = f"cancelling from position_controller"
+                    print(text)
+                    response = await self.slack_api_call(
+                        'chat.postMessage',
+                        data={'channel': '<@UC537488J>', 'text': text, 'as_user': False, 'username': 'sdc'},
+                        token=CTL_TOKEN
+                    )
                     current_task = asyncio.current_task()
                     current_task.cancel()
                     raise asyncio.CancelledError
