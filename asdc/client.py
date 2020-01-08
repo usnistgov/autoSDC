@@ -309,7 +309,12 @@ class SDC(scirc.SlackClient):
             if self.notify:
                 slack.post_message(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})')
 
-            async with self.position_controller() as pos:
+            if self.step_height == 0.0:
+                use_z_step = False
+            else:
+                use_z_step = True
+
+            async with self.position_controller(use_z_step=use_z_step) as pos:
 
                 if self.confirm:
                     await ainput('press enter to allow lateral cell motion...', loop=self.loop)
