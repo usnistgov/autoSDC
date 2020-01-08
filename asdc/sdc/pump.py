@@ -228,6 +228,11 @@ class PumpArray():
         elif counterpump_ratio == 'off':
             counterbalance_setpoint = 0.0
 
+        else:
+            counterpump_ratio = max(0, counterpump_ratio)
+            counterpump_ratio = min(counterpump_ratio, 1.0)
+            counterbalance_setpoint = counterpump_ratio * total_setpoint
+
         # reset rates to 0
         for pump_id in self.flow_setpoint.keys():
             self.flow_setpoint[pump_id] = 0.0
