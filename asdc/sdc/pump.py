@@ -204,14 +204,24 @@ class PumpArray():
 
         total_setpoint = sum(setpoints.values())
 
-        if counterpump_ratio is None:
-            counterpump_ratio = self.counterpump_ratio
+        if counterpump_ratio is None or counterpump_ratio == 'default':
+
+            # use default counterpump ratio unless total setpoint is zero
+            if total_setpoint == 0:
+                counterpump_ratio = 1.0 # max
+            else:
+                counterpump_ratio = self.counterpump_ratio
+
             counterpump_ratio = max(0, counterpump_ratio)
             counterpump_ratio = min(counterpump_ratio, 1.0)
             counterbalance_setpoint = counterpump_ratio * total_setpoint
+
         elif counterpump_ratio == 'max':
             # set to 1 mL/min
             counterbalance_setpoint = 1.0
+
+        elif counterpump_ratio == 'off':
+            counterbalance_setpoint = 0.0
 
         # reset rates to 0
         for pump_id in self.flow_setpoint.keys():
@@ -234,4 +244,7 @@ class PumpArray():
 
         # set counterbalance pumping rate
         self.counterpump.set_flow(counterbalance_setpoint)
-        self.counterpump.start()
+        if counterbalance_setpoint > 0:
+            self.counterpump.start()
+        else:
+            self.counterpump.stop()
