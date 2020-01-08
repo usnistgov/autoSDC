@@ -396,7 +396,7 @@ class SDC(scirc.SlackClient):
         if self.notify:
             slack.post_message(f"bump_flow to {cell_fill_rates} ml/min")
 
-        self.pump_array.set_rates(cell_fill_rates, counterpump_ratio='max')
+        self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.75)
         time.sleep(0.5)
         self.pump_array.run_all()
         time.sleep(bump_duration)
