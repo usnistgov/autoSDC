@@ -450,7 +450,7 @@ class SDC(scirc.SlackClient):
                 if self.test:
                     slack.post_message(f'we would set_flow here')
                 else:
-                    async with self.z_step(height=0.0005):
+                    async with self.z_step(height=self.step_height):
                         await self.set_flow(instructions[0])
                     await self.bump_flow(instructions[0])
 
@@ -520,7 +520,7 @@ class SDC(scirc.SlackClient):
         if self.cleanup_pause > 0:
             try:
                 # 500 microns
-                with self.z_step(height=0.0005):
+                with self.z_step(height=self.step_height):
                     self.pump_array.stop_all(counterbalance='full')
                     # TODO: make this configurable
                     time.sleep(self.cleanup_pause)
@@ -534,8 +534,13 @@ class SDC(scirc.SlackClient):
             if self.notify:
                 slack.post_message(f"inspect deposit quality")
 
-            await self.optical_inspect()
+            inspection_dz = 0.020
+            await self.optical_inspect(delta_z=inspection_dz)
             response = await ainput('take a moment to evaluate', loop=self.loop)
+            # drop back
+            async with self.position_controller(use_z_step=False) as pos:
+                f = functools.partial(pos.update_z, delta=-inspection_dz)
+                await self.loop.run_in_executor(None, f)
 
         await self.dm_controller('<@UHNHM7198> go')
 
