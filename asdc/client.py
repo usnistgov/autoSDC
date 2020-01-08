@@ -360,7 +360,7 @@ class SDC(scirc.SlackClient):
         # go to low nominal flow_rate for measurement
         self.pump_array.set_rates(rates)
 
-    async def bump_flow(self, instruction, nominal_rate=0.5, bump_duration=5):
+    async def bump_flow(self, instruction, nominal_rate=0.5, duration=5):
         """ briefly increase the flow rate to make sure the cell gets filled
 
         TODO: maybe make this configurable by adding an argument to the set_flow op?
@@ -376,7 +376,7 @@ class SDC(scirc.SlackClient):
         self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.75)
         time.sleep(0.5)
         self.pump_array.run_all()
-        time.sleep(bump_duration)
+        time.sleep(duration)
         self.pump_array.set_rates(rates)
 
     async def optical_inspect(self, x_combi=31.0, y_combi=0.0, delta_z=0.020):
@@ -458,7 +458,7 @@ class SDC(scirc.SlackClient):
                         await self.set_flow(instructions[0])
 
             # bump_flow needs to get run every time!
-            await self.bump_flow(instructions[0])
+            await self.bump_flow(instructions[0], duration=10)
 
             summary = '-'.join(step['op'] for step in instructions)
             _msg = f"experiment *{meta['id']}*:  {summary}"
