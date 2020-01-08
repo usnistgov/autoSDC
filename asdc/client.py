@@ -158,33 +158,20 @@ class SDC(scirc.SlackClient):
         """ wrap position controller context manager
 
         perform vertical steps before lateral cell motion with the ctx manager
-        so that the cell drops back down to baseline z level if the `move` task is cancelled.
+        so that the cell drops back down to baseline z level if the `move` task is completed
 
-        Note: there seems to be some issue with cancelling an async task that uses position_controller...
-        specifically, ainput seems to be causing some problems?
-        Do we need to kill another task?
-        https://stackoverflow.com/a/42294554
-
-        Note: this doesn't seem to actually impact subsequent tasks -- there's just some error output.
         """
-        _cancel_self_on_exit = False
-        step = 0
+
         with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
             start_position = pos.current_position()
             baseline_z = start_position[2]
 
             if self.verbose:
                 c = pos.current_position()
-                await aprint('1', c)
+                await aprint('initial', c)
 
             try:
                 if use_z_step:
-                    if self.confirm:
-                        try:
-                            await ainput('press enter to step up...', loop=self.loop)
-                        except asyncio.CancelledError:
-                            _cancel_self_on_exit = True
-                            raise
                     f = functools.partial(pos.update_z, delta=self.step_height)
                     await self.loop.run_in_executor(None, f)
 
@@ -197,15 +184,6 @@ class SDC(scirc.SlackClient):
                     current_z = current_position[2]
                     dz = baseline_z - current_z
 
-                    if self.confirm:
-                        try:
-                            await ainput('press enter to step back down...', loop=self.loop)
-                        except asyncio.CancelledError:
-
-                            print('recieved asyncio.CancelledError')
-                            traceback.print_exc()
-                            _cancel_self_on_exit = True
-
                     f = functools.partial(pos.update_z, delta=dz)
                     await self.loop.run_in_executor(None, f)
 
@@ -213,31 +191,19 @@ class SDC(scirc.SlackClient):
                 self.v_position = pos.current_position()
                 if self.verbose:
                     c = pos.current_position()
-                    await aprint('3', c)
-
-                if _cancel_self_on_exit:
-                    text = f"cancelling from position_controller"
-                    print(text)
-                    response = await self.slack_api_call(
-                        'chat.postMessage',
-                        data={'channel': '<@UC537488J>', 'text': text, 'as_user': False, 'username': 'sdc'},
-                        token=CTL_TOKEN
-                    )
-                    current_task = asyncio.current_task()
-                    current_task.cancel()
-                    raise asyncio.CancelledError
+                    await aprint('final', c)
 
     @asynccontextmanager
     async def z_step(self, height=None):
         """ wrap position controller context manager
         perform a vertical step with no horizontal movement
         """
+
         if height is None:
             height = self.step_height
+
         height = max(0, height)
 
-        _cancel_self_on_exit = False
-        step = 0
         try:
             with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
 
@@ -258,19 +224,6 @@ class SDC(scirc.SlackClient):
 
                 f = functools.partial(pos.update_z, delta=dz)
                 await self.loop.run_in_executor(None, f)
-
-                if _cancel_self_on_exit:
-                    text = f"cancelling from z_step"
-                    print(text)
-                    response = await self.slack_api_call(
-                        'chat.postMessage',
-                        data={'channel': '<@UC537488J>', 'text': text, 'as_user': False, 'username': 'sdc'},
-                        token=CTL_TOKEN
-                    )
-
-                    current_task = asyncio.current_task()
-                    current_task.cancel()
-                    raise asyncio.CancelledError
 
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
