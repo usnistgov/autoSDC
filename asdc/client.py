@@ -464,7 +464,6 @@ class SDC(scirc.SlackClient):
             'flag': False,
         }
 
-
         # wrap the whole experiment in a transaction
         # this way, if the experiment is cancelled, it's not committed to the db
         with self.db as tx:
@@ -505,45 +504,45 @@ class SDC(scirc.SlackClient):
             if self.test_cell:
                 slack.post_message(f"we would run the experiment here...")
                 await self.loop.run_in_executor(None, time.sleep, 10)
-                break
+
             else:
                 results, metadata = await self.loop.run_in_executor(None, f)
 
-            metadata['parameters'] = json.dumps(metadata.get('parameters'))
-            if self.pump_array:
-                metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
+                metadata['parameters'] = json.dumps(metadata.get('parameters'))
+                if self.pump_array:
+                    metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
 
-            # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
-            # heuristic check for experimental error signals?
-            if np.median(np.abs(results['current'])) < self.current_threshold:
-                print(f'WARNING: median current below {self.current_threshold} threshold')
-                if self.notify:
-                    slack.post_message(
-                        f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
-                    )
+                # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
+                # heuristic check for experimental error signals?
+                if np.median(np.abs(results['current'])) < self.current_threshold:
+                    print(f'WARNING: median current below {self.current_threshold} threshold')
+                    if self.notify:
+                        slack.post_message(
+                            f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
+                        )
 
-            meta.update(metadata)
-            meta['datafile'] = datafile
-            tx['experiment'].update(meta, ['id'])
+                meta.update(metadata)
+                meta['datafile'] = datafile
+                tx['experiment'].update(meta, ['id'])
 
-            # store SDC results in external csv file
-            results.to_csv(os.path.join(self.data_dir, datafile))
+                # store SDC results in external csv file
+                results.to_csv(os.path.join(self.data_dir, datafile))
 
-            if self.plot_current:
-                figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
-                visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
+                if self.plot_current:
+                    figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
+                    visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
 
-                if self.notify:
-                    slack.post_message(f"finished experiment {meta['id']}: {summary}")
-                    slack.post_image(figpath, title=f"current vs time {meta['id']}")
+                    if self.notify:
+                        slack.post_message(f"finished experiment {meta['id']}: {summary}")
+                        slack.post_image(figpath, title=f"current vs time {meta['id']}")
 
-            if self.plot_cv:
-                figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
-                visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
+                if self.plot_cv:
+                    figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
+                    visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
 
-                if self.notify:
-                    slack.post_message(f"finished experiment {meta['id']}: {summary}")
-                    slack.post_image(figpath, title=f"CV {meta['id']}")
+                    if self.notify:
+                        slack.post_message(f"finished experiment {meta['id']}: {summary}")
+                        slack.post_image(figpath, title=f"CV {meta['id']}")
 
         if self.cleanup_pause > 0:
             try:
