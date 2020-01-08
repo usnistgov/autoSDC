@@ -585,6 +585,18 @@ class Controller(scirc.SlackClient):
 
         we could register the coroutine address when we start it up, and broadcast that so it's cancellable...?
         """
+        text = f"sdc: {msgdata['username']} said abort_running_handlers"
+        print(text)
+
+        # dm UC537488J (brian)
+        response = await self.slack_api_call(
+            'chat.postMessage',
+            data={'channel': '<@UC537488J>', 'text': text, 'as_user': False, 'username': 'sdc'},
+            token=CTL_TOKEN
+        )
+        return
+
+
         current_task = asyncio.current_task()
 
         for task in asyncio.all_tasks():
