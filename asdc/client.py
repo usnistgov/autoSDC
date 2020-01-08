@@ -452,7 +452,9 @@ class SDC(scirc.SlackClient):
                 else:
                     async with self.z_step(height=self.step_height):
                         await self.set_flow(instructions[0])
-                    await self.bump_flow(instructions[0])
+
+            # bump_flow needs to get run every time!
+            await self.bump_flow(instructions[0])
 
             summary = '-'.join(step['op'] for step in instructions)
             _msg = f"experiment *{meta['id']}*:  {summary}"
