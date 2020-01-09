@@ -26,6 +26,8 @@ sys.path.append('../scirc')
 sys.path.append('.')
 import scirc
 import cycvolt
+
+import asdc
 from asdc import slack
 from asdc import analyze
 from asdc import emulation
@@ -251,24 +253,28 @@ class Controller(scirc.SlackClient):
 
     command = scirc.CommandRegistry()
     def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN):
-        super().__init__(verbose=verbose, logfile=logfile, token=token)
+        super().__init__(verbose=verbose, logfile=config['logfile'].get(), token=token)
         self.command.update(super().command)
         self.msg_id = 0
         self.update_event = asyncio.Event(loop=self.loop)
 
-        self.confirm = config.get('confirm', True)
-        self.notify = config.get('notify_slack', True)
-        self.data_dir = config.get('data_dir', os.getcwd())
-        self.figure_dir = config.get('figure_dir', os.getcwd())
-        self.domain_file = config.get('domain_file')
-        self.coverage_threshold = config.get('coverage_threshold', 0.9)
+        # debugging and quality checking criteria
+        self.confirm = config['confirm'].get()
+        self.notify = config['notify_slack'].get()
+        self.coverage_threshold = config['coverage_threshold'].get()
 
-        self.db_file = os.path.join(self.data_dir, config.get('db_file', 'test.db'))
+        # data serialization
+        self.data_dir = config['data_dir'].get()
+        self.figure_dir = config['figure_dir'].get()
+
+        self.db_file = os.path.join(self.data_dir, config['db_file'].get())
         self.db = dataset.connect(f'sqlite:///{self.db_file}')
         self.experiment_table = self.db['experiment']
 
-        self.targets = pd.read_csv(config['target_file'], index_col=0)
-        self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
+        # optimization domain and initial experiment definitions
+        self.domain_file = config['domain_file'].get()
+        self.targets = pd.read_csv(config['target_file'].get(), index_col=0)
+        self.experiments = load_experiment_json(config['experiment_file'].get(), dir=self.data_dir)
 
         # remove experiments if there are records in the database
         num_prev = self.db['experiment'].count()
@@ -610,36 +616,23 @@ class Controller(scirc.SlackClient):
 
 
 @click.command()
-@click.argument('config-file', type=click.Path())
+@click.argument('experiment-root', type=click.Path())
 @click.option('--verbose/--no-verbose', default=False)
-def sdc_controller(config_file, verbose):
+def sdc_controller(experiment_root, verbose):
 
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
-
-    experiment_root, _ = os.path.split(config_file)
+    config = asdc.config.OverrideConfig(experiment_root)
 
     # specify target file relative to config file
-    target_file = config.get('target_file')
-    config['target_file'] = os.path.join(experiment_root, target_file)
+    config['target_file'] = os.path.join(experiment_root, config['target_file'].get())
+    config['data_dir'] = os.path.join(experiment_root, config['data_dir'].get())
+    config['figure_dir'] = os.path.join(experiment_root, config['figure_dir'].get())
+    config['logfile'] = os.path.join(config['data_dir'].get(), config['command_logfile'].get())
 
-    data_dir = config.get('data_dir')
-    if data_dir is None:
-        config['data_dir'] = os.path.join(experiment_root, 'data')
+    os.makedirs(config['data_dir'].get(), exist_ok=True)
+    os.makedirs(config['figure_dir'].get(), exist_ok=True)
 
-    figure_dir = config.get('figure_dir')
-    if figure_dir is None:
-        config['figure_dir'] = os.path.join(experiment_root, 'figures')
-
-    os.makedirs(config['data_dir'], exist_ok=True)
-    os.makedirs(config['figure_dir'], exist_ok=True)
-
-    if config['step_height'] is not None:
-        config['step_height'] = abs(config['step_height'])
-
-    # logfile = config.get('command_logfile', 'commands.log')
-    logfile = 'controller.log'
-    logfile = os.path.join(config['data_dir'], logfile)
+    # make sure step_height is positive!
+    config['step_height'] = abs(config['step_height'].get())
 
     ctl = Controller(verbose=verbose, config=config, logfile=logfile)
     ctl.run()

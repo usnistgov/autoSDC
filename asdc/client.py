@@ -22,6 +22,7 @@ sys.path.append('../scirc')
 sys.path.append('.')
 import scirc
 
+import asdc
 from asdc import sdc
 from asdc import slack
 from asdc import visualization
@@ -42,67 +43,79 @@ class SDC(scirc.SlackClient):
 
     command = scirc.CommandRegistry()
 
-    def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN, resume=False):
-        super().__init__(verbose=verbose, logfile=logfile, token=token)
+    def __init__(self, config=None, verbose=False, token=BOT_TOKEN, resume=False):
+        super().__init__(verbose=verbose, logfile=config['logfile'].get(), token=token)
         self.command.update(super().command)
         self.msg_id = 0
 
-        with sdc.position.controller(ip='192.168.10.11') as pos:
-            initial_versastat_position = pos.current_position()
-            if self.verbose:
-                print(f'initial vs position: {initial_versastat_position}')
+        # load config values...
 
-        self.initial_versastat_position = initial_versastat_position
-        self.initial_combi_position = pd.Series(config['initial_combi_position'])
-        self.step_height = config.get('step_height', 0.0)
-        self.cleanup_pause = config.get('cleanup_pause', 0)
-        self.compress_dz = config.get('compress_dz', 0.0)
-        self.cell = config.get('cell', 'INTERNAL')
-        self.speed = config.get('speed', 1e-3)
-        self.data_dir = config.get('data_dir', os.getcwd())
-        self.figure_dir = config.get('figure_dir', os.getcwd())
-        self.confirm = config.get('confirm', True)
-        self.confirm_experiment = config.get('confirm_experiment', True)
-        self.notify = config.get('notify_slack', True)
-        self.plot_cv = config.get('plot_cv', False)
-        self.plot_current = config.get('plot_current', False)
+        # cell behavior
+        self.cell = config['cell'].get()
+        self.speed = config['speed'].get()
+        self.stage_ip = config['stage_ip'].get()
+        self.step_height = config['step_height'].get()
+        self.compress_dz = config['compress_dz'].get()
+        self.cleanup_pause = config['cleanup_pause'].get()
 
-        self.test = config.get('test', False)
-        self.test_cell = config.get('test_cell', False)
-        self.test_delay = config.get('test', False)
-        self.solutions = config.get('solutions')
-
-        self.v_position = self.initial_versastat_position
-        self.c_position = self.initial_combi_position
-
-        self.initialize_z_position = True
+        self.solutions = config['solutions'].get()
+        self.pump_array_port = config['pump_array_port'].get()
+        self.adafruit_port = config['adafruit_port'].get()
 
         # which wafer direction is aligned with position controller +x direction?
-        self.frame_orientation = config.get('frame_orientation', '-y')
+        self.frame_orientation = config['frame_orientation'].get()
 
-        self.db_file = os.path.join(self.data_dir, config.get('db_file', 'test.db'))
+        # breakpoints and debugging options
+        self.test = config['test'].get()
+        self.test_cell = config['test_cell'].get()
+        self.test_delay = config['test_delay'].get()
+        self.confirm = config['confirm'].get()
+        self.confirm_experiment = config['confirm_experiment'].get()
+
+        # output options
+        self.notify = config['notify_slack'].get()
+        self.plot_cv = config['plot_cv'].get()
+        self.plot_current = config['plot_current'].get()
+        self.current_threshold = config['current_threshold'].get()
+
+        # data serialization options
+        self.data_dir = config['data_dir'].get()
+        self.figure_dir = config['figure_dir'].get()
+
+        self.db_file = os.path.join(self.data_dir, config['db_file'].get())
         self.db = dataset.connect(f'sqlite:///{self.db_file}')
         self.experiment_table = self.db['experiment']
 
-        self.current_threshold = 1e-5
+        # initialize devices
 
+        # coordinate systems positions
+        self.initial_combi_position = pd.Series(config['initial_combi_position'].get())
+        self.c_position = self.initial_combi_position
+
+        with sdc.position.controller(ip=stage_ip) as pos:
+            self.initial_versastat_position = pos.current_position()
+            if self.verbose:
+                print(f'initial vs position: {self.initial_versastat_position}')
+
+        self.v_position = self.initial_versastat_position
+
+        self.initialize_z_position = True
         self.resume = resume
 
         if self.resume:
             self.sync_coordinate_systems(register_initial=True)
 
-        adafruit_port = config.get('adafruit_port', 'COM9')
-        pump_array_port = config.get('pump_array_port', 'COM10')
-
+        # syringe pump array
         try:
             self.pump_array = sdc.pump.PumpArray(
-                self.solutions, port=pump_array_port, counterpump_port=adafruit_port
+                self.solutions, port=self.pump_array_port, counterpump_port=self.adafruit_port
             )
         except:
             print('could not connect to pump array')
             self.pump_array = None
 
-        self.reflectometer = sdc.reflectivity.Reflectometer(port=adafruit_port)
+        # laser reflectance setup
+        self.reflectometer = sdc.reflectivity.Reflectometer(port=self.adafruit_port)
 
     def sync_coordinate_systems(self, register_initial=False):
 
@@ -668,39 +681,26 @@ class SDC(scirc.SlackClient):
 
 
 @click.command()
-@click.argument('config-file', type=click.Path())
+@click.argument('experiment-root', type=click.Path())
 @click.option('--resume/--no-resume', default=False)
 @click.option('--verbose/--no-verbose', default=False)
-def sdc_client(config_file, resume, verbose):
+def sdc_client(experiment_root, resume, verbose):
 
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
-
-    experiment_root, _ = os.path.split(config_file)
+    config = asdc.config.OverrideConfig(experiment_root)
 
     # specify target file relative to config file
-    target_file = config.get('target_file')
-    config['target_file'] = os.path.join(experiment_root, target_file)
+    config['target_file'] = os.path.join(experiment_root, config['target_file'].get())
+    config['data_dir'] = os.path.join(experiment_root, config['data_dir'].get())
+    config['figure_dir'] = os.path.join(experiment_root, config['figure_dir'].get())
+    config['logfile'] = os.path.join(config['data_dir'].get(), config['command_logfile'].get())
 
-    data_dir = config.get('data_dir')
-    if data_dir is None:
-        config['data_dir'] = os.path.join(experiment_root, 'data')
-
-    figure_dir = config.get('figure_dir')
-    if figure_dir is None:
-        config['figure_dir'] = os.path.join(experiment_root, 'figures')
-
-    os.makedirs(config['data_dir'], exist_ok=True)
-    os.makedirs(config['figure_dir'], exist_ok=True)
+    os.makedirs(config['data_dir'].get(), exist_ok=True)
+    os.makedirs(config['figure_dir'].get(), exist_ok=True)
 
     # make sure step_height is positive!
-    if config['step_height'] is not None:
-        config['step_height'] = abs(config['step_height'])
+    config['step_height'] = abs(config['step_height'].get())
 
-    logfile = config.get('command_logfile', 'commands.log')
-    logfile = os.path.join(config['data_dir'], logfile)
-
-    sdc = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume)
+    sdc = SDC(verbose=verbose, config=config, token=BOT_TOKEN, resume=resume)
     sdc.run()
 
 if __name__ == '__main__':

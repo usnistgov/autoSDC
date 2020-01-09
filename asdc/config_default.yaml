@@ -1,0 +1,64 @@
+# input files
+target_file: map.csv
+
+# output configuration
+data_dir: data
+figure_dir: figures
+db_file: sdc.db
+command_logfile: commands.log
+
+# output configuration
+notify_slack: true
+plot_cv: false
+plot_current: fals
+
+# debugging options
+test: false
+test_cell: false
+test_delay: false
+
+# use INTERNAL/EXTERNAL cell
+cell: INTERNAL
+
+confirm: True
+confirm_experiment: False
+
+# add a delay before running each experiment...
+initial_delay: 0
+
+# quality checks
+coverage_threshold: 0.9
+current_threshold: 1e-5
+
+# adafruit configuration
+adafruit_port: 'COM9'
+
+# pump configuration
+solutions:
+pump_array_port: 'COM10'
+
+# stage configuration
+
+frame_orientation: '-y'
+stage_ip: '192.168.10.11'
+
+# motion controller speed in m/s
+speed: 1e-3
+
+# ease off vertically before moving the cell laterally
+# step height in meters
+step_height: 0.0005
+
+# press down 50 microns below vertical setpoint to reseat probe after lateral motion
+compress_dz: 0.0
+
+# expect the human to start the experiment with the cell
+# at combi standard layout spot 1
+initial_combi_position:
+  x: -9.0
+  y: -31.5
+
+domain_file: domain.json
+
+experiment_file:
+  - instructions.json
