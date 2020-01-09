@@ -558,9 +558,9 @@ class SDC(scirc.SlackClient):
         """
 
         camera = cv2.VideoCapture(1)
+        # give the camera enough time to come online before reading data...
+        time.sleep(0.5)
         status, frame = camera.read()
-        time.sleep(1.0)
-        camera.release()
 
         if len(args) > 0:
             primary_key = int(args)
@@ -582,6 +582,7 @@ class SDC(scirc.SlackClient):
             image_name = 'test-image.png'
 
         imageio.imsave(os.path.join(self.data_dir, image_name), frame)
+        camera.release()
 
     @command
     async def bubble(self, ws, msgdata, args):
