@@ -1,11 +1,16 @@
 """ asdc.position: pythonnet .NET interface to VersaSTAT motion controller """
 
+CONTROLLER_ADDRESS= '192.168.10.11'
+
 import os
 import clr
 import sys
 import time
+import asyncio
 import numpy as np
-from contextlib import contextmanager
+from contextlib import contextmanager, asynccontextmanager
+
+import traceback
 
 # pythonnet checks PYTHONPATH for assemblies to load...
 # so add the VeraScan libraries to sys.path
@@ -29,7 +34,7 @@ from System.Net import IPAddress
 from SolartronAnalytical.DeviceInterface.NanomotionXCD import XCD, XcdSettings
 
 @contextmanager
-def controller(ip='192.168.10.11', speed=1e-4):
+def controller(ip=CONTROLLER_ADDRESS, speed=1e-4):
     """ context manager that wraps position controller class Position. """
     pos = Position(ip=ip, speed=speed)
     try:
@@ -37,10 +42,78 @@ def controller(ip='192.168.10.11', speed=1e-4):
         yield pos
     except Exception as exc:
         print('unwinding position controller due to exception.')
+        traceback.print_exc()
         pos.controller.Disconnect()
         raise exc
     finally:
         pos.controller.Disconnect()
+
+@asynccontextmanager
+async def acontroller(self, loop=None, z_step=None, ip=CONTROLLER_ADDRESS, speed=1e-4):
+    """ wrap position controller context manager
+
+    perform vertical steps before lateral cell motion with the ctx manager
+    so that the cell drops back down to baseline z level if the `move` task is completed
+    """
+
+    with controller(ip=ip, speed=speed) as pos:
+        start_position = pos.current_position()
+        baseline_z = start_position[2]
+
+        try:
+            if z_step is not None:
+
+                if z_step <= 0:
+                    raise ValueError("z_step should be positive")
+
+                f = functools.partial(pos.update_z, delta=z_step)
+                await self.loop.run_in_executor(None, f)
+
+            yield pos
+
+        finally:
+            if z_step is not None:
+                # go back to baseline
+                current_position = pos.current_position()
+                current_z = current_position[2]
+                dz = baseline_z - current_z
+
+                f = functools.partial(pos.update_z, delta=dz)
+                await loop.run_in_executor(None, f)
+
+@asynccontextmanager
+async def z_step(self, loop=None, height=0.002, ip=CONTROLLER_ADDRESS, speed=1e-4):
+    """ async controller context manager for z step
+    perform a vertical step with no horizontal movement
+    """
+
+    if height <= 0:
+        raise ValueError("z_step should be positive")
+
+    try:
+        with controller(ip=ip, speed=speed) as pos:
+
+            start_position = pos.current_position()
+            baseline_z = start_position[2]
+
+            f = functools.partial(pos.update_z, delta=height)
+            await self.loop.run_in_executor(None, f)
+
+        yield
+
+    finally:
+        with controller(ip=ip, speed=speed) as pos:
+            # go back to baseline
+            current_position = pos.current_position()
+            current_z = current_position[2]
+            dz = baseline_z - current_z
+
+            f = functools.partial(pos.update_z, delta=dz)
+            try:
+                await loop.run_in_executor(None, f)
+            except RuntimeError:
+                print('asyncio loop failed again...')
+                raise
 
 class Position():
     """ Interface to the VersaSTAT motion controller library """

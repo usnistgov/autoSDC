@@ -153,82 +153,6 @@ class SDC(scirc.SlackClient):
             if self.verbose:
                 print(f"initial combi position: {self.c_position}")
 
-    @asynccontextmanager
-    async def position_controller(self, use_z_step=False):
-        """ wrap position controller context manager
-
-        perform vertical steps before lateral cell motion with the ctx manager
-        so that the cell drops back down to baseline z level if the `move` task is completed
-
-        """
-
-        with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
-            start_position = pos.current_position()
-            baseline_z = start_position[2]
-
-            if self.verbose:
-                c = pos.current_position()
-                await aprint('initial', c)
-
-            try:
-                if use_z_step:
-                    f = functools.partial(pos.update_z, delta=self.step_height)
-                    await self.loop.run_in_executor(None, f)
-
-                yield pos
-
-            finally:
-                if use_z_step:
-                    # go back to baseline
-                    current_position = pos.current_position()
-                    current_z = current_position[2]
-                    dz = baseline_z - current_z
-
-                    f = functools.partial(pos.update_z, delta=dz)
-                    await self.loop.run_in_executor(None, f)
-
-                # update internal tracking of versastat position
-                self.v_position = pos.current_position()
-                if self.verbose:
-                    c = pos.current_position()
-                    await aprint('final', c)
-
-    @asynccontextmanager
-    async def z_step(self, height=None):
-        """ wrap position controller context manager
-        perform a vertical step with no horizontal movement
-        """
-
-        if height is None:
-            height = self.step_height
-
-        height = max(0, height)
-
-        try:
-            with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
-
-                start_position = pos.current_position()
-                baseline_z = start_position[2]
-
-                f = functools.partial(pos.update_z, delta=height)
-                await self.loop.run_in_executor(None, f)
-
-            yield
-
-        finally:
-            with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as pos:
-                # go back to baseline
-                current_position = pos.current_position()
-                current_z = current_position[2]
-                dz = baseline_z - current_z
-
-                f = functools.partial(pos.update_z, delta=dz)
-                try:
-                    await self.loop.run_in_executor(None, f)
-                except RuntimeError:
-                    print('asyncio loop failed again...')
-                    raise
-
     async def post(self, msg, ws, channel):
         # TODO: move this to the base Client class...
         response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
@@ -286,12 +210,7 @@ class SDC(scirc.SlackClient):
             if self.notify:
                 slack.post_message(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})')
 
-            if self.step_height == 0.0:
-                use_z_step = False
-            else:
-                use_z_step = True
-
-            async with self.position_controller(use_z_step=use_z_step) as pos:
+            async with sdc.position.acontroller(loop=self.loop, z_step=self.step_height, speed=self.speed) as pos:
 
                 if self.confirm:
                     await ainput('press enter to allow lateral cell motion...', loop=self.loop)
@@ -300,9 +219,6 @@ class SDC(scirc.SlackClient):
                 f = functools.partial(pos.update, delta=delta)
                 await self.loop.run_in_executor(None, f)
                 self.c_position += np.array([dx, dy])
-
-                if self.verbose:
-                    await aprint('2', pos.current_position())
 
             if self.verbose:
                 print(pos.current_position())
@@ -398,7 +314,7 @@ class SDC(scirc.SlackClient):
 
         print(delta)
 
-        async with self.position_controller(use_z_step=False) as pos:
+        async with sdc.position.acontroller(loop=self.loop, z_step=self.step_height, speed=self.speed) as pos:
 
             if self.confirm:
                 await ainput('press enter to move for optical inspection...', loop=self.loop)
@@ -454,7 +370,7 @@ class SDC(scirc.SlackClient):
                 if self.test:
                     slack.post_message(f'we would set_flow here')
                 else:
-                    async with self.z_step(height=self.step_height):
+                    async with sdc.position.z_step(loop=self.loop, height=self.step_height, speed=self.speed):
                         await self.set_flow(instructions[0])
 
             # bump_flow needs to get run every time!
@@ -525,7 +441,7 @@ class SDC(scirc.SlackClient):
 
         if self.cleanup_pause > 0:
 
-            async with self.z_step(height=self.step_height):
+            async with sdc.position.z_step(loop=self.loop, height=self.step_height, speed=self.speed):
                 self.pump_array.stop_all(counterbalance='full')
                 time.sleep(self.cleanup_pause)
                 self.pump_array.counterpump.stop()
@@ -539,8 +455,9 @@ class SDC(scirc.SlackClient):
             inspection_dz = 0.020
             await self.optical_inspect(delta_z=inspection_dz)
             response = await ainput('take a moment to evaluate', loop=self.loop)
-            # drop back
-            async with self.position_controller(use_z_step=False) as pos:
+
+            async with sdc.position.acontroller(loop=self.loop, speed=self.speed) as pos:
+                # drop back to baseline
                 f = functools.partial(pos.update_z, delta=-inspection_dz)
                 await self.loop.run_in_executor(None, f)
 
@@ -599,7 +516,7 @@ class SDC(scirc.SlackClient):
     async def reflectance_linescan(self, stepsize=0.00015, n_steps=20):
 
         mean, var = [], []
-        with sdc.position.controller(ip='192.168.10.11', speed=self.speed) as stage:
+        async with sdc.position.acontroller(loop=self.loop, speed=self.speed) as stage:
 
             for step in range(n_steps):
 
