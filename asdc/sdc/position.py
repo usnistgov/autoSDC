@@ -57,8 +57,8 @@ async def acontroller(self, loop=None, z_step=None, ip=CONTROLLER_ADDRESS, speed
     """
 
     with controller(ip=ip, speed=speed) as pos:
-        start_position = pos.current_position()
-        baseline_z = start_position[2]
+
+        baseline_z = pos.z
 
         try:
             if z_step is not None:
@@ -72,12 +72,10 @@ async def acontroller(self, loop=None, z_step=None, ip=CONTROLLER_ADDRESS, speed
             yield pos
 
         finally:
-            if z_step is not None:
-                # go back to baseline
-                current_position = pos.current_position()
-                current_z = current_position[2]
-                dz = baseline_z - current_z
 
+            if z_step is not None:
+
+                dz = baseline_z - pos.z
                 f = functools.partial(pos.update_z, delta=dz)
                 await loop.run_in_executor(None, f)
 
@@ -91,29 +89,22 @@ async def z_step(self, loop=None, height=0.002, ip=CONTROLLER_ADDRESS, speed=1e-
         raise ValueError("z_step should be positive")
 
     try:
+
         with controller(ip=ip, speed=speed) as pos:
 
-            start_position = pos.current_position()
-            baseline_z = start_position[2]
-
+            baseline_z = pos.z
             f = functools.partial(pos.update_z, delta=height)
             await self.loop.run_in_executor(None, f)
 
         yield
 
     finally:
-        with controller(ip=ip, speed=speed) as pos:
-            # go back to baseline
-            current_position = pos.current_position()
-            current_z = current_position[2]
-            dz = baseline_z - current_z
 
+        with controller(ip=ip, speed=speed) as pos:
+
+            dz = baseline_z - pos.z
             f = functools.partial(pos.update_z, delta=dz)
-            try:
-                await loop.run_in_executor(None, f)
-            except RuntimeError:
-                print('asyncio loop failed again...')
-                raise
+            await loop.run_in_executor(None, f)
 
 class Position():
     """ Interface to the VersaSTAT motion controller library """
@@ -141,6 +132,28 @@ class Position():
         self._speed = speed
         self.settings.Speed = self._speed
 
+    @property
+    def x(self):
+        """ the current stage x position """
+        return self.controller.Parameters[0].Values[0]
+
+    @property
+    def y(self):
+        """ the current stage y position """
+        return self.controller.Parameters[1].Values[0]
+
+    @property
+    def z(self):
+        """ the current stage z position """
+        return self.controller.Parameters[2].Values[0]
+
+    def current_position(self):
+        """ return the current coordinates as a list
+
+        axis.Values holds (position, speed, error)
+        """
+        return [axis.Values[0] for axis in self.controller.Parameters]
+
     def home(block_interval=1):
         """ execute the homing operation, blocking for `block_interval` seconds.
 
@@ -159,13 +172,6 @@ class Position():
             for idx in range(axis.ValueNames.Length):
                 print(axis.ValueNames[idx], axis.Values[idx], axis.Units)
                 print()
-
-    def current_position(self):
-        """ return the current coordinates as a list
-
-        axis.Values holds (position, speed, error)
-        """
-        return [axis.Values[0] for axis in self.controller.Parameters]
 
     def at_setpoint(self, verbose=False):
         """ check that each axis of the position controller is at its setpoint """
