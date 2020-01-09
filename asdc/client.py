@@ -226,21 +226,15 @@ class SDC(scirc.SlackClient):
 
         if self.initialize_z_position:
             # TODO: define the lower z baseline after the first move
-            if self.notify:
-                slack.post_message(f'*initialize z position*')
 
             await ainput('*initialize z position*: press enter to continue...', loop=self.loop)
             self.initialize_z_position = False
 
-        # @ctl
+        # @ctl -- update the semaphore in the controller process
         await self.dm_controller('<@UHNHM7198> update position is set.')
-        time.sleep(1)
-        if self.notify:
-            slack.post_message(f'moved dx={dx}, dy={dy} (delta={delta})')
 
     async def set_flow(self, instruction, nominal_rate=0.5):
         """ nominal rate in ml/min """
-
 
         print('setting the flow rates directly!')
         params = f"rates={instruction.get('rates')} {instruction.get('units')}"
@@ -259,11 +253,11 @@ class SDC(scirc.SlackClient):
             line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
             if self.notify:
-                slack.post_message(f"set_flow to {line_flush_rates} ml/min")
-            if self.confirm:
-                await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
+                slack.post_message(f"flush lines at {line_flush_rates} ml/min")
+                print('setting flow rates to flush the lines')
+
             self.pump_array.set_rates(line_flush_rates, counterpump_ratio='max')
-            time.sleep(1)
+            time.sleep(0.5)
             self.pump_array.run_all()
 
             print(f'waiting {hold_time} (s) for solution composition to reach steady state')
@@ -271,8 +265,8 @@ class SDC(scirc.SlackClient):
 
         if self.notify:
             slack.post_message(f"set_flow to {rates} ml/min")
-        if self.confirm:
-            await ainput('REMINDER: set flow rates... press <ENTER> to set_flow', loop=self.loop)
+            print(f"setting flow rates to {rates} ml/min")
+
         # go to low nominal flow_rate for measurement
         self.pump_array.set_rates(rates)
 
@@ -286,8 +280,8 @@ class SDC(scirc.SlackClient):
         total_rate = sum(rates.values())
         cell_fill_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
-        if self.notify:
-            slack.post_message(f"bump_flow to {cell_fill_rates} ml/min")
+        if self.verbose:
+            print(f"bump_flow to {cell_fill_rates} ml/min")
 
         self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.75)
         time.sleep(0.5)
