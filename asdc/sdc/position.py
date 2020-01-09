@@ -135,17 +135,17 @@ class Position():
     @property
     def x(self):
         """ the current stage x position """
-        return self.controller.Parameters[0].Values[0]
+        return self.current_position()[0]
 
     @property
     def y(self):
         """ the current stage y position """
-        return self.controller.Parameters[1].Values[0]
+        return self.current_position()[1]
 
     @property
     def z(self):
         """ the current stage z position """
-        return self.controller.Parameters[2].Values[0]
+        return self.current_position()[2]
 
     def current_position(self):
         """ return the current coordinates as a list
