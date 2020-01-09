@@ -49,7 +49,7 @@ def controller(ip=CONTROLLER_ADDRESS, speed=1e-4):
         pos.controller.Disconnect()
 
 @asynccontextmanager
-async def acontroller(self, loop=None, z_step=None, ip=CONTROLLER_ADDRESS, speed=1e-4):
+async def acontroller(loop=None, z_step=None, ip=CONTROLLER_ADDRESS, speed=1e-4):
     """ wrap position controller context manager
 
     perform vertical steps before lateral cell motion with the ctx manager
@@ -67,7 +67,7 @@ async def acontroller(self, loop=None, z_step=None, ip=CONTROLLER_ADDRESS, speed
                     raise ValueError("z_step should be positive")
 
                 f = functools.partial(pos.update_z, delta=z_step)
-                await self.loop.run_in_executor(None, f)
+                await loop.run_in_executor(None, f)
 
             yield pos
 
@@ -80,7 +80,7 @@ async def acontroller(self, loop=None, z_step=None, ip=CONTROLLER_ADDRESS, speed
                 await loop.run_in_executor(None, f)
 
 @asynccontextmanager
-async def z_step(self, loop=None, height=0.002, ip=CONTROLLER_ADDRESS, speed=1e-4):
+async def z_step(loop=None, height=0.002, ip=CONTROLLER_ADDRESS, speed=1e-4):
     """ async controller context manager for z step
     perform a vertical step with no horizontal movement
     """
@@ -94,7 +94,7 @@ async def z_step(self, loop=None, height=0.002, ip=CONTROLLER_ADDRESS, speed=1e-
 
             baseline_z = pos.z
             f = functools.partial(pos.update_z, delta=height)
-            await self.loop.run_in_executor(None, f)
+            await loop.run_in_executor(None, f)
 
         yield
 
