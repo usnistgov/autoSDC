@@ -7,6 +7,7 @@ import clr
 import sys
 import time
 import asyncio
+import functools
 import numpy as np
 from contextlib import contextmanager, asynccontextmanager
 
