@@ -507,7 +507,7 @@ class Controller(scirc.SlackClient):
             fit_gp = False
             if intent == 'deposition':
                 action = Action.QUERY
-            elif intent == 'corrode':
+            elif intent == 'corrosion':
                 action = Action.CORRODE
         else:
             instructions = None
