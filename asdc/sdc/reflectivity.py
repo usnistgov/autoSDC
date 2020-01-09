@@ -15,6 +15,7 @@ class Reflectometer(MicrocontrollerInterface):
         response = self.eval({"op": "laser"}, timeout=2.0)
 
         # TODO: check response content / add response status info
-        reflectance_data = json.loads(response[1])
+        # reflectance_data = json.loads(response[1])
+        reflectance = float(response[1])
 
-        return reflectance_data
+        return reflectance

@@ -515,8 +515,9 @@ class SDC(scirc.SlackClient):
             for step in range(n_steps):
 
                 reflectance_data = self.reflectometer.collect()
-                mean.append(np.mean(reflectance_data))
-                var.append(np.var(reflectance_data))
+                mean.append(reflectance_data)
+                # mean.append(np.mean(reflectance_data))
+                # var.append(np.var(reflectance_data))
 
                 stage.update_y(-stepsize)
                 time.sleep(0.25)
@@ -544,6 +545,7 @@ class SDC(scirc.SlackClient):
                 tx['experiment'].update(metadata, ['id'])
 
             with open(os.path.join(self.data_dir, filename), 'w') as f:
+                data = {'reflectance': mean, 'variance': var}
                 json.dump(data, f)
 
         else:
