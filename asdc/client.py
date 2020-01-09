@@ -559,6 +559,7 @@ class SDC(scirc.SlackClient):
 
         camera = cv2.VideoCapture(1)
         status, frame = camera.read()
+        time.sleep(1.0)
         camera.release()
 
         if len(args) > 0:
