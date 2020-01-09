@@ -620,13 +620,35 @@ class SDC(scirc.SlackClient):
 
     @command
     async def imagecap(self, ws, msgdata, args):
-        """ capture an image from the webcam """
+        """ capture an image from the webcam.
 
-        camera = cv2.VideoCapture(0)
+        pass an experiment index to serialize metadata to db
+        """
+
+        camera = cv2.VideoCapture(1)
         status, frame = camera.read()
         camera.release()
 
-        io.imsave(os.path.join(self.data_dir, 'test-image.png'), frame)
+        if len(args) > 0:
+            primary_key = int(args)
+
+            image_name = f'deposit_pic_{primary_key:03d}.png'
+
+            with sdc.position.controller() as stage:
+                metadata = {
+                    'id': primary_key,
+                    'image_xv': stage.x,
+                    'image_yv': stage.y,
+                    'image_name': image_name
+                }
+
+            with self.db as tx:
+                tx['experiment'].update(metadata, ['id'])
+
+        else:
+            image_name = 'test-image.png'
+
+        io.imsave(os.path.join(self.data_dir, image_name), frame)
 
     @command
     async def bubble(self, ws, msgdata, args):
