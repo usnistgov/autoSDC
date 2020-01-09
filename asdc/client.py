@@ -615,8 +615,29 @@ class SDC(scirc.SlackClient):
     @command
     async def reflectance(self, ws, msgdata, args):
         """ record the reflectance of the deposit (0.0,inf). """
+
+        # get the stage position at the start of the linescan
+        with sdc.position.controller() as stage:
+            metadata = {'reflectance_xv': stage.x, 'reflectance_yv': stage.y}
+
         mean, var = await self.reflectance_linescan()
-        print(mean, var)
+
+        if len(args) > 0:
+            primary_key = int(args)
+            filename = f'deposit_reflectance_{primary_key:03d}.json'
+
+            metadata['id'] = primary_key
+            metadata['reflectance_file'] = filename
+
+            with self.db as tx:
+                tx['experiment'].update(metadata, ['id'])
+
+            with open(os.path.join(self.data_dir, filename), 'w') as f:
+                json.dump(data, f)
+
+        else:
+            print(metadata)
+            print(mean, var)
 
     @command
     async def imagecap(self, ws, msgdata, args):
