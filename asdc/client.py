@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 import traceback
 
 import cv2
-from skimage import io
+import imageio
 
 sys.path.append('../scirc')
 sys.path.append('.')
@@ -580,7 +580,7 @@ class SDC(scirc.SlackClient):
         else:
             image_name = 'test-image.png'
 
-        io.imsave(os.path.join(self.data_dir, image_name), frame)
+        imageio.imsave(os.path.join(self.data_dir, image_name), frame)
 
     @command
     async def bubble(self, ws, msgdata, args):
