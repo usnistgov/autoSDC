@@ -505,7 +505,10 @@ class Controller(scirc.SlackClient):
             instructions = self.experiments.pop(0)
             intent = instructions[0].get('intent')
             fit_gp = False
-            action = Action.QUERY
+            if intent == 'deposition':
+                action = Action.QUERY
+            elif intent == 'corrode':
+                action = Action.CORRODE
         else:
             instructions = None
             action = select_action(self.db, threshold=self.coverage_threshold)
