@@ -176,6 +176,11 @@ class SDC(scirc.SlackClient):
 
         # now find the origin of the stage frame
         xv_init = np.array([ref['x_versa'], ref['y_versa']])
+        if resume:
+            offset = np.array([x_versa, y_versa]) - xv_init
+            print(offset)
+            # xv_init += offset
+
         l = xv_init - combi_origin
         v_origin = l[1]*cell.i + l[0]*cell.j
 
