@@ -206,7 +206,7 @@ class PumpArray():
             if q in value:
                 return key
 
-    def set_rates(self, setpoints, units='ml/min', counterpump_ratio=None):
+    def set_rates(self, setpoints, units='ml/min', counterpump_ratio=None, start=False):
         """ directly set absolute flow rates
 
         flow_setpoint is a dict containing absolute flow rates for each syringe
@@ -258,9 +258,13 @@ class PumpArray():
 
         print(self.flow_setpoint)
 
+        if start:
+            self.run_all()
+
         # set counterbalance pumping rate
         self.counterpump.set_flow(counterbalance_setpoint)
-        if counterbalance_setpoint > 0:
+
+        if start and (counterbalance_setpoint > 0)
             self.counterpump.start()
         else:
             self.counterpump.stop()

@@ -296,9 +296,7 @@ class SDC(scirc.SlackClient):
                 slack.post_message(f"flush lines at {line_flush_rates} ml/min")
                 print('setting flow rates to flush the lines')
 
-            self.pump_array.set_rates(line_flush_rates, counterpump_ratio='max')
-            time.sleep(0.5)
-            self.pump_array.run_all()
+            self.pump_array.set_rates(line_flush_rates, start=True)
 
             print(f'waiting {hold_time} (s) for solution composition to reach steady state')
             time.sleep(hold_time)
@@ -323,45 +321,9 @@ class SDC(scirc.SlackClient):
         if self.verbose:
             print(f"bump_flow to {cell_fill_rates} ml/min")
 
-        self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.75)
-        time.sleep(0.5)
-        self.pump_array.run_all()
+        self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.75, start=True)
         time.sleep(duration)
         self.pump_array.set_rates(rates)
-
-    async def optical_inspect(self, x_combi=31.0, y_combi=0.0, delta_z=0.020):
-        """ move for optical inspection
-        delta_z should be specified in meters...
-        """
-
-        # make sure delta_z is positive (actually, greater than 500 microns...)
-        delta_z = max(0.0005, delta_z)
-
-        # specify target positions in combi reference frame
-        print(x_combi, y_combi)
-        print(self.c_position)
-        dx = x_combi - self.c_position.x
-        dy = y_combi - self.c_position.y
-
-        # map position update to position controller frame
-        delta = self.compute_position_update(dx, dy)
-
-        print(delta)
-
-        async with sdc.position.acontroller(loop=self.loop, z_step=self.step_height, speed=self.speed) as pos:
-
-            if self.confirm:
-                await ainput('press enter to move for optical inspection...', loop=self.loop)
-
-            f = functools.partial(pos.update_z, delta=delta_z)
-            await self.loop.run_in_executor(None, f)
-
-            # move horizontally
-            f = functools.partial(pos.update, delta=delta)
-            await self.loop.run_in_executor(None, f)
-            self.c_position += np.array([dx, dy])
-
-        return
 
     @command
     async def run_experiment(self, ws, msgdata, args):
@@ -410,8 +372,8 @@ class SDC(scirc.SlackClient):
                     slack.post_message(f'we would set_flow here')
 
                 else:
-                    async with sdc.position.z_step(loop=self.loop, height=self.step_height, speed=self.speed):
-                        await self.set_flow(instructions[0])
+                    # new: don't pick up the cell to flush the lines or set flowrates.
+                    await self.set_flow(instructions[0])
 
             # bump_flow needs to get run every time!
             await self.bump_flow(instructions[0], duration=10)
