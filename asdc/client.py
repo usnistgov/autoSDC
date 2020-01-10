@@ -132,7 +132,7 @@ class SDC(scirc.SlackClient):
         if (resume == False) or (refs.size == 0):
 
             init = self.initial_combi_position
-            print(f'resuming from {init}')
+            print(f'starting from {init}')
 
             ref = pd.Series({
                 'x_versa': x_versa, 'y_versa': y_versa,
@@ -142,6 +142,7 @@ class SDC(scirc.SlackClient):
             # arbitrarily grab the first position
             # TODO: verify that this record comes from the current session...
             ref = refs.iloc[0]
+            print(f'resuming from {ref}')
 
         return ref
 
