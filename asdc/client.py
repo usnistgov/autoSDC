@@ -142,6 +142,9 @@ class SDC(scirc.SlackClient):
             # arbitrarily grab the first position
             # TODO: verify that this record comes from the current session...
             ref = refs.iloc[0]
+            ref['x_versa'] *= 1e3
+            ref['y_versa'] *= 1e3
+
             print(f'resuming from {ref}')
 
         return ref
