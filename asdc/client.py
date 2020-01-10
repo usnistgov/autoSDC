@@ -458,13 +458,13 @@ class SDC(scirc.SlackClient):
                     slack.post_message(f"inspecting deposit quality")
 
                 await self.move_stage(x_combi, y_combi, self.camera_frame)
-                self._capture_image(primary_key=meta['id'])
+                await self._capture_image(primary_key=meta['id'])
 
                 if self.notify:
                     slack.post_message(f"acquiring laser reflectance data")
 
                 await self.move_stage(x_combi, y_combi, self.laser_frame)
-                self._reflectance(primary_key=meta['id'])
+                await self._reflectance(primary_key=meta['id'])
 
             self.pump_array.counterpump.stop()
 
