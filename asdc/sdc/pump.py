@@ -264,7 +264,7 @@ class PumpArray():
         # set counterbalance pumping rate
         self.counterpump.set_flow(counterbalance_setpoint)
 
-        if start and (counterbalance_setpoint > 0)
+        if start and (counterbalance_setpoint > 0):
             self.counterpump.start()
         else:
             self.counterpump.stop()
