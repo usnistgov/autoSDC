@@ -79,6 +79,11 @@ class SDC(scirc.SlackClient):
         self.plot_cv = config.get('plot_cv', False)
         self.plot_current = config.get('plot_current', False)
 
+        # define a positive height to perform characterization
+        h = float(config.get('characterization_height', 0.004))
+        h = min(0.0, h)
+        self.characterization_height = h
+
         self.test = config.get('test', False)
         self.test_cell = config.get('test_cell', False)
         self.test_delay = config.get('test', False)
@@ -474,27 +479,31 @@ class SDC(scirc.SlackClient):
                         slack.post_message(f"finished experiment {meta['id']}: {summary}")
                         slack.post_image(figpath, title=f"CV {meta['id']}")
 
-        if self.cleanup_pause > 0:
+        # run cleanup and optical characterization
+        async with sdc.position.z_step(loop=self.loop, height=self.characterization_height, speed=self.speed):
 
-            async with sdc.position.z_step(loop=self.loop, height=self.step_height, speed=self.speed):
-                self.pump_array.stop_all(counterbalance='full')
+            self.pump_array.stop_all(counterbalance='full')
+
+            if self.cleanup_pause > 0:
                 time.sleep(self.cleanup_pause)
-                self.pump_array.counterpump.stop()
 
-        replicates = self.db['experiment'].count(experiment_id=experiment_id)
-        if (intent == 'deposition') and (replicates == 2):
+            replicates = self.db['experiment'].count(experiment_id=experiment_id)
+            #  and (replicates == 2):
+            if (intent == 'deposition'):
 
-            if self.notify:
-                slack.post_message(f"inspect deposit quality")
+                if self.notify:
+                    slack.post_message(f"inspecting deposit quality")
 
-            inspection_dz = 0.020
-            await self.optical_inspect(delta_z=inspection_dz)
-            response = await ainput('take a moment to evaluate', loop=self.loop)
+                self.move_stage(x_combi, y_combi, self.camera_frame)
+                self._capture_image(primary_key=meta['id'])
 
-            async with sdc.position.acontroller(loop=self.loop, speed=self.speed) as pos:
-                # drop back to baseline
-                f = functools.partial(pos.update_z, delta=-inspection_dz)
-                await self.loop.run_in_executor(None, f)
+                if self.notify:
+                    slack.post_message(f"acquiring laser reflectance data")
+
+                self.move_stage(x_combi, y_combi, self.laser_frame)
+                self._reflectance(primary_key=meta['id'])
+
+            self.pump_array.counterpump.stop()
 
         await self.dm_controller('<@UHNHM7198> go')
 
@@ -565,9 +574,7 @@ class SDC(scirc.SlackClient):
 
         return mean, var
 
-    @command
-    async def reflectance(self, ws, msgdata, args):
-        """ record the reflectance of the deposit (0.0,inf). """
+    async def _reflectance(self, primary_key=None):
 
         # get the stage position at the start of the linescan
         with sdc.position.controller() as stage:
@@ -575,7 +582,7 @@ class SDC(scirc.SlackClient):
 
         mean, var = await self.reflectance_linescan()
 
-        if len(args) > 0:
+        if primary_key is not None:
             primary_key = int(args)
             filename = f'deposit_reflectance_{primary_key:03d}.json'
 
@@ -589,24 +596,32 @@ class SDC(scirc.SlackClient):
                 data = {'reflectance': mean, 'variance': var}
                 json.dump(data, f)
 
-        else:
-            print(metadata)
-            print(mean, var)
+        return mean
 
     @command
-    async def imagecap(self, ws, msgdata, args):
+    async def reflectance(self, ws, msgdata, args):
+        """ record the reflectance of the deposit (0.0,inf). """
+
+        if len(args) > 0:
+            primary_key = int(args)
+        else:
+            primary_key = None
+
+        mean_reflectance = self._reflectance(primary_key=primary_key)
+        print('reflectance:', mean_reflectance)
+
+
+    async def _capture_image(self, primary_key=None):
         """ capture an image from the webcam.
 
         pass an experiment index to serialize metadata to db
         """
-
         camera = cv2.VideoCapture(1)
         # give the camera enough time to come online before reading data...
         time.sleep(0.5)
         status, frame = camera.read()
 
-        if len(args) > 0:
-            primary_key = int(args)
+        if primary_key is not None:
 
             image_name = f'deposit_pic_{primary_key:03d}.png'
 
@@ -626,6 +641,21 @@ class SDC(scirc.SlackClient):
 
         imageio.imsave(os.path.join(self.data_dir, image_name), frame)
         camera.release()
+
+        return
+
+    @command
+    async def imagecap(self, ws, msgdata, args):
+        """ capture an image from the webcam.
+
+        pass an experiment index to serialize metadata to db
+        """
+        if len(args) > 0:
+            primary_key = int(args)
+        else:
+            primary_key = None
+
+        self._capture_image(primary_key=primary_key)
 
     @command
     async def bubble(self, ws, msgdata, args):
