@@ -18,6 +18,10 @@ import traceback
 import cv2
 import imageio
 
+import sympy
+from sympy.vector import express
+from sympy.vector import CoordSys3D, BodyOrienter, Point
+
 sys.path.append('../scirc')
 sys.path.append('.')
 import scirc
@@ -36,6 +40,14 @@ def relative_flow(rates):
     if total == 0.0:
         return rates
     return {key: rate / total for key, rate in rates.items()}
+
+def to_vec(x, frame):
+    """ convert python iterable coordinates to vector in specified reference frame """
+    return x[0]*frame.i + x[1]*frame.j
+
+def to_coords(x, frame):
+    """ express coordinates in specified reference frame """
+    return frame.origin.locate_new('P', to_vec(p, frame))
 
 class SDC(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
@@ -88,8 +100,16 @@ class SDC(scirc.SlackClient):
 
         self.resume = resume
 
+        # define reference frames
+        # TODO: make camera and laser offsets configurable
+        self.cell_frame = CoordSys3D('cell')
+        self.camera_frame = wafer.locate_new('camera', 36*self.cell_frame.i)
+        self.laser_frame = wafer.locate_new('laser', 48*self.cell_frame.i)
+
         if self.resume:
-            self.sync_coordinate_systems(register_initial=True)
+            self.stage_frame = self.sync_coordinate_systems(register_initial=True, resume=self.resume)
+        else:
+            self.stage_frame = self.sync_coordinate_systems(register_initial=False)
 
         adafruit_port = config.get('adafruit_port', 'COM9')
         pump_array_port = config.get('pump_array_port', 'COM10')
@@ -104,17 +124,12 @@ class SDC(scirc.SlackClient):
 
         self.reflectometer = sdc.reflectivity.Reflectometer(port=adafruit_port)
 
-    def sync_coordinate_systems(self, register_initial=False):
-
-        with sdc.position.controller(ip='192.168.10.11') as pos:
-            current_versastat_position = pos.current_position()
-
-        x_versa, y_versa = current_versastat_position[0], current_versastat_position[1]
-
+    def get_last_known_position(self, x_versa, y_versa, resume=False):
 
         # load last known combi position and update internal state accordingly
         refs = pd.DataFrame(self.experiment_table.all())
-        if refs.size == 0:
+
+        if (resume == False) or (refs.size == 0):
 
             init = self.initial_combi_position
             ref = pd.Series({
@@ -126,89 +141,75 @@ class SDC(scirc.SlackClient):
             # TODO: verify that this record comes from the current session...
             ref = refs.iloc[0]
 
+        return ref
 
-        # get the offset
-        # convert versa -> combi (m -> mm)
-        disp_x = (x_versa - ref.x_versa)*1e3
-        disp_y = (y_versa - ref.y_versa)*1e3
+    def sync_coordinate_systems(self, register_initial=False, resume=False):
 
-        # keep track of the coordinate switch!
-        if self.frame_orientation == '-y':
-            # note: this one has been updated...
-            # x_combi ~ -y_versa
-            # y_combi ~ -x_versa
-            x_combi = ref.x_combi - disp_y
-            y_combi = ref.y_combi - disp_x
-        elif self.frame_orientation == '-x':
-            # x_vs is -x_c, y_vs is -y_c
-            x_combi = ref.x_combi - disp_x
-            y_combi = ref.y_combi - disp_y
+        with sdc.position.controller() as pos:
+            # map m -> mm
+            x_versa = pos.x * 1e3
+            y_versa = pos.y * 1e3
+
+        ref = self.get_last_known_position(x_versa, y_versa, resume=resume)
+
+        # set up the stage reference frame
+        # relative to the last recorded positions
+        cell = self.cell_frame
+
+        if orientation == '-y':
+            _stage = self.cell.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
         else:
             raise NotImplementedError
 
-        self.c_position = pd.Series({'x': x_combi, 'y': y_combi})
+        # find the origin of the combi wafer in the coincident stage frame
+        v = ref['x_combi']*cell.i + ref['y_combi']*cell.j
+        combi_origin = v.to_matrix(_stage)
 
-        if register_initial:
-            self.initial_combi_position = self.c_position
-            if self.verbose:
-                print(f"initial combi position: {self.c_position}")
+        # truncate to 2D vector
+        combi_origin = np.array(combi_origin).squeeze()[:-1]
 
-    async def post(self, msg, ws, channel):
-        # TODO: move this to the base Client class...
-        response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
-        self.msg_id += 1
-        await ws.send_str(json.dumps(response))
+        # now find the origin of the stage frame
+        xv_init = np.array([ref['x_versa'], ref['y_versa']])
+        l = xv_init - offset
+        v_origin = l[1]*cell.i + l[0]*cell.j
 
-    def compute_position_update(self, dx, dy):
-        """ map wafer frame position update to the position controller frame
-        frame_orientation: which wafer direction is aligned with x_versastat?
+        # construct the shifted stage frame
+        stage = _stage.locate_new('stage', v_origin)
+        return stage
+
+    def compute_position_update(self, x, y, frame):
+        """ compute frame update to map combi coordinate to the specified reference frame
+
+        NOTE: all reference frames are in mm; the position controller works with meters
         """
 
-        if self.frame_orientation == '-y':
-            # NOTE: this one has been updated.
-            # default reference frame alignment
-            # x_vs is -y_c, y_vs is -x_c
-            delta = np.array([-dy, -dx, 0.0])
+        P = to_coords(p, frame)
+        target_coords = np.array(P.express_coordinates(self.stage_frame)))
 
-        elif self.frame_orientation == '-x':
-            # x_vs is -x_c, y_vs is -y_c
-            delta = np.array([-dx, -dy, 0.0])
+        with sdc.position.controller() as pos:
+            # map m -> mm
+            current_coords = np.array((pos.x, pos.y, 0.0)) * 1e3
 
-        elif self.frame_orientation == '+y':
-            # x_vs is y_c, y_vs is -x_c
-            delta = np.array([dy, -dx, 0.0])
-
-        elif self.frame_orientation == '+x':
-            # x_vs is x_c, y_vs is y_c
-            delta = np.array([dx, dy, 0.0])
+        delta = target_coords - current_coords
 
         # convert from mm to m
         return delta * 1e-3
 
-    @command
-    async def move(self, ws, msgdata, args):
-
-        args = json.loads(args)
-
-        if self.verbose:
-            print(args)
-
-        self.sync_coordinate_systems()
-
-        # specify target positions in combi reference frame
-        # update this in the ctx manager even if things get cancelled...
-        dx = args['x'] - self.c_position.x
-        dy = args['y'] - self.c_position.y
+    async def move_stage(self, x, y, frame, threshold=0.0001):
+        """ specify target positions in combi reference frame
+        threshold is specified in meters...
+        only actually move if the update is above the noise floor
+        """
 
         # map position update to position controller frame
-        delta = self.compute_position_update(dx, dy)
+        delta = self.compute_position_update(x, y, frame)
 
-        if (dx != 0) or (dy != 0):
+        if np.abs(delta.sum()) > threshold:
             if self.verbose:
-                print('position update: {} {} (mm)'.format(dx, dy))
+                print(f'position update: {delta} (mm)')
 
             if self.notify:
-                slack.post_message(f'*confirm update*: dx={dx}, dy={dy} (delta={delta})')
+                slack.post_message(f'*confirm update*: (delta={delta})')
 
             async with sdc.position.acontroller(loop=self.loop, z_step=self.step_height, speed=self.speed) as pos:
 
@@ -218,17 +219,38 @@ class SDC(scirc.SlackClient):
                 # move horizontally
                 f = functools.partial(pos.update, delta=delta)
                 await self.loop.run_in_executor(None, f)
-                self.c_position += np.array([dx, dy])
 
-            if self.verbose:
-                print(pos.current_position())
-                print(self.c_position)
+                if self.verbose:
+                    print(pos.current_position())
 
         if self.initialize_z_position:
             # TODO: define the lower z baseline after the first move
 
             await ainput('*initialize z position*: press enter to continue...', loop=self.loop)
             self.initialize_z_position = False
+
+        with sdc.position.controller() as pos:
+            self.v_position = pos.current_position()
+
+        return
+
+    @command
+    async def move(self, ws, msgdata, args):
+
+        args = json.loads(args)
+
+        if self.verbose:
+            print(args)
+
+        reference = args.get('reference_frame', 'cell')
+
+        frame = {
+            'cell': self.cell_frame,
+            'laser': self.laser_frame,
+            'camera': self.camera_frame
+        }[reference]
+
+        self.move_stage(args['x'], args['y'], frame)
 
         # @ctl -- update the semaphore in the controller process
         await self.dm_controller('<@UHNHM7198> update position is set.')
@@ -337,14 +359,19 @@ class SDC(scirc.SlackClient):
         experiment_id = instructions[0].get('experiment_id')
 
         if intent is not None:
+            header = instructions[0]
             instructions = instructions[1:]
+
+        # move now
+        x_combi, y_combi = header.get('x'), header.get('y')
+        self.move_stage(x_combi, y_combi, self.cell_frame)
 
         meta = {
             'intent': intent,
             'experiment_id': experiment_id,
             'instructions': json.dumps(instructions),
-            'x_combi': float(self.c_position.x),
-            'y_combi': float(self.c_position.y),
+            'x_combi': float(x_combi),
+            'y_combi': float(y_combi),
             'x_versa': self.v_position[0],
             'y_versa': self.v_position[1],
             'z_versa': self.v_position[2],
@@ -635,6 +662,12 @@ class SDC(scirc.SlackClient):
     async def stop_pumps(self, ws, msgdata, args):
         """ shut off the syringe and counterbalance pumps """
         self.pump_array.stop_all(counterbalance='off')
+
+    async def post(self, msg, ws, channel):
+        # TODO: move this to the base Client class...
+        response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
+        self.msg_id += 1
+        await ws.send_str(json.dumps(response))
 
     @command
     async def abort_running_handlers(self, ws, msgdata, args):

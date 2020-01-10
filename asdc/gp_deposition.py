@@ -528,14 +528,6 @@ class Controller(scirc.SlackClient):
 
             pos = {'x': target['x_combi'], 'y': target['y_combi']}
 
-        # send the move command -- message @sdc
-        self.update_event.clear()
-        print(pos)
-        await self.dm_sdc(f'<@UHT11TM6F> move {json.dumps(pos)}')
-        print('waiting for ok')
-        # wait for the ok -- @sdc will message us with `@ctl update position`...
-        await self.update_event.wait()
-
         if instructions is None:
 
             if action in {Action.REPEAT, Action.CORRODE}:
@@ -551,10 +543,12 @@ class Controller(scirc.SlackClient):
                 instructions = deposition_instructions(query, experiment_id=experiment_id)
             elif action == Action.REPEAT:
                 instructions = json.loads(previous_op['instructions'])
-                instructions = instructions[1:] # skip the set_flow op...
                 instructions = [{'intent': 'deposition', 'experiment_id': experiment_id}] + instructions
             elif action == Action.CORRODE:
                 instructions = corrosion_instructions(experiment_id=experiment_id)
+
+        # update the intent block to include the target position
+        instructions[0].update(pos)
 
         print(instructions)
         # send the experiment command
