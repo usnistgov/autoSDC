@@ -184,7 +184,7 @@ class SDC(scirc.SlackClient):
         """
 
         P = to_coords(p, frame)
-        target_coords = np.array(P.express_coordinates(self.stage_frame)))
+        target_coords = np.array(P.express_coordinates(self.stage_frame))
 
         with sdc.position.controller() as pos:
             # map m -> mm
@@ -390,6 +390,7 @@ class SDC(scirc.SlackClient):
             if instructions[0].get('op') == 'set_flow':
                 if self.test:
                     slack.post_message(f'we would set_flow here')
+
                 else:
                     async with sdc.position.z_step(loop=self.loop, height=self.step_height, speed=self.speed):
                         await self.set_flow(instructions[0])
