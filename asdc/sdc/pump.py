@@ -266,5 +266,5 @@ class PumpArray():
 
         if start and (counterbalance_setpoint > 0):
             self.counterpump.start()
-        else:
+        elif counterbalance_setpoint == 0:
             self.counterpump.stop()
