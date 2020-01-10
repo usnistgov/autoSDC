@@ -104,7 +104,7 @@ class SDC(scirc.SlackClient):
         # TODO: make camera and laser offsets configurable
         self.cell_frame = CoordSys3D('cell')
         self.camera_frame = self.cell_frame.locate_new('camera', 36*self.cell_frame.i)
-        self.laser_frame = self.cell_frame.locate_new('laser', 48.519*self.cell_frame.i, 2.234*cell_frame.j)
+        self.laser_frame = self.cell_frame.locate_new('laser', 48.519*self.cell_frame.i, 2.234*self.cell_frame.j)
 
         if self.resume:
             self.stage_frame = self.sync_coordinate_systems(orientation=self.frame_orientation, register_initial=True, resume=self.resume)
