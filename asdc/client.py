@@ -132,6 +132,8 @@ class SDC(scirc.SlackClient):
         if (resume == False) or (refs.size == 0):
 
             init = self.initial_combi_position
+            print(f'resuming from {init}')
+
             ref = pd.Series({
                 'x_versa': x_versa, 'y_versa': y_versa,
                 'x_combi': init.x, 'y_combi': init.y
@@ -184,7 +186,9 @@ class SDC(scirc.SlackClient):
         """
 
         P = to_coords([x, y], frame)
-        target_coords = np.array(P.express_coordinates(self.stage_frame))
+        target_coords = np.array(P.express_coordinates(self.stage_frame), dtype=np.float)
+
+        print(target_coords)
 
         with sdc.position.controller() as pos:
             # map m -> mm
