@@ -47,7 +47,7 @@ def to_vec(x, frame):
 
 def to_coords(x, frame):
     """ express coordinates in specified reference frame """
-    return frame.origin.locate_new('P', to_vec(p, frame))
+    return frame.origin.locate_new('P', to_vec(x, frame))
 
 class SDC(scirc.SlackClient):
     """ autonomous scanning droplet cell client """
