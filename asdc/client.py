@@ -141,10 +141,10 @@ class SDC(scirc.SlackClient):
         else:
             # arbitrarily grab the first position
             # TODO: verify that this record comes from the current session...
-            ref = refs.iloc[0]
+            ref = refs.iloc[0].to_dict()
             ref['x_versa'] *= 1e3
             ref['y_versa'] *= 1e3
-
+            ref = pd.Series(ref)
             print(f'resuming from {ref}')
 
         return ref
