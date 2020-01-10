@@ -118,6 +118,7 @@ class SDC(scirc.SlackClient):
 
         adafruit_port = config.get('adafruit_port', 'COM9')
         pump_array_port = config.get('pump_array_port', 'COM10')
+        self.backfill_duration = config.get('backfill_duration', 15)
 
         try:
             self.pump_array = sdc.pump.PumpArray(
@@ -376,7 +377,7 @@ class SDC(scirc.SlackClient):
                     await self.set_flow(instructions[0])
 
             # bump_flow needs to get run every time!
-            await self.bump_flow(instructions[0], duration=10)
+            await self.bump_flow(instructions[0], duration=self.backfill_duration)
 
             summary = '-'.join(step['op'] for step in instructions)
             _msg = f"experiment *{meta['id']}*:  {summary}"
