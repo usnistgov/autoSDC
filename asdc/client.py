@@ -552,7 +552,6 @@ class SDC(scirc.SlackClient):
         mean, var = await self.reflectance_linescan()
 
         if primary_key is not None:
-            primary_key = int(args)
             filename = f'deposit_reflectance_{primary_key:03d}.json'
 
             metadata['id'] = primary_key
