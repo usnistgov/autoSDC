@@ -443,7 +443,7 @@ class SDC(scirc.SlackClient):
                         slack.post_image(figpath, title=f"CV {meta['id']}")
 
         # run cleanup and optical characterization
-        async with sdc.position.z_step(loop=self.loop, self.step_height, speed=self.speed):
+        async with sdc.position.z_step(loop=self.loop, z_step=self.step_height, speed=self.speed):
 
             self.pump_array.stop_all(counterbalance='full')
 
@@ -456,7 +456,7 @@ class SDC(scirc.SlackClient):
 
                 height_difference = self.characterization_height - self.step_height
                 height_difference = max(0, height_difference)
-                async with sdc.position.z_step(loop=self.loop, height_difference, speed=self.speed):
+                async with sdc.position.z_step(loop=self.loop, z_step=height_difference, speed=self.speed):
 
                     if self.notify:
                         slack.post_message(f"inspecting deposit quality")
