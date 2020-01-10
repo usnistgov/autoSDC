@@ -157,7 +157,7 @@ class SDC(scirc.SlackClient):
         cell = self.cell_frame
 
         if orientation == '-y':
-            _stage = self.cell.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
+            _stage = cell.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
         else:
             raise NotImplementedError
 
