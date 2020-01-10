@@ -183,7 +183,7 @@ class SDC(scirc.SlackClient):
         NOTE: all reference frames are in mm; the position controller works with meters
         """
 
-        P = to_coords(p, frame)
+        P = to_coords([x, y], frame)
         target_coords = np.array(P.express_coordinates(self.stage_frame))
 
         with sdc.position.controller() as pos:
