@@ -107,9 +107,9 @@ class SDC(scirc.SlackClient):
         self.laser_frame = self.cell_frame.locate_new('laser', 48*self.cell_frame.i)
 
         if self.resume:
-            self.stage_frame = self.sync_coordinate_systems(register_initial=True, resume=self.resume)
+            self.stage_frame = self.sync_coordinate_systems(orientation=self.frame_orientation, register_initial=True, resume=self.resume)
         else:
-            self.stage_frame = self.sync_coordinate_systems(register_initial=False)
+            self.stage_frame = self.sync_coordinate_systems(orientation=self.frame_orientation, register_initial=False)
 
         adafruit_port = config.get('adafruit_port', 'COM9')
         pump_array_port = config.get('pump_array_port', 'COM10')
@@ -143,7 +143,7 @@ class SDC(scirc.SlackClient):
 
         return ref
 
-    def sync_coordinate_systems(self, register_initial=False, resume=False):
+    def sync_coordinate_systems(self, orientation=None, register_initial=False, resume=False):
 
         with sdc.position.controller() as pos:
             # map m -> mm
