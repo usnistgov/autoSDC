@@ -250,7 +250,7 @@ class SDC(scirc.SlackClient):
             'camera': self.camera_frame
         }[reference]
 
-        self.move_stage(args['x'], args['y'], frame)
+        await self.move_stage(args['x'], args['y'], frame)
 
         # @ctl -- update the semaphore in the controller process
         await self.dm_controller('<@UHNHM7198> update position is set.')
