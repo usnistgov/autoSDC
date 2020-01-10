@@ -81,7 +81,7 @@ class SDC(scirc.SlackClient):
 
         # define a positive height to perform characterization
         h = float(config.get('characterization_height', 0.004))
-        h = min(0.0, h)
+        h = max(0.0, h)
         self.characterization_height = h
 
         self.test = config.get('test', False)
