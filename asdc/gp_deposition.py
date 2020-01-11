@@ -506,7 +506,14 @@ class Controller(scirc.SlackClient):
             intent = instructions[0].get('intent')
             fit_gp = False
             if intent == 'deposition':
-                action = Action.QUERY
+                # correctly handle "double-tap" protocol
+                # assume a deposition op following another deposition is a repeat
+                if previous_op is None:
+                    action = Action.QUERY
+                elif previous_op['intent'] == 'deposition':
+                    action = Action.REPEAT
+                else:
+                    action = Action.QUERY
             elif intent == 'corrosion':
                 action = Action.CORRODE
         else:
