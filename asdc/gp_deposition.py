@@ -531,7 +531,10 @@ class Controller(scirc.SlackClient):
         # if action is Action.CORRODE, select a target without a bubble to corrode
         if action == Action.CORRODE:
             targets = pd.DataFrame(self.db['experiment'].find(experiment_id=previous_op['experiment_id']))
-            target = targets[~(targets['has_bubble'] == True)].iloc[0]
+            try:
+                target = targets[~(targets['has_bubble'] == True)].iloc[0]
+            except KeyError:
+                target = targets.iloc[0]
 
             pos = {'x': target['x_combi'], 'y': target['y_combi']}
 
