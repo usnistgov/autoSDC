@@ -1,5 +1,7 @@
 import json
 import time
+import asyncio
+import websockets
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -17,7 +19,7 @@ potentiostat_id = 17109013
 POLL_INTERVAL = 1
 MIN_SAMPLING_FREQUENCY = 1.0e-5
 
-def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL):
+async def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL, streaming_ws=None):
     """ run an SDC experiment sequence -- busy wait until it's finished """
 
     pstat.start()
@@ -25,13 +27,34 @@ def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL):
     error_codes = set()
     metadata = {'timestamp_start': datetime.now()}
 
-    while pstat.sequence_running():
-        time.sleep(poll_interval)
-        pstat.update_status()
-        overload_status = pstat.overload_status()
-        if overload_status != 0:
-            print('OVERLOAD:', overload_status)
-            error_codes.add(overload_status)
+    if streaming_ws is None:
+        while pstat.sequence_running():
+            time.sleep(poll_interval)
+            pstat.update_status()
+            overload_status = pstat.overload_status()
+            if overload_status != 0:
+                print('OVERLOAD:', overload_status)
+                error_codes.add(overload_status)
+    else:
+        async with websockets.connect(streaming_ws) as ws:
+            current_idx = 0
+            while pstat.sequence_running():
+                time.sleep(poll_interval)
+
+                pstat.update_status()
+                overload_status = pstat.overload_status()
+                if overload_status != 0:
+                    print('OVERLOAD:', overload_status)
+                    error_codes.add(overload_status)
+
+                n_avail = pstat.points_available()
+                chunk_size = n_avail - current_idx
+                results_chunk = {
+                    'elapsed_time': pstat.potential(start=current_idx, num_points=chunk_size)
+                    'potential': pstat.potential(start=current_idx, num_points=chunk_size)
+                }
+                current_idx = n_avail
+                await ws.send(json.dumps(results_chunk))
 
     metadata['timestamp'] = datetime.now()
     metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
@@ -133,7 +156,7 @@ def setup_cv(pstat, data, cell='INTERNAL'):
     return status, params
 
 
-def run(instructions, cell='INTERNAL', verbose=False):
+async def run(instructions, cell='INTERNAL', verbose=False, datastream_ws=None):
 
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
@@ -166,7 +189,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
             #     time.sleep(hold_time)
 
         slack.post_message(f'starting experiment sequence')
-        scan_data, metadata = run_experiment_sequence(pstat)
+        scan_data, metadata = await run_experiment_sequence(pstat, datastream_ws=datastream_ws)
         # if pump_array:
         #     pump_array.stop_all()
         #     time.sleep(60)
