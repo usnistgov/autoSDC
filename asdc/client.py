@@ -448,13 +448,16 @@ class SDC(scirc.SlackClient):
             elif self.notify:
                 slack.post_message(_msg)
 
+
             f = functools.partial(sdc.experiment.run, instructions, cell=self.cell, verbose=self.verbose)
+
             if self.test_cell:
                 slack.post_message(f"we would run the experiment here...")
                 await self.loop.run_in_executor(None, time.sleep, 10)
 
             else:
                 results, metadata = await self.loop.run_in_executor(None, f)
+                results, metadata = await sdc.experiment.run(instructions, cell=self.cell, verbose=self.verbos)
 
                 metadata['parameters'] = json.dumps(metadata.get('parameters'))
                 if self.pump_array:
