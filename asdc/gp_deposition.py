@@ -522,27 +522,32 @@ class Controller(scirc.SlackClient):
             print(action)
             # intent, fit_gp = exp_id(self.db)
 
-        if action in {Action.QUERY, Action.REPEAT}:
+        if action == Action.QUERY:
+            experiment_id = int(previous_op.get('experiment_id')) + 1
             # march through target positions sequentially
             target_idx = self.db['experiment'].count(intent='deposition')
             target = self.targets.iloc[target_idx]
             pos = {'x': target.x, 'y': target.y}
 
+        elif action ==  Action.REPEAT:
+            experiment_id = int(previous_op.get('experiment_id'))
+            # march through target positions sequentially
+            target_idx = self.db['experiment'].count(intent='deposition')
+            target = self.targets.iloc[target_idx]
+            pos = {'x': target.x, 'y': target.y}
+
+        elif action == Action.CORRODE:
+            experiment_id = int(previous_op.get('experiment_id'))
+
         # if action is Action.CORRODE, select a target without a bubble to corrode
         if action == Action.CORRODE:
-            targets = pd.DataFrame(self.db['experiment'].find(experiment_id=previous_op['experiment_id']))
+            targets = pd.DataFrame(self.db['experiment'].find(experiment_id=experiment_id))
             try:
                 target = targets[~(targets['has_bubble'] == True)].iloc[0]
             except KeyError:
                 target = targets.iloc[0]
 
             pos = {'x': target['x_combi'], 'y': target['y_combi']}
-
-        if action in {Action.REPEAT, Action.CORRODE}:
-            experiment_id = previous_op.get('experiment_id')
-        else:
-            # action == Action.QUERY
-            experiment_id = previous_op.get('experiment_id') + 1
 
         if instructions is None:
 
