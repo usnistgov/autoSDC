@@ -575,7 +575,7 @@ class SDC(scirc.SlackClient):
         else:
             primary_key = None
 
-        mean_reflectance = self._reflectance(primary_key=primary_key)
+        mean_reflectance = await self._reflectance(primary_key=primary_key)
         print('reflectance:', mean_reflectance)
 
 
