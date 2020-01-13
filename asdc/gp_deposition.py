@@ -538,13 +538,13 @@ class Controller(scirc.SlackClient):
 
             pos = {'x': target['x_combi'], 'y': target['y_combi']}
 
-        if instructions is None:
+        if action in {Action.REPEAT, Action.CORRODE}:
+            experiment_id = previous_op.get('experiment_id')
+        else:
+            # action == Action.QUERY
+            experiment_id = previous_op.get('experiment_id') + 1
 
-            if action in {Action.REPEAT, Action.CORRODE}:
-                experiment_id = previous_op.get('experiment_id')
-            else:
-                # action == Action.QUERY
-                experiment_id = previous_op.get('experiment_id') + 1
+        if instructions is None:
 
             print('get instructions')
             # get the next instruction set
