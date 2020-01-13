@@ -559,6 +559,7 @@ class Controller(scirc.SlackClient):
 
         # update the intent block to include the target position
         instructions[0].update(pos)
+        instructions[0].update({'experiment_id': experiment_id})
 
         print(instructions)
         # send the experiment command
