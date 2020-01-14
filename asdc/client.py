@@ -484,17 +484,22 @@ class SDC(scirc.SlackClient):
         {
             'prep_height': 4mm,
             'wetting_height': 1.1mm,
-            'fill_ratio': 0.75,
-            'shrink_ratio': 1.1,
-            'flow_rate': 0.5
+            'fill_rate': 0.75,
+            'fill_time': None,
+            'shrink_rate': 1.1,
+            'shrink_time': None,
+            'flow_rate': 0.5,
+            'stage_speed': 0.001,
         }
         """
         instructions = json.loads(args)
 
         prep_height = max(0, instructions.get('height', 0.004))
         wetting_height = max(0, instructions.get('wetting_height', 0.0011))
-        fill_ratio = instructions.get('rfill', 0.75)
-        shrink_ratio = instructions.get('rshrink', 1.1)
+        fill_ratio = instructions.get('fill_rate', 0.75)
+        fill_time = instructions.get('fill_time', None)
+        shrink_ratio = instructions.get('shrink_rate', 1.1)
+        shrink_time = instructions.get('shrink_time', None)
         flow_rate = instructions.get('flow_rate', 0.5)
         cleanup_duration = instructions.get('cleanup', 0)
         stage_speed = instructions.get('stage_speed', self.speed)
@@ -524,14 +529,20 @@ class SDC(scirc.SlackClient):
                 # counterpump slower to fill the droplet
                 self.pump_array.set_rates(rates, counterpump_ratio=fill_ratio, start=True)
                 fill_start = time.time()
-                await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
+                if fill_time is None:
+                    await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
+                else:
+                    time.sleep(fill_time)
                 fill_time = time.time() - fill_start
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
             self.pump_array.set_rates(rates, counterpump_ratio=shrink_ratio)
             shrink_start = time.time()
-            await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
+            if shrink_time is None:
+                await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
+            else:
+                time.sleep(shrink_time)
             shrink_time = time.time() - shrink_start
 
         self.pump_array.set_rates(rates)
