@@ -533,7 +533,7 @@ class SDC(scirc.SlackClient):
 
             for step in range(n_steps):
 
-                reflectance_data = self.reflectometer.collect()
+                reflectance_data = self.reflectometer.collect(timeout=2)
                 mean.append(reflectance_data)
                 # mean.append(np.mean(reflectance_data))
                 # var.append(np.var(reflectance_data))
