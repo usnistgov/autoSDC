@@ -546,7 +546,7 @@ class SDC(scirc.SlackClient):
                 time.sleep(shrink_time)
             shrink_time = time.time() - shrink_start
 
-        self.pump_array.set_rates(rates)
+            self.pump_array.set_rates(rates)
 
         # drop down to contact height
         instructions['fill_time'] = fill_time
