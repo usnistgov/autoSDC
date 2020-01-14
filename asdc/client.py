@@ -498,8 +498,10 @@ class SDC(scirc.SlackClient):
         flow_rate = instructions.get('flow_rate', 0.5)
 
         # just pump from the first syringe pump
-        solution = next(iter(self.solutions))
-        rates = {solution: flow_rate}
+        # solution = next(iter(self.solutions))
+        solution = self.solutions[0]
+        s = next(iter(solution))
+        rates = {s: flow_rate}
 
         # start at zero
         async with sdc.position.z_step(loop=self.loop, height=wetting_height, speed=self.speed):
