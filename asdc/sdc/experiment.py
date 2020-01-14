@@ -50,7 +50,7 @@ async def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL, streaming_
                 n_avail = pstat.points_available()
                 chunk_size = n_avail - current_idx
                 results_chunk = {
-                    'elapsed_time': pstat.potential(start=current_idx, num_points=chunk_size)
+                    'elapsed_time': pstat.potential(start=current_idx, num_points=chunk_size),
                     'potential': pstat.potential(start=current_idx, num_points=chunk_size)
                 }
                 current_idx = n_avail
