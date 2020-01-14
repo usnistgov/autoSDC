@@ -55,6 +55,7 @@ async def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL, streaming_
                 }
                 current_idx = n_avail
                 await ws.send(json.dumps(results_chunk))
+            await ws.send(json.dumps({'type': 'goodbye'})
 
     metadata['timestamp'] = datetime.now()
     metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
