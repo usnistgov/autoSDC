@@ -477,6 +477,59 @@ class SDC(scirc.SlackClient):
         await self.dm_controller('<@UHNHM7198> go')
 
     @command
+    async def droplet(self, ws, msgdata, args):
+        """ debugging command for droplet contact routine
+
+        defaults
+        {
+            'prep_height': 4mm,
+            'wetting_height': 1.1mm,
+            'fill_ratio': 0.75,
+            'shrink_ratio': 1.1,
+            'flow_rate': 0.5
+        }
+        """
+        instructions = json.loads(args)
+
+        prep_height = max(0, instructions.get('height': 0.004))
+        wetting_height = max(0, instructions.get('wetting_height': 0.0011))
+        fill_ratio = instructions.get('rfill': 0.75)
+        shrink_ratio = instructions.get('rshrink': 1.1)
+        flow_rate = instructions.get('flow_rate': 0.5)
+
+        # just pump from the first syringe pump
+        solution = next(iter(self.solutions))
+        rates = {solution: flow_rate}
+
+        # start at zero
+        async with sdc.position.z_step(loop=self.loop, height=wetting_height, speed=self.speed):
+
+            height_difference = prep_height - wetting_height
+            height_difference = max(0, height_difference)
+            async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
+
+                # counterpump slower to fill the droplet
+                self.pump_array.set_rates(rates, counterpump_ratio=fill_ratio, start=True)
+                fill_start = time.time()
+                await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
+                fill_time = time.time() - fill_start
+
+            # drop down to wetting height
+            # counterpump faster to shrink the droplet
+            self.pump_array.set_rates(rates, counterpump_ratio=shrink_ratio)
+            shrink_start = time.time()
+            await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
+            shrink_time = shrink_start = time.time()
+
+        self.pump_array.set_rates(rates)
+
+        # drop down to contact height
+        instructions['fill_time'] = fill_time
+        instructions['shrink_time'] = shrink_time
+
+        return
+
+    @command
     async def checkpoint(self, ws, msgdata, args):
         """ hold until user input is given to allow experiment to proceed """
 
