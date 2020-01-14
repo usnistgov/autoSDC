@@ -31,7 +31,8 @@ from asdc import slack
 from asdc import visualization
 
 asdc_channel = 'CDW5JFZAR'
-BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
+# BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
+BOT_TOKEN = None
 CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 
 def relative_flow(rates):
@@ -50,11 +51,27 @@ def to_coords(x, frame):
     return frame.origin.locate_new('P', to_vec(x, frame))
 
 class SDC(scirc.SlackClient):
-    """ autonomous scanning droplet cell client """
+    """ autonomous scanning droplet cell client
+
+    this is a slack client that controls all of the hardware and executes experiments.
+
+    Arguments:
+        config: configuration dictionary
+        token: slack bot token
+
+    """
 
     command = scirc.CommandRegistry()
 
     def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN, resume=False):
+        """ sdc client
+
+        Arguments:
+            config: configuration dictionary
+            token: slack bot token
+
+        """
+
         super().__init__(verbose=verbose, logfile=logfile, token=token)
         self.command.update(super().command)
         self.msg_id = 0
@@ -765,7 +782,7 @@ class SDC(scirc.SlackClient):
     async def abort_running_handlers(self, ws, msgdata, args):
         """ cancel all currently running task handlers...
 
-        WARNING: does not do any checks on the potentiostat -- don't call this while an experiment is running...
+        Warning: does not do any checks on the potentiostat -- don't call this while an experiment is running...
 
         we could register the coroutine address when we start it up, and broadcast that so it's cancellable...?
         """
