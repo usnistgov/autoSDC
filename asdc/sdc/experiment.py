@@ -156,7 +156,7 @@ def setup_cv(pstat, data, cell='INTERNAL'):
     return status, params
 
 
-async def run(instructions, cell='INTERNAL', verbose=False, datastream_ws=None):
+async def run(instructions, cell='INTERNAL', verbose=False, streaming_ws=None):
 
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
@@ -189,7 +189,7 @@ async def run(instructions, cell='INTERNAL', verbose=False, datastream_ws=None):
             #     time.sleep(hold_time)
 
         slack.post_message(f'starting experiment sequence')
-        scan_data, metadata = await run_experiment_sequence(pstat, datastream_ws=datastream_ws)
+        scan_data, metadata = await run_experiment_sequence(pstat, streaming_ws=streaming_ws)
         # if pump_array:
         #     pump_array.stop_all()
         #     time.sleep(60)
