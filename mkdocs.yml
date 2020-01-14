@@ -1,0 +1,21 @@
+site_name: asdc
+site_description: automation tools for autonomous scanning droplet cell electrochemical characterization
+
+nav:
+  - Overview: "index.md"
+  - SDC Reference:
+    - client.py: "reference/client.md"
+    - controller.py: "reference/controller.md"
+    - sdc: "reference/sdc.md"
+  - Experiments:
+    - protocol: "experiment/protocol.md"
+    - configuration: "experiment/config.md"
+
+theme:
+  name: "material"
+
+plugins:
+  - search
+  - mkdocstrings:
+      watch:
+      - ./asdc
