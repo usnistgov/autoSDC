@@ -497,6 +497,11 @@ class SDC(scirc.SlackClient):
         shrink_ratio = instructions.get('rshrink', 1.1)
         flow_rate = instructions.get('flow_rate', 0.5)
         cleanup_duration = instructions.get('cleanup', 0)
+        stage_speed = instructions.get('stage_speed', self.speed)
+
+        # stage speed is specified in m/s
+        stage_speed = min(stage_speed, 1e-3)
+        stage_speed = max(stage_speed, 1e-5)
 
         # just pump from the first syringe pump
         # solution = next(iter(self.solutions))
@@ -505,7 +510,7 @@ class SDC(scirc.SlackClient):
         rates = {s: flow_rate}
 
         # start at zero
-        async with sdc.position.z_step(loop=self.loop, height=wetting_height, speed=self.speed):
+        async with sdc.position.z_step(loop=self.loop, height=wetting_height, speed=stage_speed):
 
             if cleanup_duration > 0:
                 print('cleaning up...')
@@ -514,7 +519,7 @@ class SDC(scirc.SlackClient):
 
             height_difference = prep_height - wetting_height
             height_difference = max(0, height_difference)
-            async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
+            async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=stage_speed):
 
                 # counterpump slower to fill the droplet
                 self.pump_array.set_rates(rates, counterpump_ratio=fill_ratio, start=True)
