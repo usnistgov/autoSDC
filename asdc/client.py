@@ -527,6 +527,8 @@ class SDC(scirc.SlackClient):
         instructions['fill_time'] = fill_time
         instructions['shrink_time'] = shrink_time
 
+        slack.post_message(f"contact routine with {json.dumps(instructions)}")
+
         return
 
     @command
