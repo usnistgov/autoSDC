@@ -19,7 +19,7 @@ potentiostat_id = 17109013
 POLL_INTERVAL = 1
 MIN_SAMPLING_FREQUENCY = 1.0e-5
 
-async def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL, streaming_ws=None):
+async def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL, streaming_ws="ws://localhost:8765"):
     """ run an SDC experiment sequence -- busy wait until it's finished """
 
     pstat.start()
