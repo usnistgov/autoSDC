@@ -532,7 +532,7 @@ class SDC(scirc.SlackClient):
             self.pump_array.set_rates(rates, counterpump_ratio=shrink_ratio)
             shrink_start = time.time()
             await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
-            shrink_time = shrink_start - time.time()
+            shrink_time = time.time() - shrink_start
 
         self.pump_array.set_rates(rates)
 
