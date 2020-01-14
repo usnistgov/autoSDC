@@ -236,7 +236,7 @@ class PumpArray():
 
         else:
             counterpump_ratio = max(0, counterpump_ratio)
-            counterpump_ratio = min(counterpump_ratio, 1.0)
+            # counterpump_ratio = min(counterpump_ratio, 1.0)
             counterbalance_setpoint = counterpump_ratio * total_setpoint
 
         # reset rates to 0
