@@ -128,7 +128,7 @@ class SDC(scirc.SlackClient):
             print('could not connect to pump array')
             self.pump_array = None
 
-        self.reflectometer = sdc.reflectivity.Reflectometer(port=adafruit_port)
+        self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
 
     def get_last_known_position(self, x_versa, y_versa, resume=False):
 

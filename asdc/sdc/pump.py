@@ -9,7 +9,7 @@ from chempy import equilibria
 from collections import defaultdict
 
 from asdc.sdc.utils import encode
-from asdc.sdc.peristaltic import PeristalticPump
+from asdc.sdc.microcontroller import PeristalticPump
 
 # placeholder config for development
 SOLUTIONS = {
