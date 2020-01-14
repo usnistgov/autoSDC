@@ -491,11 +491,11 @@ class SDC(scirc.SlackClient):
         """
         instructions = json.loads(args)
 
-        prep_height = max(0, instructions.get('height': 0.004))
-        wetting_height = max(0, instructions.get('wetting_height': 0.0011))
-        fill_ratio = instructions.get('rfill': 0.75)
-        shrink_ratio = instructions.get('rshrink': 1.1)
-        flow_rate = instructions.get('flow_rate': 0.5)
+        prep_height = max(0, instructions.get('height', 0.004))
+        wetting_height = max(0, instructions.get('wetting_height', 0.0011))
+        fill_ratio = instructions.get('rfill', 0.75)
+        shrink_ratio = instructions.get('rshrink', 1.1)
+        flow_rate = instructions.get('flow_rate', 0.5)
 
         # just pump from the first syringe pump
         solution = next(iter(self.solutions))
