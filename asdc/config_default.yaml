@@ -10,7 +10,7 @@ command_logfile: commands.log
 # output configuration
 notify_slack: true
 plot_cv: false
-plot_current: fals
+plot_current: false
 
 # debugging options
 test: false
@@ -25,6 +25,8 @@ confirm_experiment: False
 
 # add a delay before running each experiment...
 initial_delay: 0
+
+cleanup_pause: 0
 
 # quality checks
 coverage_threshold: 0.9

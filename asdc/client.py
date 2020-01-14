@@ -87,6 +87,7 @@ class SDC(scirc.SlackClient):
         self.experiment_table = self.db['experiment']
 
         # initialize devices
+        print('config parsed')
 
         # coordinate systems positions
         self.initial_combi_position = pd.Series(config['initial_combi_position'].get())
