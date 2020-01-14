@@ -510,6 +510,7 @@ class SDC(scirc.SlackClient):
             if cleanup_duration > 0:
                 print('cleaning up...')
                 self.pump_array.stop_all(counterbalance='full')
+                time.sleep(cleanup_duration)
 
             height_difference = prep_height - wetting_height
             height_difference = max(0, height_difference)
