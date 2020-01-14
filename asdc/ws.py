@@ -5,6 +5,12 @@ import websockets
 async def echo(websocket, path):
     while True:
         chunk = await websocket.recv()
+
+        data = json.loads(chunk)
+
+        if data.get('type') == 'goodbye':
+            break
+
         print(f"< {chunk}")
 
 start_server = websockets.serve(echo, "localhost", 8765)
