@@ -489,6 +489,7 @@ class SDC(scirc.SlackClient):
             'shrink_rate': 1.1,
             'shrink_time': None,
             'flow_rate': 0.5,
+            'cleanup': 0,
             'stage_speed': 0.001,
         }
         """
