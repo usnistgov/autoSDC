@@ -1,0 +1,1272 @@
+
+
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+        <meta name="description" content="automation tools for autonomous scanning droplet cell electrochemical characterization">
+      
+      
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.pipeline.stopwords" content="True">
+      
+        <meta name="lang:search.pipeline.trimmer" content="True">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-4.6.0">
+    
+    
+      
+        <title>controller.py - asdc</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/application.1b62728e.css">
+      
+      
+    
+    
+      <script src="../../assets/javascripts/modernizr.268332fc.js"></script>
+    
+    
+      
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
+      
+    
+    <link rel="stylesheet" href="../../assets/fonts/material-icons.css">
+    
+    
+      <link rel="stylesheet" href="../../custom.css">
+    
+    
+      
+    
+    
+  </head>
+  
+    <body dir="ltr">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+    
+      <a href="#automation-controller" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a href="../.." title="asdc" class="md-header-nav__button md-logo">
+          
+            <i class="md-icon"></i>
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            <span class="md-header-nav__topic">
+              asdc
+            </span>
+            <span class="md-header-nav__topic">
+              
+                controller.py
+              
+            </span>
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          <label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+          
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="__search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+        
+      </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main" role="main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="__drawer">
+    <a href="../.." title="asdc" class="md-nav__button md-logo">
+      
+        <i class="md-icon"></i>
+      
+    </a>
+    asdc
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." title="Overview" class="md-nav__link">
+      Overview
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-2" type="checkbox" id="nav-2" checked>
+    
+    <label class="md-nav__link" for="nav-2">
+      SDC Reference
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-2">
+        SDC Reference
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../client/" title="client.py" class="md-nav__link">
+      client.py
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        controller.py
+      </label>
+    
+    <a href="./" title="controller.py" class="md-nav__link md-nav__link--active">
+      controller.py
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Action" class="md-nav__link">
+    Action
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller" class="md-nav__link">
+    Controller
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller.abort_running_handlers" class="md-nav__link">
+    abort_running_handlers()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller.dm" class="md-nav__link">
+    dm()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller.go" class="md-nav__link">
+    go()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller.random_scalarization_cb" class="md-nav__link">
+    random_scalarization_cb()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.classification_criterion" class="md-nav__link">
+    classification_criterion()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.deposition_instructions" class="md-nav__link">
+    deposition_instructions()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.exp_id" class="md-nav__link">
+    exp_id()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.load_cv" class="md-nav__link">
+    load_cv()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.load_experiment_json" class="md-nav__link">
+    load_experiment_json()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.select_action" class="md-nav__link">
+    select_action()
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../sdc/" title="sdc" class="md-nav__link">
+      sdc
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+    
+    <label class="md-nav__link" for="nav-3">
+      Experiments
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        Experiments
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../experiment/protocol/" title="protocol" class="md-nav__link">
+      protocol
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../experiment/config/" title="configuration" class="md-nav__link">
+      configuration
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Action" class="md-nav__link">
+    Action
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller" class="md-nav__link">
+    Controller
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller.abort_running_handlers" class="md-nav__link">
+    abort_running_handlers()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller.dm" class="md-nav__link">
+    dm()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller.go" class="md-nav__link">
+    go()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.Controller.random_scalarization_cb" class="md-nav__link">
+    random_scalarization_cb()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.classification_criterion" class="md-nav__link">
+    classification_criterion()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.deposition_instructions" class="md-nav__link">
+    deposition_instructions()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.exp_id" class="md-nav__link">
+    exp_id()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.load_cv" class="md-nav__link">
+    load_cv()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.load_experiment_json" class="md-nav__link">
+    load_experiment_json()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asdc.gp_deposition.select_action" class="md-nav__link">
+    select_action()
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                
+                <h1 id="automation-controller">Automation Controller<a class="headerlink" href="#automation-controller" title="Permanent link">&para;</a></h1>
+<p>GP deposition -- deposit duplicate samples, performing a corrosion test on the second </p>
+<h2 id="asdc.gp_deposition.Action"><code class="codehilite"><span class="n">Action</span></code><a class="headerlink" href="#asdc.gp_deposition.Action" title="Permanent link">&para;</a></h2>
+<div class="autodoc">
+<p>An enumeration.</p>
+</div>
+<h2 id="asdc.gp_deposition.Controller"><code class="codehilite"><span class="n">Controller</span></code><a class="headerlink" href="#asdc.gp_deposition.Controller" title="Permanent link">&para;</a></h2>
+<div class="autodoc">
+<p>autonomous scanning droplet cell client </p>
+<h3 id="asdc.gp_deposition.Controller.abort_running_handlers"><code class="codehilite"><span class="n">abort_running_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.Controller.abort_running_handlers" title="Permanent link">&para;</a></h3>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>593
+594
+595
+596
+597
+598
+599
+600
+601
+602
+603
+604
+605
+606
+607
+608
+609
+610
+611
+612
+613
+614
+615
+616
+617
+618
+619
+620
+621
+622</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+    <span class="n">async</span> <span class="k">def</span> <span class="nf">abort_running_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; cancel all currently running task handlers...</span>
+
+<span class="sd">        WARNING: does not do any checks on the potentiostat -- don&#39;t call this while an experiment is running...</span>
+
+<span class="sd">        we could register the coroutine address when we start it up, and broadcast that so it&#39;s cancellable...?</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;sdc: {msgdata[&#39;username&#39;]} said abort_running_handlers&quot;</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="c1"># dm UC537488J (brian)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">slack_api_call</span><span class="p">(</span>
+            <span class="s1">&#39;chat.postMessage&#39;</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;channel&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;@UC537488J&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span> <span class="s1">&#39;as_user&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span> <span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="s1">&#39;sdc&#39;</span><span class="p">},</span>
+            <span class="n">token</span><span class="o">=</span><span class="n">CTL_TOKEN</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+
+        <span class="n">current_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">current_task</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">all_tasks</span><span class="p">():</span>
+
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">_coro</span> <span class="o">==</span> <span class="n">current_task</span><span class="o">.</span><span class="n">_coro</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">_coro</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;handle&#39;</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;killing task {task._coro}&#39;</span><span class="p">)</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>cancel all currently running task handlers...</p>
+<p>WARNING: does not do any checks on the potentiostat -- don't call this while an experiment is running...</p>
+<p>we could register the coroutine address when we start it up, and broadcast that so it's cancellable...?</p>
+</div>
+<h3 id="asdc.gp_deposition.Controller.dm"><code class="codehilite"><span class="n">dm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.Controller.dm" title="Permanent link">&para;</a></h3>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>582
+583
+584
+585
+586
+587
+588
+589
+590
+591</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+    <span class="n">async</span> <span class="k">def</span> <span class="nf">dm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; echo random string to DM channel &quot;&quot;&quot;</span>
+        <span class="n">dm_channel</span> <span class="o">=</span> <span class="s1">&#39;DHY5REQ0H&#39;</span>
+        <span class="c1"># dm_channel = &#39;DHNHM74TU&#39;</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">slack_api_call</span><span class="p">(</span>
+            <span class="s1">&#39;chat.postMessage&#39;</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">SDC_TOKEN</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;channel&#39;</span><span class="p">:</span> <span class="n">dm_channel</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="n">args</span><span class="p">,</span> <span class="s1">&#39;as_user&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span> <span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="s1">&#39;ctl&#39;</span><span class="p">}</span>
+        <span class="p">)</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>echo random string to DM channel </p>
+</div>
+<h3 id="asdc.gp_deposition.Controller.go"><code class="codehilite"><span class="n">go</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.Controller.go" title="Permanent link">&para;</a></h3>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>494
+495
+496
+497
+498
+499
+500
+501
+502
+503
+504
+505
+506
+507
+508
+509
+510
+511
+512
+513
+514
+515
+516
+517
+518
+519
+520
+521
+522
+523
+524
+525
+526
+527
+528
+529
+530
+531
+532
+533
+534
+535
+536
+537
+538
+539
+540
+541
+542
+543
+544
+545
+546
+547
+548
+549
+550
+551
+552
+553
+554
+555
+556
+557
+558
+559
+560
+561
+562
+563
+564
+565
+566
+567
+568
+569
+570
+571
+572
+573</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+    <span class="n">async</span> <span class="k">def</span> <span class="nf">go</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; keep track of target positions and experiment list</span>
+
+<span class="sd">        target and experiment indices start at 0</span>
+<span class="sd">        sqlite integer primary keys start at 1...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">previous_op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiments</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">instructions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiments</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">intent</span> <span class="o">=</span> <span class="n">instructions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;intent&#39;</span><span class="p">)</span>
+            <span class="n">fit_gp</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="n">intent</span> <span class="o">==</span> <span class="s1">&#39;deposition&#39;</span><span class="p">:</span>
+                <span class="c1"># correctly handle &quot;double-tap&quot; protocol</span>
+                <span class="c1"># assume a deposition op following another deposition is a repeat</span>
+                <span class="k">if</span> <span class="n">previous_op</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">QUERY</span>
+                <span class="k">elif</span> <span class="n">previous_op</span><span class="p">[</span><span class="s1">&#39;intent&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;deposition&#39;</span><span class="p">:</span>
+                    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">REPEAT</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">QUERY</span>
+            <span class="k">elif</span> <span class="n">intent</span> <span class="o">==</span> <span class="s1">&#39;corrosion&#39;</span><span class="p">:</span>
+                <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">CORRODE</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">instructions</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">action</span> <span class="o">=</span> <span class="n">select_action</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coverage_threshold</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+            <span class="c1"># intent, fit_gp = exp_id(self.db)</span>
+
+        <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Action</span><span class="o">.</span><span class="n">QUERY</span><span class="p">:</span>
+            <span class="n">experiment_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">previous_op</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;experiment_id&#39;</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="c1"># march through target positions sequentially</span>
+            <span class="n">target_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="s1">&#39;deposition&#39;</span><span class="p">)</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">target_idx</span><span class="p">]</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">y</span><span class="p">}</span>
+
+        <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span>  <span class="n">Action</span><span class="o">.</span><span class="n">REPEAT</span><span class="p">:</span>
+            <span class="n">experiment_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">previous_op</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;experiment_id&#39;</span><span class="p">))</span>
+            <span class="c1"># march through target positions sequentially</span>
+            <span class="n">target_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="s1">&#39;deposition&#39;</span><span class="p">)</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">target_idx</span><span class="p">]</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">y</span><span class="p">}</span>
+
+        <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Action</span><span class="o">.</span><span class="n">CORRODE</span><span class="p">:</span>
+            <span class="n">experiment_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">previous_op</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;experiment_id&#39;</span><span class="p">))</span>
+
+        <span class="c1"># if action is Action.CORRODE, select a target without a bubble to corrode</span>
+        <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Action</span><span class="o">.</span><span class="n">CORRODE</span><span class="p">:</span>
+            <span class="n">targets</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">targets</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">targets</span><span class="p">[</span><span class="s1">&#39;has_bubble&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">True</span><span class="p">)]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">targets</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">pos</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">target</span><span class="p">[</span><span class="s1">&#39;x_combi&#39;</span><span class="p">],</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">target</span><span class="p">[</span><span class="s1">&#39;y_combi&#39;</span><span class="p">]}</span>
+
+        <span class="k">if</span> <span class="n">instructions</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;get instructions&#39;</span><span class="p">)</span>
+            <span class="c1"># get the next instruction set</span>
+            <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Action</span><span class="o">.</span><span class="n">QUERY</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gp_acquisition</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">)</span>
+                <span class="n">instructions</span> <span class="o">=</span> <span class="n">deposition_instructions</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Action</span><span class="o">.</span><span class="n">REPEAT</span><span class="p">:</span>
+                <span class="n">instructions</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">previous_op</span><span class="p">[</span><span class="s1">&#39;instructions&#39;</span><span class="p">])</span>
+                <span class="n">instructions</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;intent&#39;</span><span class="p">:</span> <span class="s1">&#39;deposition&#39;</span><span class="p">,</span> <span class="s1">&#39;experiment_id&#39;</span><span class="p">:</span> <span class="n">experiment_id</span><span class="p">}]</span> <span class="o">+</span> <span class="n">instructions</span>
+            <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Action</span><span class="o">.</span><span class="n">CORRODE</span><span class="p">:</span>
+                <span class="n">instructions</span> <span class="o">=</span> <span class="n">corrosion_instructions</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">)</span>
+
+        <span class="c1"># update the intent block to include the target position</span>
+        <span class="n">instructions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+        <span class="n">instructions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;experiment_id&#39;</span><span class="p">:</span> <span class="n">experiment_id</span><span class="p">})</span>
+
+        <span class="k">print</span><span class="p">(</span><span class="n">instructions</span><span class="p">)</span>
+        <span class="c1"># send the experiment command</span>
+        <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">dm_sdc</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;&lt;@UHT11TM6F&gt; run_experiment {json.dumps(instructions)}&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>keep track of target positions and experiment list</p>
+<p>target and experiment indices start at 0
+sqlite integer primary keys start at 1...</p>
+</div>
+<h3 id="asdc.gp_deposition.Controller.random_scalarization_cb"><code class="codehilite"><span class="n">random_scalarization_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">cb_beta</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.Controller.random_scalarization_cb" title="Permanent link">&para;</a></h3>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">random_scalarization_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">cb_beta</span><span class="o">=</span><span class="mf">0.25</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; random scalarization acquisition policy function</span>
+<span class="sd">        depending on model likelihood, use different policy functions for different outputs</span>
+<span class="sd">        each criterion should be framed as a minimization problem...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">objective</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">candidates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="c1"># sample one set of weights from a dirichlet distribution</span>
+        <span class="c1"># that specifies our general preference on the objective weightings</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">dirichlet</span><span class="o">.</span><span class="n">rvs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objective_alphas</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+        <span class="c1"># weights = [0.0, 1.0]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
+            <span class="n">slack</span><span class="o">.</span><span class="n">post_message</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;sampled objective fn weights: {weights}&#39;</span><span class="p">)</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">criteria</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
+
+            <span class="n">sign</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sgn</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;Gaussian&#39;</span><span class="p">,</span> <span class="s1">&#39;Beta&#39;</span><span class="p">):</span>
+                <span class="n">criterion</span> <span class="o">=</span> <span class="n">confidence_bound</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">sign</span><span class="o">=</span><span class="n">sign</span><span class="p">,</span> <span class="n">cb_beta</span><span class="o">=</span><span class="n">cb_beta</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;Bernoulli&#39;</span><span class="p">:</span>
+                <span class="n">criterion</span> <span class="o">=</span> <span class="n">classification_criterion</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">candidates</span><span class="p">)</span>
+                <span class="n">y_loc</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_y</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span>
+                <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_loc</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+
+            <span class="n">criteria</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">criterion</span><span class="o">.</span><span class="n">squeeze</span><span class="p">())</span>
+
+        <span class="n">objective</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">criteria</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">weight</span><span class="p">,</span> <span class="n">criterion</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">criteria</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">criterion</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+            <span class="n">drange</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ptp</span><span class="p">(</span><span class="n">criterion</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">criterion</span><span class="p">)])</span>
+            <span class="n">criterion</span> <span class="o">=</span> <span class="p">(</span><span class="n">criterion</span> <span class="o">-</span> <span class="n">criterion</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">/</span> <span class="n">drange</span>
+            <span class="n">objective</span> <span class="o">+=</span> <span class="n">weight</span><span class="o">*</span><span class="n">criterion</span>
+
+        <span class="k">return</span> <span class="n">objective</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>random scalarization acquisition policy function
+depending on model likelihood, use different policy functions for different outputs
+each criterion should be framed as a minimization problem...</p>
+</div>
+</div>
+<h2 id="asdc.gp_deposition.classification_criterion"><code class="codehilite"><span class="n">classification_criterion</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">candidates</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.classification_criterion" title="Permanent link">&para;</a></h2>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>225
+226
+227
+228
+229</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">classification_criterion</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">candidates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; compute the classification criterion from 10.1007/s11263-009-0268-3 &quot;&quot;&quot;</span>
+    <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_f</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span>
+    <span class="n">criterion</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">loc</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">scale</span><span class="o">+</span><span class="mf">0.001</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">criterion</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>compute the classification criterion from 10.1007/s11263-009-0268-3 </p>
+</div>
+<h2 id="asdc.gp_deposition.deposition_instructions"><code class="codehilite"><span class="n">deposition_instructions</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.deposition_instructions" title="Permanent link">&para;</a></h2>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">deposition_instructions</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; TODO: do something about deposition duration.... &quot;&quot;&quot;</span>
+    <span class="n">instructions</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;deposition&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="n">experiment_id</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;op&quot;</span><span class="p">:</span> <span class="s2">&quot;set_flow&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rates&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;CuSO4&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;flow_rate&quot;</span><span class="p">]},</span>
+            <span class="s2">&quot;hold_time&quot;</span><span class="p">:</span> <span class="mi">120</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;op&quot;</span><span class="p">:</span> <span class="s2">&quot;potentiostatic&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;potential&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;potential&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="s2">&quot;current_range&quot;</span><span class="p">:</span> <span class="s2">&quot;20MA&quot;</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">instructions</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>TODO: do something about deposition duration.... </p>
+</div>
+<h2 id="asdc.gp_deposition.exp_id"><code class="codehilite"><span class="n">exp_id</span><span class="p">(</span><span class="n">db</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.exp_id" title="Permanent link">&para;</a></h2>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span> 81
+ 82
+ 83
+ 84
+ 85
+ 86
+ 87
+ 88
+ 89
+ 90
+ 91
+ 92
+ 93
+ 94
+ 95
+ 96
+ 97
+ 98
+ 99
+100
+101
+102
+103
+104</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">exp_id</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; we&#39;re running two depositions followed by a corrosion experiment</span>
+<span class="sd">    return 0 if it&#39;s time for the first deposition</span>
+<span class="sd">           1 if it&#39;s time for  the second deposition</span>
+<span class="sd">           2 if it&#39;s time for corrosion</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">deps</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="s1">&#39;deposition&#39;</span><span class="p">)</span>
+    <span class="n">cors</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="s1">&#39;corrosion&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">cors</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">phase</span> <span class="o">=</span> <span class="n">deps</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">phase</span> <span class="o">=</span> <span class="n">deps</span> <span class="o">%</span> <span class="n">cors</span>
+
+    <span class="k">if</span> <span class="n">phase</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">intent</span> <span class="o">=</span> <span class="s1">&#39;deposition&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">intent</span> <span class="o">=</span> <span class="s1">&#39;corrosion&#39;</span>
+    <span class="k">if</span> <span class="n">phase</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">fit_gp</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fit_gp</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="n">intent</span><span class="p">,</span> <span class="n">fit_gp</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>we're running two depositions followed by a corrosion experiment
+return 0 if it's time for the first deposition
+       1 if it's time for  the second deposition
+       2 if it's time for corrosion</p>
+</div>
+<h2 id="asdc.gp_deposition.load_cv"><code class="codehilite"><span class="n">load_cv</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">data_dir</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">segment</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">half</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.load_cv" title="Permanent link">&para;</a></h2>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">load_cv</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">data_dir</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">segment</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">half</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; load CV data and process it... &quot;&quot;&quot;</span>
+    <span class="n">cv</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;datafile&#39;</span><span class="p">]),</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">sel</span> <span class="o">=</span> <span class="n">cv</span><span class="p">[</span><span class="s1">&#39;segment&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">segment</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="n">cv</span><span class="p">[</span><span class="s1">&#39;current&#39;</span><span class="p">][</span><span class="n">sel</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="n">cv</span><span class="p">[</span><span class="s1">&#39;potential&#39;</span><span class="p">][</span><span class="n">sel</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">cv</span><span class="p">[</span><span class="s1">&#39;elapsed_time&#39;</span><span class="p">][</span><span class="n">sel</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="k">if</span> <span class="n">half</span><span class="p">:</span>
+        <span class="c1"># grab the length of the polarization curve</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">I</span><span class="o">.</span><span class="n">size</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="n">I</span> <span class="o">=</span> <span class="n">I</span><span class="p">[:</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">V</span><span class="p">[:</span><span class="n">n</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">log</span><span class="p">:</span>
+        <span class="n">I</span> <span class="o">=</span> <span class="n">cycvolt</span><span class="o">.</span><span class="n">analyze</span><span class="o">.</span><span class="n">log_abs_current</span><span class="p">(</span><span class="n">I</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">t</span> <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>load CV data and process it... </p>
+</div>
+<h2 id="asdc.gp_deposition.load_experiment_json"><code class="codehilite"><span class="n">load_experiment_json</span><span class="p">(</span><span class="n">experiment_files</span><span class="p">,</span> <span class="nb">dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.load_experiment_json" title="Permanent link">&para;</a></h2>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">load_experiment_json</span><span class="p">(</span><span class="n">experiment_files</span><span class="p">,</span> <span class="nb">dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; an experiment file contains a json list of experiment definitions &quot;&quot;&quot;</span>
+    <span class="nb">dir</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="nb">dir</span><span class="p">)</span>
+
+    <span class="n">experiments</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">experiment_file</span> <span class="ow">in</span> <span class="n">experiment_files</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="n">experiment_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">experiments</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">experiments</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">experiments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">experiments</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">return</span> <span class="n">experiments</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>an experiment file contains a json list of experiment definitions </p>
+</div>
+<h2 id="asdc.gp_deposition.select_action"><code class="codehilite"><span class="n">select_action</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.select_action" title="Permanent link">&para;</a></h2>
+<div class="autodoc">
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">select_action</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.9</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; run two depositions, followed by a corrosion experiment if the deposits are acceptable.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">prev_id</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+
+    <span class="n">prev</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">prev_id</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">prev</span><span class="p">[</span><span class="s1">&#39;intent&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;corrosion&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Action</span><span class="o">.</span><span class="n">QUERY</span>
+
+    <span class="k">elif</span> <span class="n">prev</span><span class="p">[</span><span class="s1">&#39;intent&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;deposition&#39;</span><span class="p">:</span>
+        <span class="n">n_repeats</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="n">prev</span><span class="p">[</span><span class="s1">&#39;experiment_id&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">n_repeats</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># logic to skip replicate based on quality goes here...</span>
+            <span class="k">return</span> <span class="n">Action</span><span class="o">.</span><span class="n">REPEAT</span>
+
+        <span class="k">elif</span> <span class="n">n_repeats</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># if coverage is good enough, run a corrosion measurement.</span>
+            <span class="n">session</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="n">prev</span><span class="p">[</span><span class="s1">&#39;experiment_id&#39;</span><span class="p">]))</span>
+            <span class="n">min_coverage</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;coverage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">min_coverage</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">:</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="n">prev</span><span class="p">[</span><span class="s1">&#39;experiment_id&#39;</span><span class="p">]))</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">target</span><span class="p">[</span><span class="s1">&#39;has_bubble&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">True</span><span class="p">)]</span>
+
+                <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;no replicates without bubbles...&#39;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">Action</span><span class="o">.</span><span class="n">QUERY</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;good coverage ({min_coverage})&#39;</span><span class="p">)</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;target&#39;</span><span class="p">,</span> <span class="n">target</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">target</span><span class="p">[</span><span class="s1">&#39;x_combi&#39;</span><span class="p">],</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">target</span><span class="p">[</span><span class="s1">&#39;y_combi&#39;</span><span class="p">]}</span>
+                    <span class="k">return</span> <span class="n">Action</span><span class="o">.</span><span class="n">CORRODE</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;poor coverage ({min_coverage})&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">Action</span><span class="o">.</span><span class="n">QUERY</span>
+</pre></div>
+</td></tr></table>
+
+</details>
+<p>run two depositions, followed by a corrosion experiment if the deposits are acceptable.</p>
+</div>
+                
+                  
+                
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../client/" title="client.py" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                client.py
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../sdc/" title="sdc" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                sdc
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        powered by
+        <a href="https://www.mkdocs.org">MkDocs</a>
+        and
+        <a href="https://squidfunk.github.io/mkdocs-material/">
+          Material for MkDocs</a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/application.808e90bb.js"></script>
+      
+      <script>app.initialize({version:"1.0.4",url:{base:"../.."}})</script>
+      
+    
+  </body>
+</html>
