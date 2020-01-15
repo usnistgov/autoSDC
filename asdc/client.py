@@ -426,8 +426,8 @@ class SDC(scirc.SlackClient):
         if line_flush_needed:
             print('performing line flush')
             time.sleep(line_flush_duration)
-        else:
-            time.sleep(5)
+
+        time.sleep(3)
 
         print(f'stepping flow rates to {rates}')
         self.pump_array.set_rates(rates, counterpump_ratio=0.95)
