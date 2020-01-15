@@ -8,8 +8,7 @@ before_script:
 
 # build mkdocs documentation
 pages:
-  tags:
-  - shared
+  stage: deploy
   script:
   - mkdocs build
   - mv site public
@@ -18,3 +17,5 @@ pages:
     - public
   only:
   - master
+  tags:
+  - shared
