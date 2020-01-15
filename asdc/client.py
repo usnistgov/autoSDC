@@ -34,9 +34,15 @@ from asdc import slack
 from asdc import visualization
 
 asdc_channel = 'CDW5JFZAR'
-# BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
-BOT_TOKEN = None
-CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
+try:
+    BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
+except FileNotFoundError:
+    BOT_TOKEN = None
+
+try:
+    CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
+except FileNotFoundError:
+    CTL_TOKEN = None
 
 def relative_flow(rates):
     """ convert a dictionary of flow rates to ratios of each component """
