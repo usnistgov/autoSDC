@@ -420,7 +420,7 @@ class SDC(scirc.SlackClient):
             time.sleep(self.shrink_time)
 
             print('equalizing differential pumping rate')
-            self.pump_array.set_rates(cell_fill_rates)
+            self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.95)
 
         # flush lines with cell in contact
         if line_flush_needed:
@@ -430,7 +430,7 @@ class SDC(scirc.SlackClient):
             time.sleep(5)
 
         print(f'stepping flow rates to {rates}')
-        self.pump_array.set_rates(rates)
+        self.pump_array.set_rates(rates, counterpump_ratio=0.95)
 
         # end droplet workflow
 
