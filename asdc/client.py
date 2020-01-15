@@ -732,7 +732,7 @@ class SDC(scirc.SlackClient):
         mean_reflectance = await self._reflectance(primary_key=primary_key)
         print('reflectance:', mean_reflectance)
 
-    async def capture_image(self, primary_key=None):
+    async def _capture_image(self, primary_key=None):
         """ capture an image from the webcam.
 
         pass an experiment index to serialize metadata to db
@@ -776,7 +776,7 @@ class SDC(scirc.SlackClient):
         else:
             primary_key = None
 
-        self.capture_image(primary_key=primary_key)
+        self._capture_image(primary_key=primary_key)
 
     @command
     async def bubble(self, ws, msgdata, args):
