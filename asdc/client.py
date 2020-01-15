@@ -742,6 +742,9 @@ class SDC(scirc.SlackClient):
         time.sleep(0.5)
         status, frame = camera.read()
 
+        # BGR --> RGB format
+        frame = frame[...,::-1].copy()
+
         if primary_key is not None:
 
             image_name = f'deposit_pic_{primary_key:03d}.png'
