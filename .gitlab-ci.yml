@@ -8,6 +8,7 @@ before_script:
 pages:
   image: python:latest
   script:
+  - pip install -e .
   - mkdocs build
   - mv site public
   artifacts:
