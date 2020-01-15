@@ -1,4 +1,4 @@
-image: python:alpine
+image: linux
 
 before_script:
   - pip install mkdocs
@@ -6,6 +6,7 @@ before_script:
   ## (https://github.com/mkdocs/mkdocs/wiki/MkDocs-Themes)
   # - pip install mkdocs-material mkdocstrings
 
+# build documentation
 pages:
   script:
   - mkdocs build
