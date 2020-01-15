@@ -399,9 +399,19 @@ class SDC(scirc.SlackClient):
             header = instructions[0]
             instructions = instructions[1:]
 
-        # move now
         x_combi, y_combi = header.get('x'), header.get('y')
         await self.move_stage(x_combi, y_combi, self.cell_frame)
+
+        if instructions[0].get('op') == 'set_flow':
+            if self.test:
+                slack.post_message(f'we would set_flow here')
+
+            else:
+                # new: don't pick up the cell to flush the lines or set flowrates.
+                await self.set_flow(instructions[0])
+
+        # bump_flow needs to get run every time!
+        await self.bump_flow(instructions[0], duration=self.backfill_duration)
 
         meta = {
             'intent': intent,
@@ -419,21 +429,9 @@ class SDC(scirc.SlackClient):
         # this way, if the experiment is cancelled, it's not committed to the db
         with self.db as tx:
 
-            meta['id'] = tx['experiment'].insert(meta)
-
             stem = 'asdc'
+            meta['id'] = tx['experiment'].insert(meta)
             datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
-
-            if instructions[0].get('op') == 'set_flow':
-                if self.test:
-                    slack.post_message(f'we would set_flow here')
-
-                else:
-                    # new: don't pick up the cell to flush the lines or set flowrates.
-                    await self.set_flow(instructions[0])
-
-            # bump_flow needs to get run every time!
-            await self.bump_flow(instructions[0], duration=self.backfill_duration)
 
             summary = '-'.join(step['op'] for step in instructions)
             _msg = f"experiment *{meta['id']}*:  {summary}"
