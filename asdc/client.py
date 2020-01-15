@@ -112,6 +112,14 @@ class SDC(scirc.SlackClient):
         h = max(0.0, h)
         self.characterization_height = h
 
+        # droplet workflow configuration
+        # TODO: document me
+        self.wetting_height = max(0, config.get('wetting_height', 0.0011))
+        self.fill_ratio = config.get('fill_rate', 0.7)
+        self.fill_time = config.get('fill_time', 19)
+        self.shrink_ratio = config.get('shrink_rate', 1.3)
+        self.shrink_time = config.get('shrink_time', 2)
+
         self.test = config.get('test', False)
         self.test_cell = config.get('test_cell', False)
         self.solutions = config.get('solutions')
@@ -251,15 +259,36 @@ class SDC(scirc.SlackClient):
         delta = delta * 1e-3
         return delta
 
-    async def move_stage(self, x: float, y: float, frame: Any, threshold: float = 0.0001):
+    async def move_stage(
+            self,
+            x: float,
+            y: float,
+            frame: Any,
+            stage: Any = None,
+            threshold: float = 0.0001):
         """ specify target positions in combi reference frame
 
         Arguments:
             x: wafer x coordinate (`mm`)
             y: wafer y coordinate (`mm`)
             frame: target reference frame (`cell`, `camera`, `laser`)
+            stage: stage control interface
             threshold: distance threshold in meters
+
+        Important:
+            If a `stage` interface is passed, [move_stage][asdc.client.SDC.move_stage] does not traverse the `z` axis at all!
         """
+
+        async def _execute_update(stage, delta, loop, confirm, verbose):
+            if confirm:
+                await ainput('press enter to allow lateral cell motion...', loop=loop)
+
+            # move horizontally
+            f = functools.partial(pos.update, delta=delta)
+            await loop.run_in_executor(None, f)
+
+            if self.verbose:
+                print(pos.current_position())
 
         # map position update to position controller frame
         delta = self.compute_position_update(x, y, frame)
@@ -271,17 +300,11 @@ class SDC(scirc.SlackClient):
             if self.notify:
                 slack.post_message(f'*confirm update*: (delta={delta})')
 
-            async with sdc.position.acontroller(loop=self.loop, z_step=self.step_height, speed=self.speed) as pos:
-
-                if self.confirm:
-                    await ainput('press enter to allow lateral cell motion...', loop=self.loop)
-
-                # move horizontally
-                f = functools.partial(pos.update, delta=delta)
-                await self.loop.run_in_executor(None, f)
-
-                if self.verbose:
-                    print(pos.current_position())
+            if stage is None:
+                async with sdc.position.acontroller(loop=self.loop, z_step=self.step_height, speed=self.speed) as stage:
+                    await _execute_update(stage, delta, self.loop, self.confirm, self.verbose)
+            else:
+                await _execute_update(stage, delta, self.loop, self.confirm, self.verbose)
 
         if self.initialize_z_position:
             # TODO: define the lower z baseline after the first move
@@ -289,8 +312,12 @@ class SDC(scirc.SlackClient):
             await ainput('*initialize z position*: press enter to continue...', loop=self.loop)
             self.initialize_z_position = False
 
-        with sdc.position.controller() as pos:
-            self.v_position = pos.current_position()
+        # update internal tracking of stage position
+        if stage is None:
+            with sdc.position.controller() as stage:
+                self.v_position = stage.current_position()
+        else:
+            self.v_position = stage.current_position()
 
         return
 
@@ -330,6 +357,16 @@ class SDC(scirc.SlackClient):
         # @ctl -- update the semaphore in the controller process
         await self.dm_controller('<@UHNHM7198> update position is set.')
 
+    def _scale_flow(self, rates: Dict, nominal_rate: float = 0.5) -> Dict:
+        """ high nominal flow_rate for running out to steady state """
+
+        total_rate = sum(rates.values())
+
+        if total_rate <= 0.0:
+            total_rate = 1.0
+
+        return {key: val * nominal_rate/total_rate for key, val in rates.items()}
+
     async def set_flow(self, instruction, nominal_rate=0.5):
         """ nominal rate in ml/min """
 
@@ -342,13 +379,7 @@ class SDC(scirc.SlackClient):
         # if relative flow rates don't match, purge solution
         if relative_flow(rates) != relative_flow(self.pump_array.flow_setpoint):
 
-            # high nominal flow_rate for running out to steady state
-            total_rate = sum(rates.values())
-            if total_rate <= 0.0:
-                total_rate = 1.0
-
-            line_flush_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
-
+            line_flush_rates = _scale_flow(rates, nominal_rate=nominal_rate)
             if self.notify:
                 slack.post_message(f"flush lines at {line_flush_rates} ml/min")
                 print('setting flow rates to flush the lines')
@@ -372,8 +403,7 @@ class SDC(scirc.SlackClient):
         """
 
         rates = instruction.get('rates')
-        total_rate = sum(rates.values())
-        cell_fill_rates = {key: val * nominal_rate/total_rate for key, val in rates.items()}
+        cell_fill_rates = _scale_flow(rates, nominal_rate=nominal_rate)
 
         if self.verbose:
             print(f"bump_flow to {cell_fill_rates} ml/min")
@@ -400,18 +430,48 @@ class SDC(scirc.SlackClient):
             instructions = instructions[1:]
 
         x_combi, y_combi = header.get('x'), header.get('y')
-        await self.move_stage(x_combi, y_combi, self.cell_frame)
 
-        if instructions[0].get('op') == 'set_flow':
-            if self.test:
-                slack.post_message(f'we would set_flow here')
+        rates = instructions[0].get('rates')
+        cell_fill_rates = _scale_flow(rates, nominal_rate=0.5)
 
-            else:
-                # new: don't pick up the cell to flush the lines or set flowrates.
-                await self.set_flow(instructions[0])
+        # if relative flow rates don't match, purge solution
+        line_flush_duration = instructions[0].get('hold_time', 0)
+        line_flush_needed = relative_flow(rates) != relative_flow(self.pump_array.flow_setpoint)
 
-        # bump_flow needs to get run every time!
-        await self.bump_flow(instructions[0], duration=self.backfill_duration)
+        # droplet workflow -- start at zero
+        async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed) as stage:
+
+            if self.cleanup_pause > 0:
+                print('cleaning up...')
+                self.pump_array.stop_all(counterbalance='full')
+                time.sleep(self.cleanup_pause)
+
+            await self.move_stage(x_combi, y_combi, self.cell_frame, stage=stage)
+
+            height_difference = self.characterization_height - self.wetting_height
+            height_difference = max(0, height_difference)
+            async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
+
+                # counterpump slower to fill the droplet
+                self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.fill_ratio, start=True)
+                time.sleep(self.fill_time)
+
+            # drop down to wetting height
+            # counterpump faster to shrink the droplet
+            self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.shrink_ratio)
+            time.sleep(self.shrink_time)
+
+            self.pump_array.set_rates(cell_fill_rates)
+
+        # flush lines with cell in contact
+        if line_flush_needed:
+            time.sleep(line_flush_duration)
+        else:
+            time.sleep(5)
+
+        self.pump_array.set_rates(rates)
+
+        # end droplet workflow
 
         meta = {
             'intent': intent,
