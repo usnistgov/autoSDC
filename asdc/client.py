@@ -394,6 +394,7 @@ class SDC(scirc.SlackClient):
         line_flush_needed = relative_flow(rates) != relative_flow(self.pump_array.flow_setpoint)
 
         # droplet workflow -- start at zero
+        print('starting droplet workflow')
         async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed) as stage:
 
             if self.cleanup_pause > 0:
@@ -408,22 +409,27 @@ class SDC(scirc.SlackClient):
             async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
 
                 # counterpump slower to fill the droplet
+                print('differentially pumping to grow the droplet')
                 self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.fill_ratio, start=True)
                 time.sleep(self.fill_time)
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
+            print('differentially pumping to shrink the droplet')
             self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.shrink_ratio)
             time.sleep(self.shrink_time)
 
+            print('equalizing differential pumping rate')
             self.pump_array.set_rates(cell_fill_rates)
 
         # flush lines with cell in contact
         if line_flush_needed:
+            print('performing line flush')
             time.sleep(line_flush_duration)
         else:
             time.sleep(5)
 
+        print(f'stepping flow rates to {rates}')
         self.pump_array.set_rates(rates)
 
         # end droplet workflow
