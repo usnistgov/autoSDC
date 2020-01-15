@@ -1,4 +1,4 @@
-image: python:latest
+image: docker
 
 before_script:
   - pip install mkdocs
@@ -6,7 +6,7 @@ before_script:
 
 # build mkdocs documentation
 pages:
-  stage: deploy
+  image: docker
   script:
   - mkdocs build
   - mv site public
