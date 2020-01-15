@@ -284,7 +284,7 @@ class SDC(scirc.SlackClient):
                 await ainput('press enter to allow lateral cell motion...', loop=loop)
 
             # move horizontally
-            f = functools.partial(pos.update, delta=delta)
+            f = functools.partial(stage.update, delta=delta)
             await loop.run_in_executor(None, f)
 
             if self.verbose:
