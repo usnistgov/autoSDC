@@ -36,12 +36,12 @@ from asdc import visualization
 
 asdc_channel = 'CDW5JFZAR'
 try:
-    BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
+    BOT_TOKEN = None
 except FileNotFoundError:
     BOT_TOKEN = None
 
 try:
-    CTL_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
+    CTL_TOKEN = None
 except FileNotFoundError:
     CTL_TOKEN = None
 
