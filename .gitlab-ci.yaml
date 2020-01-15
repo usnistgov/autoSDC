@@ -8,6 +8,8 @@ before_script:
 
 # build mkdocs documentation
 pages:
+  tags:
+  - shared
   script:
   - mkdocs build
   - mv site public
