@@ -23,6 +23,7 @@ class MicrocontrollerInterface():
             # block until the whole command is echoed
             ser.write(encode(json.dumps(command, separators=(',', ':'))))
             ack = ser.readline()
+            print(decode(ack))
 
             response = ser.readline()
             return decode(response)
@@ -64,6 +65,7 @@ class PeristalticPump(MicrocontrollerInterface):
         """ set pumping rate to counterbalance a nominal target flow rate in ml/min """
 
         ismatec_proportion = flow_to_proportion(rate)
+        print(f'ismatec_proportion: {ismatec_proportion}')
         self.eval({"op": "set_flow", "rate": ismatec_proportion})
 
     def set_flow_proportion(self, proportion):
