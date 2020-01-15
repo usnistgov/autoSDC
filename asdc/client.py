@@ -6,12 +6,15 @@ import click
 import asyncio
 import dataset
 import functools
+import websockets
 import numpy as np
 import pandas as pd
 from ruamel import yaml
 from datetime import datetime
 from aioconsole import ainput, aprint
 from contextlib import asynccontextmanager
+
+from typing import Any, List, Dict, Optional
 
 import traceback
 
@@ -51,27 +54,30 @@ def to_coords(x, frame):
     return frame.origin.locate_new('P', to_vec(x, frame))
 
 class SDC(scirc.SlackClient):
-    """ autonomous scanning droplet cell client
-
-    this is a slack client that controls all of the hardware and executes experiments.
-
-    Arguments:
-        config: configuration dictionary
-        token: slack bot token
-
-    """
+    """ scanning droplet cell """
 
     command = scirc.CommandRegistry()
 
-    def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN, resume=False):
-        """ sdc client
+    def __init__(
+            self,
+            config: Dict[str, Any] = None,
+            token: str = BOT_TOKEN,
+            resume: bool = False,
+            logfile: Optional[str] = None,
+            verbose: bool = False
+    ):
+        """ scanning droplet cell client
+
+        this is a slack client that controls all of the hardware and executes experiments.
 
         Arguments:
             config: configuration dictionary
             token: slack bot token
+            resume: toggle auto-registration of stage and sample coordinates
+            logfile: file to log slackbot commands to
+            verbose: toggle additional debugging output
 
         """
-
         super().__init__(verbose=verbose, logfile=logfile, token=token)
         self.command.update(super().command)
         self.msg_id = 0
@@ -85,7 +91,6 @@ class SDC(scirc.SlackClient):
         self.initial_combi_position = pd.Series(config['initial_combi_position'])
         self.step_height = config.get('step_height', 0.0)
         self.cleanup_pause = config.get('cleanup_pause', 0)
-        self.compress_dz = config.get('compress_dz', 0.0)
         self.cell = config.get('cell', 'INTERNAL')
         self.speed = config.get('speed', 1e-3)
         self.data_dir = config.get('data_dir', os.getcwd())
@@ -103,7 +108,6 @@ class SDC(scirc.SlackClient):
 
         self.test = config.get('test', False)
         self.test_cell = config.get('test_cell', False)
-        self.test_delay = config.get('test', False)
         self.solutions = config.get('solutions')
 
         self.v_position = self.initial_versastat_position
@@ -114,7 +118,7 @@ class SDC(scirc.SlackClient):
         # which wafer direction is aligned with position controller +x direction?
         self.frame_orientation = config.get('frame_orientation', '-y')
 
-        self.db_file = os.path.join(self.data_dir, config.get('db_file', 'test.db'))
+        self.db_file = os.path.join(self.data_dir, config.get('db_file', 'testb.db'))
         self.db = dataset.connect(f'sqlite:///{self.db_file}')
         self.experiment_table = self.db['experiment']
 
@@ -211,10 +215,19 @@ class SDC(scirc.SlackClient):
         stage = _stage.locate_new('stage', v_origin)
         return stage
 
-    def compute_position_update(self, x, y, frame):
+    def compute_position_update(self, x: float, y: float, frame: Any) -> np.ndarray:
         """ compute frame update to map combi coordinate to the specified reference frame
 
-        NOTE: all reference frames are in mm; the position controller works with meters
+        Arguments:
+            x: wafer x coordinate (`mm`)
+            y: wafer y coordinate (`mm`)
+            frame: target reference frame (`cell`, `camera`, `laser`)
+
+        Returns:
+            stage frame update vector (in meters)
+
+        Important:
+            all reference frames are in `mm`; the position controller works with `meters`
         """
 
         P = to_coords([x, y], frame)
@@ -229,12 +242,17 @@ class SDC(scirc.SlackClient):
         delta = target_coords - current_coords
 
         # convert from mm to m
-        return delta * 1e-3
+        delta = delta * 1e-3
+        return delta
 
-    async def move_stage(self, x, y, frame, threshold=0.0001):
+    async def move_stage(self, x: float, y: float, frame: Any, threshold: float = 0.0001):
         """ specify target positions in combi reference frame
-        threshold is specified in meters...
-        only actually move if the update is above the noise floor
+
+        Arguments:
+            x: wafer x coordinate (`mm`)
+            y: wafer y coordinate (`mm`)
+            frame: target reference frame (`cell`, `camera`, `laser`)
+            threshold: distance threshold in meters
         """
 
         # map position update to position controller frame
@@ -271,8 +289,23 @@ class SDC(scirc.SlackClient):
         return
 
     @command
-    async def move(self, ws, msgdata, args):
+    async def move(self, ws: websockets.client.WebSocketClientProtocol, msgdata: Dict, args: str):
+        """ slack bot command to move the stage
 
+        A thin json wrapper for [move_stage][asdc.client.SDC.move_stage].
+
+        Arguments:
+            ws: websocket connection
+            msgdata: slack message metadata
+            args: json string containing command arguments
+
+       Note:
+            json arguments:
+
+            - `x`: wafer x coordinate (`mm`)
+            - `y`: wafer y coordinate (`mm`)
+            - `reference_frame`: target reference frame (`cell`, `camera`, `laser`)
+        """
         args = json.loads(args)
 
         if self.verbose:
@@ -495,20 +528,25 @@ class SDC(scirc.SlackClient):
 
     @command
     async def droplet(self, ws, msgdata, args):
-        """ debugging command for droplet contact routine
+        """ slack bot command for prototyping droplet contact routine
 
-        defaults
-        {
-            'prep_height': 4mm,
-            'wetting_height': 1.1mm,
-            'fill_rate': 0.75,
-            'fill_time': None,
-            'shrink_rate': 1.1,
-            'shrink_time': None,
-            'flow_rate': 0.5,
-            'cleanup': 0,
-            'stage_speed': 0.001,
-        }
+
+
+        #### json arguments
+
+        | Name             | Type  | Description                                         | Default |
+        |------------------|-------|-----------------------------------------------------|---------|
+        | `prep_height`    | float | z setting to grow the droplet                       |     4mm |
+        | `wetting_height` | float | z setting to wet the droplet to the surface         |   1.1mm |
+        | `fill_rate`      | float | counterpumping ratio during droplet growth          |    0.75 |
+        | `fill_time`      | float | droplet growth duration (s)                         |    None |
+        | `shrink_rate`    | float | counterpumping ratio during droplet wetting phase   |     1.1 |
+        | `shrink_time`    | float | droplet wetting duration (s)                        |    None |
+        | `flow_rate`      | float | total flow rate during droplet formation (mL/min)   |     0.5 |
+        | `cleanup`        | float | duration of pre-droplet-formation cleanup siphoning |       0 |
+        | `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
+
+
         """
         instructions = json.loads(args)
 
@@ -675,8 +713,7 @@ class SDC(scirc.SlackClient):
         mean_reflectance = await self._reflectance(primary_key=primary_key)
         print('reflectance:', mean_reflectance)
 
-
-    async def _capture_image(self, primary_key=None):
+    async def capture_image(self, primary_key=None):
         """ capture an image from the webcam.
 
         pass an experiment index to serialize metadata to db
@@ -720,11 +757,16 @@ class SDC(scirc.SlackClient):
         else:
             primary_key = None
 
-        self._capture_image(primary_key=primary_key)
+        self.capture_image(primary_key=primary_key)
 
     @command
     async def bubble(self, ws, msgdata, args):
-        """ record a bubble in the deposit """
+        """ slack bot command to record a bubble in the deposit
+
+        trigger with `@sdc bubble ${primary_key: int}`.
+        this updates the corresponding record in the sqlite database
+        with `has_bubble=True`.
+        """
         primary_key = args  # need to do format checking...
         primary_key = int(primary_key)
 
@@ -779,10 +821,11 @@ class SDC(scirc.SlackClient):
         await ws.send_str(json.dumps(response))
 
     @command
-    async def abort_running_handlers(self, ws, msgdata, args):
+    async def _abort_running_handlers(self, ws, msgdata, args):
         """ cancel all currently running task handlers...
 
-        Warning: does not do any checks on the potentiostat -- don't call this while an experiment is running...
+        Warning:
+            does not do any checks on the potentiostat -- don't call this while an experiment is running...
 
         we could register the coroutine address when we start it up, and broadcast that so it's cancellable...?
         """
