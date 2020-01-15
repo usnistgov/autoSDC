@@ -523,7 +523,10 @@ class Controller(scirc.SlackClient):
             # intent, fit_gp = exp_id(self.db)
 
         if action == Action.QUERY:
-            experiment_id = int(previous_op.get('experiment_id')) + 1
+            if previous_op is not None:
+                experiment_id = int(previous_op.get('experiment_id')) + 1
+            else:
+                experiment_id = 1
             # march through target positions sequentially
             target_idx = self.db['experiment'].count(intent='deposition')
             target = self.targets.iloc[target_idx]
