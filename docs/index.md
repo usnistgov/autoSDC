@@ -1,6 +1,6 @@
 # autonomous scanning droplet cell documentation
 
-automation tools for autonomous scanning droplet cell electrochemical characterization.
+ASDC: automation tools for autonomous scanning droplet cell electrochemical characterization.
 
 ## slack bots
 
