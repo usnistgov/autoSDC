@@ -214,6 +214,7 @@ class PumpArray():
         """
 
         total_setpoint = sum(setpoints.values())
+        print(f'total_setpoint: {total_setpoint}')
 
         if counterpump_ratio is None or counterpump_ratio == 'default':
 
