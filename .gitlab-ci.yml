@@ -1,21 +1,11 @@
-image: python:3.7
+image: alpine:latest
 
-before_script:
-  - pip install mkdocs
-  - pip install mkdocs-material mkdocstrings
-
-# build mkdocs documentation
 pages:
-  image: python:3.7
+  stage: deploy
   script:
-  - pip install -e .
-  - mkdocs build
-  - mv site public
+  - echo 'Nothing to do...'
   artifacts:
     paths:
     - public
   only:
-  - master
-  tags:
-  - shared
-  - docker
+  - doc
