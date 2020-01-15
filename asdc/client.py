@@ -448,13 +448,7 @@ class SDC(scirc.SlackClient):
             elif self.notify:
                 slack.post_message(_msg)
 
-            # TODO: replace this with asyncio.run?
-            f = functools.partial(
-                sdc.experiment.run,
-                instructions,
-                cell=self.cell,
-                verbose=self.verbose
-            )
+            f = functools.partial(sdc.experiment.run, instructions, cell=self.cell, verbose=self.verbose)
             if self.test_cell:
                 slack.post_message(f"we would run the experiment here...")
                 await self.loop.run_in_executor(None, time.sleep, 10)
