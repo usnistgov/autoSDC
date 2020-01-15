@@ -367,51 +367,6 @@ class SDC(scirc.SlackClient):
 
         return {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
-    async def set_flow(self, instruction, nominal_rate=0.5):
-        """ nominal rate in ml/min """
-
-        print('setting the flow rates directly!')
-        params = f"rates={instruction.get('rates')} {instruction.get('units')}"
-        hold_time = instruction.get('hold_time', 0)
-
-        rates = instruction.get('rates')
-
-        # if relative flow rates don't match, purge solution
-        if relative_flow(rates) != relative_flow(self.pump_array.flow_setpoint):
-
-            line_flush_rates = _scale_flow(rates, nominal_rate=nominal_rate)
-            if self.notify:
-                slack.post_message(f"flush lines at {line_flush_rates} ml/min")
-                print('setting flow rates to flush the lines')
-
-            self.pump_array.set_rates(line_flush_rates, start=True)
-
-            print(f'waiting {hold_time} (s) for solution composition to reach steady state')
-            time.sleep(hold_time)
-
-        if self.notify:
-            slack.post_message(f"set_flow to {rates} ml/min")
-            print(f"setting flow rates to {rates} ml/min")
-
-        # go to low nominal flow_rate for measurement
-        self.pump_array.set_rates(rates)
-
-    async def bump_flow(self, instruction, nominal_rate=0.5, duration=5):
-        """ briefly increase the flow rate to make sure the cell gets filled
-
-        TODO: maybe make this configurable by adding an argument to the set_flow op?
-        """
-
-        rates = instruction.get('rates')
-        cell_fill_rates = _scale_flow(rates, nominal_rate=nominal_rate)
-
-        if self.verbose:
-            print(f"bump_flow to {cell_fill_rates} ml/min")
-
-        self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.75, start=True)
-        time.sleep(duration)
-        self.pump_array.set_rates(rates)
-
     @command
     async def run_experiment(self, ws, msgdata, args):
         """ run an SDC experiment """
