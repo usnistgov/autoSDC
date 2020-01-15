@@ -776,7 +776,7 @@ class SDC(scirc.SlackClient):
         else:
             primary_key = None
 
-        self._capture_image(primary_key=primary_key)
+        await self._capture_image(primary_key=primary_key)
 
     @command
     async def bubble(self, ws, msgdata, args):
