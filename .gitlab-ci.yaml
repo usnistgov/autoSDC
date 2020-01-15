@@ -1,10 +1,8 @@
-image: linux
+image: python:latest
 
 before_script:
   - pip install mkdocs
-  ## Add your custom theme if not inside a theme_dir
-  ## (https://github.com/mkdocs/mkdocs/wiki/MkDocs-Themes)
-  # - pip install mkdocs-material mkdocstrings
+  - pip install mkdocs-material mkdocstrings
 
 # build mkdocs documentation
 pages:
