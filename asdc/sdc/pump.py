@@ -87,14 +87,14 @@ class PumpArray():
         # serial interface things
         self.port = port
         self.baud = baud
-        self.timeout = 1
+        self.timeout = timeout
         self.buffer_size = output_buffer
         self.fast = fast
         self.flow_rate = flow_rate
         self.flow_units = flow_units
         self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
 
-        self.counterpump = PeristalticPump(port=counterpump_port)
+        self.counterpump = PeristalticPump(port=counterpump_port, timeout=self.timeout)
         self.counterpump_ratio = counterpump_ratio
 
     def relative_rates(self):
