@@ -387,7 +387,7 @@ class SDC(scirc.SlackClient):
         x_combi, y_combi = header.get('x'), header.get('y')
 
         rates = instructions[0].get('rates')
-        cell_fill_rates = _scale_flow(rates, nominal_rate=0.5)
+        cell_fill_rates = self._scale_flow(rates, nominal_rate=0.5)
 
         # if relative flow rates don't match, purge solution
         line_flush_duration = instructions[0].get('hold_time', 0)
