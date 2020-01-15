@@ -288,7 +288,7 @@ class SDC(scirc.SlackClient):
             await loop.run_in_executor(None, f)
 
             if self.verbose:
-                print(pos.current_position())
+                print(stage.current_position())
 
         # map position update to position controller frame
         delta = self.compute_position_update(x, y, frame)
