@@ -746,8 +746,8 @@ class SDC(scirc.SlackClient):
     async def _reflectance(self, primary_key=None, stage=None):
 
         # get the stage position at the start of the linescan
-        with sdc.position.controller() as stage:
-            metadata = {'reflectance_xv': stage.x, 'reflectance_yv': stage.y}
+        with sdc.position.controller() as s:
+            metadata = {'reflectance_xv': s.x, 'reflectance_yv': s.y}
 
         mean, var = await self.reflectance_linescan(stage=stage)
 
