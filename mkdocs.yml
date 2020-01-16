@@ -8,6 +8,8 @@ nav:
     - "automation client": "reference/controller.md"
     - microcontroller: "reference/microcontroller.md"
     - "syringe pumps": "reference/pumps.md"
+  - Utilities:
+    - webcam: "reference/webcam.md"
   - Experiments:
     - protocol: "experiment/protocol.md"
     - configuration: "experiment/config.md"
