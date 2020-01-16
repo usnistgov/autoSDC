@@ -1,0 +1,24 @@
+| Name            | Type    | Description                | Default |
+|-----------------+---------+----------------------------+---------|
+| `potential`     | `float` | applied potential (V)      | None    |
+| `duration`      | `float` | operation duration (s)     | 10      |
+| `current_range` | `bool`  | post current plot to slack | 'AUTO'  |
+
+
+| Name                 | Type    | Description                              | Default |
+|----------------------+---------+------------------------------------------+---------|
+| `initial_potential`  | `float` | starting potential (V)                   | None    |
+| `vertex_potential_1` | `float` | first vertex potential in the cycle (V)  | None    |
+| `vertex_potential_2` | `float` | second vertex potential in the cycle (V) | None    |
+| `initial_potential`  | `float` | final potential (V)                      | None    |
+| `scan_rate`          | `float` | operation duration (s)                   | None    |
+| `cycles`             | `int`   | operation duration (s)                   | None    |
+| `current_range`      | `str`   | post current plot to slack               | 'AUTO'  |
+
+
+    initial_potential (float:volt)
+    vertex_potential_1 (float:volt)
+    vertex_potential_2 (float:volt)
+    final_potential (float:volt)
+    scan_rate (float)
+    cycles (int)

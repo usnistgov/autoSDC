@@ -38,7 +38,7 @@
     
     
       
-        <title>configuration - asdc</title>
+        <title>webcam - asdc</title>
       
     
     
@@ -79,7 +79,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#configuration" tabindex="1" class="md-skip">
+      <a href="#sdc-client" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -105,7 +105,7 @@
             </span>
             <span class="md-header-nav__topic">
               
-                configuration
+                webcam
               
             </span>
           
@@ -205,7 +205,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../../reference/client/" title="sdc client" class="md-nav__link">
+    <a href="../client/" title="sdc client" class="md-nav__link">
       sdc client
     </a>
   </li>
@@ -217,7 +217,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../../reference/controller/" title="automation client" class="md-nav__link">
+    <a href="../controller/" title="automation client" class="md-nav__link">
       automation client
     </a>
   </li>
@@ -229,7 +229,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../../reference/microcontroller/" title="microcontroller" class="md-nav__link">
+    <a href="../microcontroller/" title="microcontroller" class="md-nav__link">
       microcontroller
     </a>
   </li>
@@ -241,44 +241,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../../reference/pumps/" title="syringe pumps" class="md-nav__link">
+    <a href="../pumps/" title="syringe pumps" class="md-nav__link">
       syringe pumps
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item md-nav__item--nested">
-    
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
-    
-    <label class="md-nav__link" for="nav-3">
-      Utilities
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
-      <label class="md-nav__title" for="nav-3">
-        Utilities
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../../reference/webcam/" title="webcam" class="md-nav__link">
-      webcam
     </a>
   </li>
 
@@ -297,7 +261,52 @@
 
   <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
+    
+    <label class="md-nav__link" for="nav-3">
+      Utilities
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        Utilities
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+    <a href="./" title="webcam" class="md-nav__link md-nav__link--active">
+      webcam
+    </a>
+    
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
     
     <label class="md-nav__link" for="nav-4">
       Experiments
@@ -315,7 +324,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../protocol/" title="protocol" class="md-nav__link">
+    <a href="../../experiment/protocol/" title="protocol" class="md-nav__link">
       protocol
     </a>
   </li>
@@ -325,20 +334,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-    <a href="./" title="configuration" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../../experiment/config/" title="configuration" class="md-nav__link">
       configuration
     </a>
-    
   </li>
 
         
@@ -375,8 +375,10 @@
               
                 
                 
-                <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
-<p>asdc currently looks for <code>experiment-dir/config.yaml</code> for configuration.</p>
+                <h1 id="sdc-client">SDC Client<a class="headerlink" href="#sdc-client" title="Permanent link">&para;</a></h1>
+<p><code>python asdc/webcam.py</code> - start the live webcam viewer.</p>
+<p>to exit, press <code>^C</code> in the terminal window.</p>
+<p>if the webcam viewer is open, the <a href="None#asdc.client.SDC.imagecap">automated image capture command</a> will fail to load the camera.</p>
                 
                   
                 
@@ -398,7 +400,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../protocol/" title="protocol" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../pumps/" title="syringe pumps" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -407,11 +409,25 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                protocol
+                syringe pumps
               </span>
             </div>
           </a>
         
+        
+          <a href="../../experiment/protocol/" title="protocol" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                protocol
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
         
       </nav>
     </div>

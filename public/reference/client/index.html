@@ -38,7 +38,7 @@
     
     
       
-        <title>client.py - asdc</title>
+        <title>sdc client - asdc</title>
       
     
     
@@ -105,7 +105,7 @@
             </span>
             <span class="md-header-nav__topic">
               
-                client.py
+                sdc client
               
             </span>
           
@@ -216,11 +216,11 @@
     
     
       <label class="md-nav__link md-nav__link--active" for="__toc">
-        client.py
+        sdc client
       </label>
     
-    <a href="./" title="client.py" class="md-nav__link md-nav__link--active">
-      client.py
+    <a href="./" title="sdc client" class="md-nav__link md-nav__link--active">
+      sdc client
     </a>
     
       
@@ -319,20 +319,6 @@
         <li class="md-nav__item">
   <a href="#asdc.client.SDC.bubble" class="md-nav__link">
     bubble()
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#asdc.client.SDC.bump_flow" class="md-nav__link">
-    bump_flow()
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#asdc.client.SDC.capture_image" class="md-nav__link">
-    capture_image()
   </a>
   
 </li>
@@ -442,13 +428,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#asdc.client.SDC.set_flow" class="md-nav__link">
-    set_flow()
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#asdc.client.SDC.stop_pumps" class="md-nav__link">
     stop_pumps()
   </a>
@@ -472,8 +451,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../controller/" title="controller.py" class="md-nav__link">
-      controller.py
+    <a href="../controller/" title="automation client" class="md-nav__link">
+      automation client
     </a>
   </li>
 
@@ -484,8 +463,20 @@
 
 
   <li class="md-nav__item">
-    <a href="../sdc/" title="sdc" class="md-nav__link">
-      sdc
+    <a href="../microcontroller/" title="microcontroller" class="md-nav__link">
+      microcontroller
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../pumps/" title="syringe pumps" class="md-nav__link">
+      syringe pumps
     </a>
   </li>
 
@@ -505,10 +496,46 @@
       <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
     
     <label class="md-nav__link" for="nav-3">
-      Experiments
+      Utilities
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
       <label class="md-nav__title" for="nav-3">
+        Utilities
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../webcam/" title="webcam" class="md-nav__link">
+      webcam
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
+    
+    <label class="md-nav__link" for="nav-4">
+      Experiments
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
         Experiments
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
@@ -654,20 +681,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#asdc.client.SDC.bump_flow" class="md-nav__link">
-    bump_flow()
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#asdc.client.SDC.capture_image" class="md-nav__link">
-    capture_image()
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#asdc.client.SDC.checkpoint" class="md-nav__link">
     checkpoint()
   </a>
@@ -767,13 +780,6 @@
         <li class="md-nav__item">
   <a href="#asdc.client.SDC.run_experiment" class="md-nav__link">
     run_experiment()
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#asdc.client.SDC.set_flow" class="md-nav__link">
-    set_flow()
   </a>
   
 </li>
@@ -1161,7 +1167,15 @@
 155
 156
 157
-158</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+158
+159
+160
+161
+162
+163
+164
+165
+166</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
             <span class="n">token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">BOT_TOKEN</span><span class="p">,</span>
@@ -1209,6 +1223,14 @@
         <span class="n">h</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">characterization_height</span> <span class="o">=</span> <span class="n">h</span>
 
+        <span class="c1"># droplet workflow configuration</span>
+        <span class="c1"># TODO: document me</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wetting_height</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;wetting_height&#39;</span><span class="p">,</span> <span class="mf">0.0011</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fill_ratio</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fill_rate&#39;</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fill_time</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fill_time&#39;</span><span class="p">,</span> <span class="mi">19</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shrink_ratio</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;shrink_rate&#39;</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shrink_time</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;shrink_time&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">test</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">test_cell</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;test_cell&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solutions</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;solutions&#39;</span><span class="p">)</span>
@@ -1232,8 +1254,8 @@
         <span class="c1"># define reference frames</span>
         <span class="c1"># TODO: make camera and laser offsets configurable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span> <span class="o">=</span> <span class="n">CoordSys3D</span><span class="p">(</span><span class="s1">&#39;cell&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">camera_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">locate_new</span><span class="p">(</span><span class="s1">&#39;camera&#39;</span><span class="p">,</span> <span class="mi">36</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">i</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">laser_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">locate_new</span><span class="p">(</span><span class="s1">&#39;laser&#39;</span><span class="p">,</span> <span class="mf">48.519</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">i</span> <span class="o">+</span> <span class="mf">2.234</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">j</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">camera_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">locate_new</span><span class="p">(</span><span class="s1">&#39;camera&#39;</span><span class="p">,</span> <span class="mf">38.8</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">i</span> <span class="o">-</span> <span class="mf">0.1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">j</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laser_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">locate_new</span><span class="p">(</span><span class="s1">&#39;laser&#39;</span><span class="p">,</span> <span class="mf">38.1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">i</span> <span class="o">+</span> <span class="mf">0.799</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="o">.</span><span class="n">j</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resume</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stage_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sync_coordinate_systems</span><span class="p">(</span><span class="n">orientation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">frame_orientation</span><span class="p">,</span> <span class="n">register_initial</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">resume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resume</span><span class="p">)</span>
@@ -1246,7 +1268,7 @@
 
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span> <span class="o">=</span> <span class="n">sdc</span><span class="o">.</span><span class="n">pump</span><span class="o">.</span><span class="n">PumpArray</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">solutions</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">pump_array_port</span><span class="p">,</span> <span class="n">counterpump_port</span><span class="o">=</span><span class="n">adafruit_port</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">solutions</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">pump_array_port</span><span class="p">,</span> <span class="n">counterpump_port</span><span class="o">=</span><span class="n">adafruit_port</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">1</span>
             <span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="k">print</span><span class="p">(</span><span class="s1">&#39;could not connect to pump array&#39;</span><span class="p">)</span>
@@ -1305,19 +1327,19 @@
 </div>
 <h2 id="asdc.client.SDC.bubble"><code class="codehilite"><span class="n">bubble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.bubble" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>768
-769
-770
-771
-772
-773
-774
-775
-776
-777
-778
-779
-780</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>784
+785
+786
+787
+788
+789
+790
+791
+792
+793
+794
+795
+796</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">bubble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; slack bot command to record a bubble in the deposit</span>
 
@@ -1339,129 +1361,17 @@
 this updates the corresponding record in the sqlite database
 with <code>has_bubble=True</code>.</p>
 </div>
-<h2 id="asdc.client.SDC.bump_flow"><code class="codehilite"><span class="n">bump_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruction</span><span class="p">,</span> <span class="n">nominal_rate</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.bump_flow" title="Permanent link">&para;</a></h2>
-<div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>368
-369
-370
-371
-372
-373
-374
-375
-376
-377
-378
-379
-380
-381
-382
-383</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="n">async</span> <span class="k">def</span> <span class="nf">bump_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruction</span><span class="p">,</span> <span class="n">nominal_rate</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; briefly increase the flow rate to make sure the cell gets filled</span>
-
-<span class="sd">        TODO: maybe make this configurable by adding an argument to the set_flow op?</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">rates</span> <span class="o">=</span> <span class="n">instruction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;rates&#39;</span><span class="p">)</span>
-        <span class="n">total_rate</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">rates</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-        <span class="n">cell_fill_rates</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="o">*</span> <span class="n">nominal_rate</span><span class="o">/</span><span class="n">total_rate</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">rates</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;bump_flow to {cell_fill_rates} ml/min&quot;</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">set_rates</span><span class="p">(</span><span class="n">cell_fill_rates</span><span class="p">,</span> <span class="n">counterpump_ratio</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">set_rates</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span>
-</pre></div>
-</td></tr></table>
-
-</details>
-<p>briefly increase the flow rate to make sure the cell gets filled</p>
-<p>TODO: maybe make this configurable by adding an argument to the set_flow op?</p>
-</div>
-<h2 id="asdc.client.SDC.capture_image"><code class="codehilite"><span class="n">capture_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.capture_image" title="Permanent link">&para;</a></h2>
-<div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>722
-723
-724
-725
-726
-727
-728
-729
-730
-731
-732
-733
-734
-735
-736
-737
-738
-739
-740
-741
-742
-743
-744
-745
-746
-747
-748
-749
-750
-751
-752
-753</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="n">async</span> <span class="k">def</span> <span class="nf">capture_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; capture an image from the webcam.</span>
-
-<span class="sd">        pass an experiment index to serialize metadata to db</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">camera</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoCapture</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-        <span class="c1"># give the camera enough time to come online before reading data...</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
-        <span class="n">status</span><span class="p">,</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">camera</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-
-        <span class="k">if</span> <span class="n">primary_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-
-            <span class="n">image_name</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;deposit_pic_{primary_key:03d}.png&#39;</span>
-
-            <span class="k">with</span> <span class="n">sdc</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">controller</span><span class="p">()</span> <span class="k">as</span> <span class="n">stage</span><span class="p">:</span>
-                <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">primary_key</span><span class="p">,</span>
-                    <span class="s1">&#39;image_xv&#39;</span><span class="p">:</span> <span class="n">stage</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
-                    <span class="s1">&#39;image_yv&#39;</span><span class="p">:</span> <span class="n">stage</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-                    <span class="s1">&#39;image_name&#39;</span><span class="p">:</span> <span class="n">image_name</span>
-                <span class="p">}</span>
-
-            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="k">as</span> <span class="n">tx</span><span class="p">:</span>
-                <span class="n">tx</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
-
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">image_name</span> <span class="o">=</span> <span class="s1">&#39;test-image.png&#39;</span>
-
-        <span class="n">imageio</span><span class="o">.</span><span class="n">imsave</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_dir</span><span class="p">,</span> <span class="n">image_name</span><span class="p">),</span> <span class="n">frame</span><span class="p">)</span>
-        <span class="n">camera</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
-
-        <span class="k">return</span>
-</pre></div>
-</td></tr></table>
-
-</details>
-<p>capture an image from the webcam.</p>
-<p>pass an experiment index to serialize metadata to db</p>
-</div>
 <h2 id="asdc.client.SDC.checkpoint"><code class="codehilite"><span class="n">checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.checkpoint" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>620
-621
-622
-623
-624
-625
-626
-627
-628</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>633
+634
+635
+636
+637
+638
+639
+640
+641</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; hold until user input is given to allow experiment to proceed &quot;&quot;&quot;</span>
 
@@ -1478,23 +1388,23 @@ with <code>has_bubble=True</code>.</p>
 </div>
 <h2 id="asdc.client.SDC.comment"><code class="codehilite"><span class="n">comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.comment" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>782
-783
-784
-785
-786
-787
-788
-789
-790
-791
-792
-793
-794
-795
-796
-797
-798</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>798
+799
+800
+801
+802
+803
+804
+805
+806
+807
+808
+809
+810
+811
+812
+813
+814</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; add a comment &quot;&quot;&quot;</span>
         <span class="n">primary_key</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># need to do format checking...</span>
@@ -1519,15 +1429,7 @@ with <code>has_bubble=True</code>.</p>
 </div>
 <h2 id="asdc.client.SDC.compute_position_update"><code class="codehilite"><span class="n">compute_position_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.compute_position_update" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>224
-225
-226
-227
-228
-229
-230
-231
-232
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>232
 233
 234
 235
@@ -1547,7 +1449,15 @@ with <code>has_bubble=True</code>.</p>
 249
 250
 251
-252</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">compute_position_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+252
+253
+254
+255
+256
+257
+258
+259
+260</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">compute_position_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot; compute frame update to map combi coordinate to the specified reference frame</span>
 
 <span class="sd">        Arguments:</span>
@@ -1634,20 +1544,20 @@ with <code>has_bubble=True</code>.</p>
 </div>
 <h2 id="asdc.client.SDC.coverage"><code class="codehilite"><span class="n">coverage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.coverage" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>640
-641
-642
-643
-644
-645
-646
-647
-648
-649
-650
-651
-652
-653</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>653
+654
+655
+656
+657
+658
+659
+660
+661
+662
+663
+664
+665
+666</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">coverage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; record deposition coverage on (0.0,1.0). &quot;&quot;&quot;</span>
         <span class="n">primary_key</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># need to do format checking...</span>
@@ -1669,16 +1579,16 @@ with <code>has_bubble=True</code>.</p>
 </div>
 <h2 id="asdc.client.SDC.dm"><code class="codehilite"><span class="n">dm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.dm" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>807
-808
-809
-810
-811
-812
-813
-814
-815
-816</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>823
+824
+825
+826
+827
+828
+829
+830
+831
+832</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">dm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; echo random string to DM channel &quot;&quot;&quot;</span>
         <span class="n">dm_channel</span> <span class="o">=</span> <span class="s1">&#39;DHNHM74TU&#39;</span>
@@ -1696,20 +1606,7 @@ with <code>has_bubble=True</code>.</p>
 </div>
 <h2 id="asdc.client.SDC.droplet"><code class="codehilite"><span class="n">droplet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.droplet" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>535
-536
-537
-538
-539
-540
-541
-542
-543
-544
-545
-546
-547
-548
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>548
 549
 550
 551
@@ -1779,7 +1676,20 @@ with <code>has_bubble=True</code>.</p>
 615
 616
 617
-618</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+618
+619
+620
+621
+622
+623
+624
+625
+626
+627
+628
+629
+630
+631</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">droplet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; slack bot command for prototyping droplet contact routine</span>
 
@@ -1938,15 +1848,15 @@ with <code>has_bubble=True</code>.</p>
 </div>
 <h2 id="asdc.client.SDC.flag"><code class="codehilite"><span class="n">flag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.flag" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>630
-631
-632
-633
-634
-635
-636
-637
-638</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>643
+644
+645
+646
+647
+648
+649
+650
+651</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">flag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; mark a datapoint as bad</span>
 <span class="sd">        TODO: format checking</span>
@@ -1964,18 +1874,18 @@ TODO: format checking</p>
 </div>
 <h2 id="asdc.client.SDC.imagecap"><code class="codehilite"><span class="n">imagecap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.imagecap" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>755
-756
-757
-758
-759
-760
-761
-762
-763
-764
-765
-766</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>771
+772
+773
+774
+775
+776
+777
+778
+779
+780
+781
+782</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">imagecap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; capture an image from the webcam.</span>
 
@@ -1986,7 +1896,7 @@ TODO: format checking</p>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">primary_key</span> <span class="o">=</span> <span class="bp">None</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">capture_image</span><span class="p">(</span><span class="n">primary_key</span><span class="o">=</span><span class="n">primary_key</span><span class="p">)</span>
+        <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_capture_image</span><span class="p">(</span><span class="n">primary_key</span><span class="o">=</span><span class="n">primary_key</span><span class="p">)</span>
 </pre></div>
 </td></tr></table>
 
@@ -1996,41 +1906,41 @@ TODO: format checking</p>
 </div>
 <h2 id="asdc.client.SDC.move"><code class="codehilite"><span class="n">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.move" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>297
-298
-299
-300
-301
-302
-303
-304
-305
-306
-307
-308
-309
-310
-311
-312
-313
-314
-315
-316
-317
-318
-319
-320
-321
-322
-323
-324
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>324
 325
 326
 327
 328
 329
 330
-331</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">:</span> <span class="n">websockets</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">WebSocketClientProtocol</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; slack bot command to move the stage</span>
 
@@ -2085,17 +1995,9 @@ TODO: format checking</p>
 </ul>
 </div>
 </div>
-<h2 id="asdc.client.SDC.move_stage"><code class="codehilite"><span class="n">move_stage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.move_stage" title="Permanent link">&para;</a></h2>
+<h2 id="asdc.client.SDC.move_stage"><code class="codehilite"><span class="n">move_stage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.move_stage" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>254
-255
-256
-257
-258
-259
-260
-261
-262
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>262
 263
 264
 265
@@ -2128,15 +2030,63 @@ TODO: format checking</p>
 292
 293
 294
-295</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="n">async</span> <span class="k">def</span> <span class="nf">move_stage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">):</span>
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="n">async</span> <span class="k">def</span> <span class="nf">move_stage</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">frame</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+            <span class="n">stage</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+            <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; specify target positions in combi reference frame</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            x: wafer x coordinate (`mm`)</span>
 <span class="sd">            y: wafer y coordinate (`mm`)</span>
 <span class="sd">            frame: target reference frame (`cell`, `camera`, `laser`)</span>
+<span class="sd">            stage: stage control interface</span>
 <span class="sd">            threshold: distance threshold in meters</span>
+
+<span class="sd">        Important:</span>
+<span class="sd">            If a `stage` interface is passed, [move_stage][asdc.client.SDC.move_stage] does not traverse the `z` axis at all!</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">async</span> <span class="k">def</span> <span class="nf">_execute_update</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">loop</span><span class="p">,</span> <span class="n">confirm</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">confirm</span><span class="p">:</span>
+                <span class="n">await</span> <span class="n">ainput</span><span class="p">(</span><span class="s1">&#39;press enter to allow lateral cell motion...&#39;</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span>
+
+            <span class="c1"># move horizontally</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">update</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span>
+            <span class="n">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">current_position</span><span class="p">())</span>
 
         <span class="c1"># map position update to position controller frame</span>
         <span class="n">delta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_position_update</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
@@ -2148,17 +2098,11 @@ TODO: format checking</p>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
                 <span class="n">slack</span><span class="o">.</span><span class="n">post_message</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;*confirm update*: (delta={delta})&#39;</span><span class="p">)</span>
 
-            <span class="n">async</span> <span class="k">with</span> <span class="n">sdc</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">acontroller</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span> <span class="n">z_step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">step_height</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span> <span class="k">as</span> <span class="n">pos</span><span class="p">:</span>
-
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">confirm</span><span class="p">:</span>
-                    <span class="n">await</span> <span class="n">ainput</span><span class="p">(</span><span class="s1">&#39;press enter to allow lateral cell motion...&#39;</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
-
-                <span class="c1"># move horizontally</span>
-                <span class="n">f</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">pos</span><span class="o">.</span><span class="n">update</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span>
-                <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
-                    <span class="k">print</span><span class="p">(</span><span class="n">pos</span><span class="o">.</span><span class="n">current_position</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">stage</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">async</span> <span class="k">with</span> <span class="n">sdc</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">acontroller</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span> <span class="n">z_step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">step_height</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span> <span class="k">as</span> <span class="n">stage</span><span class="p">:</span>
+                    <span class="n">await</span> <span class="n">_execute_update</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">confirm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">await</span> <span class="n">_execute_update</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">confirm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialize_z_position</span><span class="p">:</span>
             <span class="c1"># TODO: define the lower z baseline after the first move</span>
@@ -2166,8 +2110,12 @@ TODO: format checking</p>
             <span class="n">await</span> <span class="n">ainput</span><span class="p">(</span><span class="s1">&#39;*initialize z position*: press enter to continue...&#39;</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">initialize_z_position</span> <span class="o">=</span> <span class="bp">False</span>
 
-        <span class="k">with</span> <span class="n">sdc</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">controller</span><span class="p">()</span> <span class="k">as</span> <span class="n">pos</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">v_position</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">current_position</span><span class="p">()</span>
+        <span class="c1"># update internal tracking of stage position</span>
+        <span class="k">if</span> <span class="n">stage</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">sdc</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">controller</span><span class="p">()</span> <span class="k">as</span> <span class="n">stage</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">v_position</span> <span class="o">=</span> <span class="n">stage</span><span class="o">.</span><span class="n">current_position</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">v_position</span> <span class="o">=</span> <span class="n">stage</span><span class="o">.</span><span class="n">current_position</span><span class="p">()</span>
 
         <span class="k">return</span>
 </pre></div>
@@ -2205,6 +2153,12 @@ TODO: format checking</p>
 <td><em>required</em></td>
 </tr>
 <tr>
+<td><code>stage</code></td>
+<td><code>Any</code></td>
+<td>stage control interface</td>
+<td><code>None</code></td>
+</tr>
+<tr>
 <td><code>threshold</code></td>
 <td><code>float</code></td>
 <td>distance threshold in meters</td>
@@ -2212,23 +2166,27 @@ TODO: format checking</p>
 </tr>
 </tbody>
 </table>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>If a <code>stage</code> interface is passed, <a href="None#asdc.client.SDC.move_stage">move_stage</a> does not traverse the <code>z</code> axis at all!</p>
+</div>
 </div>
 <h2 id="asdc.client.SDC.refl"><code class="codehilite"><span class="n">refl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.refl" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>655
-656
-657
-658
-659
-660
-661
-662
-663
-664
-665
-666
-667
-668</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>668
+669
+670
+671
+672
+673
+674
+675
+676
+677
+678
+679
+680
+681</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">refl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; record the reflectance of the deposit (0.0,inf). &quot;&quot;&quot;</span>
         <span class="n">primary_key</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># need to do format checking...</span>
@@ -2250,17 +2208,17 @@ TODO: format checking</p>
 </div>
 <h2 id="asdc.client.SDC.reflectance"><code class="codehilite"><span class="n">reflectance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.reflectance" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>710
-711
-712
-713
-714
-715
-716
-717
-718
-719
-720</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>723
+724
+725
+726
+727
+728
+729
+730
+731
+732
+733</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">reflectance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; record the reflectance of the deposit (0.0,inf). &quot;&quot;&quot;</span>
 
@@ -2279,7 +2237,22 @@ TODO: format checking</p>
 </div>
 <h2 id="asdc.client.SDC.run_experiment"><code class="codehilite"><span class="n">run_experiment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.run_experiment" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>385
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
 386
 387
 388
@@ -2427,7 +2400,20 @@ TODO: format checking</p>
 530
 531
 532
-533</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+533
+534
+535
+536
+537
+538
+539
+540
+541
+542
+543
+544
+545
+546</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">run_experiment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; run an SDC experiment &quot;&quot;&quot;</span>
 
@@ -2444,9 +2430,55 @@ TODO: format checking</p>
             <span class="n">header</span> <span class="o">=</span> <span class="n">instructions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">instructions</span> <span class="o">=</span> <span class="n">instructions</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
 
-        <span class="c1"># move now</span>
         <span class="n">x_combi</span><span class="p">,</span> <span class="n">y_combi</span> <span class="o">=</span> <span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">),</span> <span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
-        <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">move_stage</span><span class="p">(</span><span class="n">x_combi</span><span class="p">,</span> <span class="n">y_combi</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="p">)</span>
+
+        <span class="n">rates</span> <span class="o">=</span> <span class="n">instructions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;rates&#39;</span><span class="p">)</span>
+        <span class="n">cell_fill_rates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale_flow</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">nominal_rate</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="c1"># if relative flow rates don&#39;t match, purge solution</span>
+        <span class="n">line_flush_duration</span> <span class="o">=</span> <span class="n">instructions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hold_time&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">line_flush_needed</span> <span class="o">=</span> <span class="n">relative_flow</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="o">!=</span> <span class="n">relative_flow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">flow_setpoint</span><span class="p">)</span>
+
+        <span class="c1"># droplet workflow -- start at zero</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;starting droplet workflow&#39;</span><span class="p">)</span>
+        <span class="n">async</span> <span class="k">with</span> <span class="n">sdc</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">z_step</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">wetting_height</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span> <span class="k">as</span> <span class="n">stage</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleanup_pause</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s1">&#39;cleaning up...&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">stop_all</span><span class="p">(</span><span class="n">counterbalance</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cleanup_pause</span><span class="p">)</span>
+
+            <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">move_stage</span><span class="p">(</span><span class="n">x_combi</span><span class="p">,</span> <span class="n">y_combi</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_frame</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">)</span>
+
+            <span class="n">height_difference</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">characterization_height</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">wetting_height</span>
+            <span class="n">height_difference</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">height_difference</span><span class="p">)</span>
+            <span class="n">async</span> <span class="k">with</span> <span class="n">sdc</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">z_step</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">height_difference</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">speed</span><span class="p">):</span>
+
+                <span class="c1"># counterpump slower to fill the droplet</span>
+                <span class="k">print</span><span class="p">(</span><span class="s1">&#39;differentially pumping to grow the droplet&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">set_rates</span><span class="p">(</span><span class="n">cell_fill_rates</span><span class="p">,</span> <span class="n">counterpump_ratio</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fill_ratio</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fill_time</span><span class="p">)</span>
+
+            <span class="c1"># drop down to wetting height</span>
+            <span class="c1"># counterpump faster to shrink the droplet</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;differentially pumping to shrink the droplet&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">set_rates</span><span class="p">(</span><span class="n">cell_fill_rates</span><span class="p">,</span> <span class="n">counterpump_ratio</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shrink_ratio</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shrink_time</span><span class="p">)</span>
+
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;equalizing differential pumping rate&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">set_rates</span><span class="p">(</span><span class="n">cell_fill_rates</span><span class="p">,</span> <span class="n">counterpump_ratio</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+
+        <span class="c1"># flush lines with cell in contact</span>
+        <span class="k">if</span> <span class="n">line_flush_needed</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;performing line flush&#39;</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">line_flush_duration</span><span class="p">)</span>
+
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;stepping flow rates to {rates}&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">set_rates</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">counterpump_ratio</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+
+        <span class="c1"># end droplet workflow</span>
 
         <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;intent&#39;</span><span class="p">:</span> <span class="n">intent</span><span class="p">,</span>
@@ -2464,21 +2496,9 @@ TODO: format checking</p>
         <span class="c1"># this way, if the experiment is cancelled, it&#39;s not committed to the db</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="k">as</span> <span class="n">tx</span><span class="p">:</span>
 
-            <span class="n">meta</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tx</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
-
             <span class="n">stem</span> <span class="o">=</span> <span class="s1">&#39;asdc&#39;</span>
+            <span class="n">meta</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tx</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
             <span class="n">datafile</span> <span class="o">=</span> <span class="s1">&#39;{}_data_{:03d}.csv&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">stem</span><span class="p">,</span> <span class="n">meta</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
-
-            <span class="k">if</span> <span class="n">instructions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;set_flow&#39;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">test</span><span class="p">:</span>
-                    <span class="n">slack</span><span class="o">.</span><span class="n">post_message</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;we would set_flow here&#39;</span><span class="p">)</span>
-
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># new: don&#39;t pick up the cell to flush the lines or set flowrates.</span>
-                    <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_flow</span><span class="p">(</span><span class="n">instructions</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-
-            <span class="c1"># bump_flow needs to get run every time!</span>
-            <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">bump_flow</span><span class="p">(</span><span class="n">instructions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">duration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">backfill_duration</span><span class="p">)</span>
 
             <span class="n">summary</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;op&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">instructions</span><span class="p">)</span>
             <span class="n">_msg</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;experiment *{meta[&#39;id&#39;]}*:  {summary}&quot;</span>
@@ -2493,13 +2513,7 @@ TODO: format checking</p>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
                 <span class="n">slack</span><span class="o">.</span><span class="n">post_message</span><span class="p">(</span><span class="n">_msg</span><span class="p">)</span>
 
-            <span class="c1"># TODO: replace this with asyncio.run?</span>
-            <span class="n">f</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span>
-                <span class="n">sdc</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
-                <span class="n">instructions</span><span class="p">,</span>
-                <span class="n">cell</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="p">,</span>
-                <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">verbose</span>
-            <span class="p">)</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">sdc</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">instructions</span><span class="p">,</span> <span class="n">cell</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_cell</span><span class="p">:</span>
                 <span class="n">slack</span><span class="o">.</span><span class="n">post_message</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;we would run the experiment here...&quot;</span><span class="p">)</span>
                 <span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
@@ -2582,87 +2596,12 @@ TODO: format checking</p>
 </details>
 <p>run an SDC experiment </p>
 </div>
-<h2 id="asdc.client.SDC.set_flow"><code class="codehilite"><span class="n">set_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruction</span><span class="p">,</span> <span class="n">nominal_rate</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.set_flow" title="Permanent link">&para;</a></h2>
-<div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>333
-334
-335
-336
-337
-338
-339
-340
-341
-342
-343
-344
-345
-346
-347
-348
-349
-350
-351
-352
-353
-354
-355
-356
-357
-358
-359
-360
-361
-362
-363
-364
-365
-366</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="n">async</span> <span class="k">def</span> <span class="nf">set_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruction</span><span class="p">,</span> <span class="n">nominal_rate</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; nominal rate in ml/min &quot;&quot;&quot;</span>
-
-        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;setting the flow rates directly!&#39;</span><span class="p">)</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;rates={instruction.get(&#39;rates&#39;)} {instruction.get(&#39;units&#39;)}&quot;</span>
-        <span class="n">hold_time</span> <span class="o">=</span> <span class="n">instruction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hold_time&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-        <span class="n">rates</span> <span class="o">=</span> <span class="n">instruction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;rates&#39;</span><span class="p">)</span>
-
-        <span class="c1"># if relative flow rates don&#39;t match, purge solution</span>
-        <span class="k">if</span> <span class="n">relative_flow</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="o">!=</span> <span class="n">relative_flow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">flow_setpoint</span><span class="p">):</span>
-
-            <span class="c1"># high nominal flow_rate for running out to steady state</span>
-            <span class="n">total_rate</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">rates</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-            <span class="k">if</span> <span class="n">total_rate</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
-                <span class="n">total_rate</span> <span class="o">=</span> <span class="mf">1.0</span>
-
-            <span class="n">line_flush_rates</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="o">*</span> <span class="n">nominal_rate</span><span class="o">/</span><span class="n">total_rate</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">rates</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
-                <span class="n">slack</span><span class="o">.</span><span class="n">post_message</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;flush lines at {line_flush_rates} ml/min&quot;</span><span class="p">)</span>
-                <span class="k">print</span><span class="p">(</span><span class="s1">&#39;setting flow rates to flush the lines&#39;</span><span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">set_rates</span><span class="p">(</span><span class="n">line_flush_rates</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-
-            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;waiting {hold_time} (s) for solution composition to reach steady state&#39;</span><span class="p">)</span>
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">hold_time</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
-            <span class="n">slack</span><span class="o">.</span><span class="n">post_message</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;set_flow to {rates} ml/min&quot;</span><span class="p">)</span>
-            <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;setting flow rates to {rates} ml/min&quot;</span><span class="p">)</span>
-
-        <span class="c1"># go to low nominal flow_rate for measurement</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">set_rates</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span>
-</pre></div>
-</td></tr></table>
-
-</details>
-<p>nominal rate in ml/min </p>
-</div>
 <h2 id="asdc.client.SDC.stop_pumps"><code class="codehilite"><span class="n">stop_pumps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.client.SDC.stop_pumps" title="Permanent link">&para;</a></h2>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>818
-819
-820
-821</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+<details class="note"><summary>Show source code in asdc/client.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>834
+835
+836
+837</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">stop_pumps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; shut off the syringe and counterbalance pumps &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pump_array</span><span class="o">.</span><span class="n">stop_all</span><span class="p">(</span><span class="n">counterbalance</span><span class="o">=</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
@@ -2708,13 +2647,13 @@ TODO: format checking</p>
           </a>
         
         
-          <a href="../controller/" title="controller.py" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../controller/" title="automation client" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                controller.py
+                automation client
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">

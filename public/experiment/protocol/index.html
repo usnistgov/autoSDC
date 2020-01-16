@@ -205,8 +205,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../../reference/client/" title="client.py" class="md-nav__link">
-      client.py
+    <a href="../../reference/client/" title="sdc client" class="md-nav__link">
+      sdc client
     </a>
   </li>
 
@@ -217,8 +217,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../../reference/controller/" title="controller.py" class="md-nav__link">
-      controller.py
+    <a href="../../reference/controller/" title="automation client" class="md-nav__link">
+      automation client
     </a>
   </li>
 
@@ -229,8 +229,56 @@
 
 
   <li class="md-nav__item">
-    <a href="../../reference/sdc/" title="sdc" class="md-nav__link">
-      sdc
+    <a href="../../reference/microcontroller/" title="microcontroller" class="md-nav__link">
+      microcontroller
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../reference/pumps/" title="syringe pumps" class="md-nav__link">
+      syringe pumps
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+    
+    <label class="md-nav__link" for="nav-3">
+      Utilities
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        Utilities
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../reference/webcam/" title="webcam" class="md-nav__link">
+      webcam
     </a>
   </li>
 
@@ -249,13 +297,13 @@
 
   <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
     
-    <label class="md-nav__link" for="nav-3">
+    <label class="md-nav__link" for="nav-4">
       Experiments
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
-      <label class="md-nav__title" for="nav-3">
+      <label class="md-nav__title" for="nav-4">
         Experiments
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
@@ -275,9 +323,58 @@
       
     
     
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        protocol
+      </label>
+    
     <a href="./" title="protocol" class="md-nav__link md-nav__link--active">
       protocol
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#electrochemistry" class="md-nav__link">
+    electrochemistry
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#potentiostatic" class="md-nav__link">
+    potentiostatic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cv" class="md-nav__link">
+    CV
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
     
   </li>
 
@@ -316,6 +413,42 @@
     
   
   
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#electrochemistry" class="md-nav__link">
+    electrochemistry
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#potentiostatic" class="md-nav__link">
+    potentiostatic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cv" class="md-nav__link">
+    CV
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -328,7 +461,117 @@
                 
                 
                 <h1 id="protocol">Protocol<a class="headerlink" href="#protocol" title="Permanent link">&para;</a></h1>
-<p>asdc uses a json protocol to define experiments and actions.</p>
+<p><code>asdc</code> uses a json protocol to define experiments and actions, to support logging, experiment composition, and communication between multiple processes/machines.</p>
+<h2 id="electrochemistry">electrochemistry<a class="headerlink" href="#electrochemistry" title="Permanent link">&para;</a></h2>
+<h3 id="potentiostatic">potentiostatic<a class="headerlink" href="#potentiostatic" title="Permanent link">&para;</a></h3>
+<p>Apply a constant potential for a fixed interval.</p>
+<p><strong>Parameters</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>potential</code></td>
+<td><code>float</code></td>
+<td>applied potential (V)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>duration</code></td>
+<td><code>float</code></td>
+<td>operation duration (s)</td>
+<td>10</td>
+</tr>
+<tr>
+<td><code>current_range</code></td>
+<td><code>str</code></td>
+<td>current range to use</td>
+<td>'AUTO'</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;op&quot;</span><span class="p">:</span> <span class="s2">&quot;potentiostatic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;potential&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="mi">30</span>
+<span class="p">}</span>
+</pre></div>
+
+<h3 id="cv">CV<a class="headerlink" href="#cv" title="Permanent link">&para;</a></h3>
+<p>Multi-cycle cyclic voltammetry -- apply a triangular wave potential pattern and measure current.</p>
+<p><strong>Parameters</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>initial_potential</code></td>
+<td><code>float</code></td>
+<td>starting potential (V)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>vertex_potential_1</code></td>
+<td><code>float</code></td>
+<td>first vertex potential in the cycle (V)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>vertex_potential_2</code></td>
+<td><code>float</code></td>
+<td>second vertex potential in the cycle (V)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>initial_potential</code></td>
+<td><code>float</code></td>
+<td>final potential (V)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>scan_rate</code></td>
+<td><code>float</code></td>
+<td>operation duration (s)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>cycles</code></td>
+<td><code>int</code></td>
+<td>operation duration (s)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>current_range</code></td>
+<td><code>str</code></td>
+<td>post current plot to slack</td>
+<td>'AUTO'</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;op&quot;</span><span class="p">:</span> <span class="s2">&quot;cv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;initial_potential&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s2">&quot;vertex_potential_1&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">&quot;vertex_potential_2&quot;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">,</span>
+    <span class="s2">&quot;final_potential&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s2">&quot;scan_rate&quot;</span><span class="p">:</span> <span class="mf">0.075</span><span class="p">,</span>
+    <span class="s2">&quot;cycles&quot;</span><span class="p">:</span> <span class="mi">2</span>
+<span class="p">}</span>
+</pre></div>
                 
                   
                 
@@ -350,7 +593,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../../reference/sdc/" title="sdc" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../../reference/webcam/" title="webcam" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -359,7 +602,7 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                sdc
+                webcam
               </span>
             </div>
           </a>

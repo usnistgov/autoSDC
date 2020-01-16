@@ -38,7 +38,7 @@
     
     
       
-        <title>controller.py - asdc</title>
+        <title>automation client - asdc</title>
       
     
     
@@ -105,7 +105,7 @@
             </span>
             <span class="md-header-nav__topic">
               
-                controller.py
+                automation client
               
             </span>
           
@@ -207,8 +207,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../client/" title="client.py" class="md-nav__link">
-      client.py
+    <a href="../client/" title="sdc client" class="md-nav__link">
+      sdc client
     </a>
   </li>
 
@@ -228,11 +228,11 @@
     
     
       <label class="md-nav__link md-nav__link--active" for="__toc">
-        controller.py
+        automation client
       </label>
     
-    <a href="./" title="controller.py" class="md-nav__link md-nav__link--active">
-      controller.py
+    <a href="./" title="automation client" class="md-nav__link md-nav__link--active">
+      automation client
     </a>
     
       
@@ -352,8 +352,20 @@
 
 
   <li class="md-nav__item">
-    <a href="../sdc/" title="sdc" class="md-nav__link">
-      sdc
+    <a href="../microcontroller/" title="microcontroller" class="md-nav__link">
+      microcontroller
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../pumps/" title="syringe pumps" class="md-nav__link">
+      syringe pumps
     </a>
   </li>
 
@@ -373,10 +385,46 @@
       <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
     
     <label class="md-nav__link" for="nav-3">
-      Experiments
+      Utilities
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
       <label class="md-nav__title" for="nav-3">
+        Utilities
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../webcam/" title="webcam" class="md-nav__link">
+      webcam
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
+    
+    <label class="md-nav__link" for="nav-4">
+      Experiments
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
         Experiments
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
@@ -549,10 +597,7 @@
 <p>autonomous scanning droplet cell client </p>
 <h3 id="asdc.gp_deposition.Controller.abort_running_handlers"><code class="codehilite"><span class="n">abort_running_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.Controller.abort_running_handlers" title="Permanent link">&para;</a></h3>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>593
-594
-595
-596
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>596
 597
 598
 599
@@ -578,7 +623,10 @@
 619
 620
 621
-622</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+622
+623
+624
+625</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">abort_running_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; cancel all currently running task handlers...</span>
 
@@ -618,16 +666,16 @@
 </div>
 <h3 id="asdc.gp_deposition.Controller.dm"><code class="codehilite"><span class="n">dm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></code><a class="headerlink" href="#asdc.gp_deposition.Controller.dm" title="Permanent link">&para;</a></h3>
 <div class="autodoc">
-<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>582
-583
-584
-585
+<details class="note"><summary>Show source code in asdc/gp_deposition.py</summary><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>585
 586
 587
 588
 589
 590
-591</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+591
+592
+593
+594</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">dm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; echo random string to DM channel &quot;&quot;&quot;</span>
         <span class="n">dm_channel</span> <span class="o">=</span> <span class="s1">&#39;DHY5REQ0H&#39;</span>
@@ -724,7 +772,10 @@
 570
 571
 572
-573</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
+573
+574
+575
+576</pre></div></td><td class="code"><div class="codehilite"><pre><span></span>    <span class="nd">@command</span>
     <span class="n">async</span> <span class="k">def</span> <span class="nf">go</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">msgdata</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; keep track of target positions and experiment list</span>
 
@@ -756,7 +807,10 @@
             <span class="c1"># intent, fit_gp = exp_id(self.db)</span>
 
         <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Action</span><span class="o">.</span><span class="n">QUERY</span><span class="p">:</span>
-            <span class="n">experiment_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">previous_op</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;experiment_id&#39;</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">previous_op</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">experiment_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">previous_op</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;experiment_id&#39;</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">experiment_id</span> <span class="o">=</span> <span class="mi">1</span>
             <span class="c1"># march through target positions sequentially</span>
             <span class="n">target_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="s1">&#39;deposition&#39;</span><span class="p">)</span>
             <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">target_idx</span><span class="p">]</span>
@@ -1214,7 +1268,7 @@ return 0 if it's time for the first deposition
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../client/" title="client.py" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../client/" title="sdc client" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -1223,19 +1277,19 @@ return 0 if it's time for the first deposition
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                client.py
+                sdc client
               </span>
             </div>
           </a>
         
         
-          <a href="../sdc/" title="sdc" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../microcontroller/" title="microcontroller" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                sdc
+                microcontroller
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
