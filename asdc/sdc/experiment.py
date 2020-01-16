@@ -74,6 +74,64 @@ def setup_potentiostatic(pstat, data, cell='INTERNAL'):
 
     return status, params
 
+def setup_lsv(pstat, data, cell='INTERNAL'):
+    """ linear scan voltammetry
+
+    initial_potential (float:volt)
+    final_potential (float:volt)
+    scan_rate (float:volt/second)
+
+    {
+        "op": "lsv",
+        "initial_potential": 0.0,
+        "final_potential": 1.0,
+        "scan_rate": 0.075
+    }
+    """
+
+    status, params = pstat.linear_scan_voltammetry(
+        initial_potential=data.get('initial_potential'),
+        final_potential=data.get('final_potential'),
+        scan_rate=data.get('scan_rate'),
+        current_range=data.get('current_range', 'AUTO'),
+        e_filter='1HZ',
+        i_filter='1HZ',
+        cell_to_use=cell
+    )
+
+    return status, params
+
+def setup_lpr(pstat, data, cell='INTERNAL'):
+    """ linear polarization resistance
+
+    initial_potential (float:volt)
+    final_potential (float:volt)
+    step_size: (float: V)
+    step_time: (float:second)
+    cycles (int)
+
+    {
+        "op": "lpr",
+        "initial_potential": 0.0,
+        "final_potential": 1.0,
+        "step_size": 0.1,
+        "step_time": 0.1
+    }
+    """
+
+    status, params = pstat.linear_polarization_resistance(
+        initial_potential=data.get('initial_potential'),
+        final_potential=data.get('final_potential'),
+        step_size=data.get('step_size'),
+        step_time=data.get('step_time'),
+        current_range=data.get('current_range', 'AUTO'),
+        e_filter='1HZ',
+        i_filter='1HZ',
+        cell_to_use=cell
+    )
+
+    return status, params
+
 def setup_corrosion_oc(pstat, data, cell='INTERNAL'):
     """ set up corrosion open circuit
 
@@ -146,6 +204,12 @@ def run(instructions, cell='INTERNAL', verbose=False):
             params = None
             if instruction.get('op') == 'potentiostatic':
                 status, params = setup_potentiostatic(pstat, instruction, cell=cell)
+
+            elif instruction.get('op') == 'lsv':
+                status, params = setup_lsv(pstat, instruction, cell=cell)
+
+            elif instruction.get('op') == 'lpr':
+                status, params = setup_lpr(pstat, instruction, cell=cell)
 
             elif instruction.get('op') == 'cv':
                 status, params = setup_cv(pstat, instruction, cell=cell)
