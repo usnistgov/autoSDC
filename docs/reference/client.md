@@ -6,13 +6,13 @@
 
 #### input/output files
 
-| Name              | Type      | Description                                                             | Default        |
-|-------------------|-----------|-------------------------------------------------------------------------|----------------|
-| `target_file`     | `os.path` | csv file containing wafer coordinates, relative to ${EXPERIMENT_DIR}/`. | `map.csv`      |
-| `data_dir`        | `os.path` | data directory, relative to `${EXPERIMENT_DIR}`.                        | `data/`        |
-| `figure_dir`      | `os.path` | figure directory, relative to `${EXPERIMENT_DIR}`.                      | `figures/`     |
-| `db_file`         | `os.path` | sqlite database file, relative to `data_dir`.                           | `sdc.db`       |
-| `command_logfile` | `os.path` | log file for slack command history, relative to `data_dir`              | `commands.log` |
+| Name              | Type      | Description                                                              | Default        |
+|-------------------|-----------|--------------------------------------------------------------------------|----------------|
+| `target_file`     | `os.path` | csv file containing wafer coordinates, relative to `${EXPERIMENT_DIR}/`. | `map.csv`      |
+| `data_dir`        | `os.path` | data directory, relative to `${EXPERIMENT_DIR}`.                         | `data/`        |
+| `figure_dir`      | `os.path` | figure directory, relative to `${EXPERIMENT_DIR}`.                       | `figures/`     |
+| `db_file`         | `os.path` | sqlite database file, relative to `data_dir`.                            | `sdc.db`       |
+| `command_logfile` | `os.path` | log file for slack command history, relative to `data_dir`               | `commands.log` |
 
 
 #### output configuration
