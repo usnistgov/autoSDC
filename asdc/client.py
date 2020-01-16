@@ -516,10 +516,11 @@ class SDC(scirc.SlackClient):
                         slack.post_message(f"finished experiment {meta['id']}: {summary}")
                         slack.post_image(figpath, title=f"CV {meta['id']}")
 
+        self.pump_array.stop_all(counterbalance='full')
+        time.sleep(0.25)
+
         # run cleanup and optical characterization
         async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
-
-            self.pump_array.stop_all(counterbalance='full')
 
             if self.cleanup_pause > 0:
                 time.sleep(self.cleanup_pause)
