@@ -4,9 +4,10 @@ site_description: automation tools for autonomous scanning droplet cell electroc
 nav:
   - Overview: "index.md"
   - SDC Reference:
-    - client.py: "reference/client.md"
-    - controller.py: "reference/controller.md"
-    - sdc: "reference/sdc.md"
+    - "sdc client": "reference/client.md"
+    - "automation client": "reference/controller.md"
+    - microcontroller: "reference/microcontroller.md"
+    - "syringe pumps": "reference/pumps.md"
   - Experiments:
     - protocol: "experiment/protocol.md"
     - configuration: "experiment/config.md"

@@ -1,3 +1,0 @@
-# SDC
-
-::: asdc.sdc.microcontroller
