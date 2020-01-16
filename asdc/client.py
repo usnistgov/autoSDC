@@ -605,6 +605,9 @@ class SDC(scirc.SlackClient):
         rates = self._scale_flow(_rates, nominal_rate=flow_rate)
         target_rates = self._scale_flow(_rates, nominal_rate=target_rate)
 
+        print(f'rates: {rates}')
+        print(f'target_rates: {target_rates}')
+
         # start at zero
         async with sdc.position.z_step(loop=self.loop, height=wetting_height, speed=stage_speed):
 
