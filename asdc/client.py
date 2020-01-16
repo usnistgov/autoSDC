@@ -117,6 +117,8 @@ class SDC(scirc.SlackClient):
         h = max(0.0, h)
         self.laser_scan_height = h
 
+        self.camera_index = int(config.get('camera_index', 2))
+
         # droplet workflow configuration
         # TODO: document me
         self.wetting_height = max(0, config.get('wetting_height', 0.0011))
@@ -783,7 +785,7 @@ class SDC(scirc.SlackClient):
 
         pass an experiment index to serialize metadata to db
         """
-        camera = cv2.VideoCapture(1)
+        camera = cv2.VideoCapture(self.camera_index)
         # give the camera enough time to come online before reading data...
         time.sleep(0.5)
         status, frame = camera.read()
