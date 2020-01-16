@@ -529,7 +529,7 @@ class SDC(scirc.SlackClient):
             #  and (replicates == 2):
             if (intent == 'deposition'):
 
-                height_difference = self.characterization_height - self.step_height
+                height_difference = self.characterization_height - self.wetting_height
                 height_difference = max(0, height_difference)
                 async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
 
