@@ -112,6 +112,11 @@ class SDC(scirc.SlackClient):
         h = max(0.0, h)
         self.characterization_height = h
 
+        # define a positive height to perform characterization
+        h = float(config.get('laser_scan_height', 0.01))
+        h = max(0.0, h)
+        self.laser_scan_height = h
+
         # droplet workflow configuration
         # TODO: document me
         self.wetting_height = max(0, config.get('wetting_height', 0.0011))
@@ -536,8 +541,9 @@ class SDC(scirc.SlackClient):
                     if self.notify:
                         slack.post_message(f"acquiring laser reflectance data")
 
-                    await self.move_stage(x_combi, y_combi, self.laser_frame, height=self.step_height)
-                    await self._reflectance(primary_key=meta['id'])
+                    async with sdc.position.z_step(loop=self.loop, height=self.laser_scan_height, speed=self.speed) as stage:
+                        await self.move_stage(x_combi, y_combi, self.laser_frame, stage=stage)
+                        await self._reflectance(primary_key=meta['id'], stage=stage)
 
                     await self.move_stage(x_combi, y_combi, self.cell_frame, height=self.step_height)
 
@@ -693,13 +699,15 @@ class SDC(scirc.SlackClient):
     async def reflectance_linescan(
             self,
             stepsize: float = 0.00015,
-            n_steps: int = 28
+            n_steps: int = 28,
+            stage: Any = None
     ) -> Tuple[List[float], List[float]]:
         """ perform a laser reflectance linescan
 
         Arguments:
             stepsize: distance between linescan measurements (meters)
             n_steps: number of measurements in the scan
+            stage: stage controller
 
         Returns:
             mean: list of reflectance values forming the linescan
@@ -712,27 +720,35 @@ class SDC(scirc.SlackClient):
             the sample or the cell.
         """
         mean, var = [], []
-        async with sdc.position.acontroller(loop=self.loop, speed=self.speed) as stage:
+        if stage is None:
+            async with sdc.position.acontroller(loop=self.loop, speed=self.speed) as stage:
 
+                for step in range(n_steps):
+
+                    reflectance_data = self.reflectometer.collect(timeout=2)
+                    mean.append(reflectance_data)
+                    # mean.append(np.mean(reflectance_data))
+                    # var.append(np.var(reflectance_data))
+
+                    stage.update_y(-stepsize)
+                    time.sleep(0.25)
+        else:
             for step in range(n_steps):
 
                 reflectance_data = self.reflectometer.collect(timeout=2)
                 mean.append(reflectance_data)
-                # mean.append(np.mean(reflectance_data))
-                # var.append(np.var(reflectance_data))
-
                 stage.update_y(-stepsize)
                 time.sleep(0.25)
 
         return mean, var
 
-    async def _reflectance(self, primary_key=None):
+    async def _reflectance(self, primary_key=None, stage=None):
 
         # get the stage position at the start of the linescan
         with sdc.position.controller() as stage:
             metadata = {'reflectance_xv': stage.x, 'reflectance_yv': stage.y}
 
-        mean, var = await self.reflectance_linescan()
+        mean, var = await self.reflectance_linescan(stage=stage)
 
         if primary_key is not None:
             filename = f'deposit_reflectance_{primary_key:03d}.json'
