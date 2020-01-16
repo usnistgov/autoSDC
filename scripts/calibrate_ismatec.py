@@ -12,8 +12,10 @@ from asdc.sdc import microcontroller
 
 pump = microcontroller.PeristalticPump()
 
-proportion = np.linspace(0, 0.6, 0.05)
+
+proportion = np.arange(0, 0.2, 0.005)
 volts_in, volts_out, sem_volts_out = [], [], []
+volts_in, volts_out = [], []
 
 pump.start()
 
@@ -24,7 +26,8 @@ for p in proportion:
     v = []
     for iteration in range(5):
         time.sleep(1)
-        v.append(pump.get_flow())
+        v.append(float(pump.get_flow()))
+    print(v)
     volts_out.append(np.mean(v))
     sem_volts_out.append(stats.sem(v))
 
