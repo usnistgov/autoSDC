@@ -1,6 +1,142 @@
 # SDC Client
 
+## Overview
+
 `python asdc/client.py ${EXPERIMENT_DIR}/config.yaml` - start the sdc client.
+
+The client program will read the [configuration](#configuration) file and connect to the `#asdc` channel
+using slack's [real-time messaging API](https://api.slack.com/rtm).
+
+`asdc` uses a (mostly) json api to mediate control between computer programs and humans.
+These commands are primarily intended to be used programmatically, but we've
+found them to be pretty useful for free-form debugging as well.
+
+The SDC client will parse all messages in the `#asdc` channel for commands,
+which are begin by @mentioning the SDC bot account
+and consist of a command name and a json payload of arguments.
+The SDC client will also respond to direct messages (the @mention is still required).
+
+## SDC json commands
+
+### move
+
+slack command for horizontal translation of the SDC sample stage ([implementation][asdc.client.SDC.move]). Direct z-stage access is not allowed.
+
+This slack command wraps [move_stage][asdc.client.SDC.move_stage], and will lift up the cell by the [configured step height](#stage-configuration) for translating the stage horizontally and returning to the initial z-stage setting.
+
+**Example:** align wafer coordinate `(0,0)` with the camera
+
+`#!json @sdc move {"x": 0.0, "y": 0.0, "reference_frame": "camera"}`
+
+**Parameters**
+
+| Name              | Type                              | Description                                                   | Default  |
+|-------------------|-----------------------------------|---------------------------------------------------------------|----------|
+| `x`               | `float`                           | wafer x coordinate (mm)                                       |          |
+| `y`               | `float`                           | wafer y coordinate (mm)                                       |          |
+| `reference_frame` | `Enum['cell', 'camera', 'laser]]` | reference frame to align with the specified wafer coordinates | `'cell'` |
+
+
+!!! warning
+    The `move` command does not currently perform input validation.
+    `move` does not currently know about any physical obstructions within the throw of the stages,
+    and will happily ram into things if directed to do so...
+
+
+### stop_pumps
+
+::: asdc.client.SDC.stop_pumps
+
+**Example:**
+
+`#!json @sdc stop_pumps`
+
+
+### run_experiment
+
+Execute some SDC experiment protocol.
+
+
+### droplet
+
+debugging command for droplet formation subroutine.
+
+If `fill_time` or `shrink_time` are not specified, `droplet` will request input
+on the terminal for each of these phases (i.e. press `<ENTER>` when ready),
+and helpfully report timings for each step in a slack message.
+
+**Example:** ask the `droplet` routine to time things for us
+
+`#!json @sdc droplet {"shrink_rate": 1.3, "fill_rate": 0.7, "cleanup": 15}`
+
+**Example:** test a fully-specified droplet formation routine
+
+`#!json @sdc droplet {"shrink_rate": 1.3, "fill_rate": 0.7, "fill_time": 19, "shrink_time": 2, "cleanup": 15}`
+
+**Parameters**
+
+| Name             | Type  | Description                                         | Default |
+|------------------|-------|-----------------------------------------------------|---------|
+| `prep_height`    | float | z setting to grow the droplet (meters)              | 0.004 (4mm) |
+| `wetting_height` | float | z setting to wet the droplet to the surface         | 0.0011  (1.1mm) |
+| `fill_rate`      | float | counterpumping ratio during droplet growth          |    0.75 |
+| `fill_time`      | float | droplet growth duration (s)                         |    None |
+| `shrink_rate`    | float | counterpumping ratio during droplet wetting phase   |     1.1 |
+| `shrink_time`    | float | droplet wetting duration (s)                        |    None |
+| `flow_rate`      | float | total flow rate during droplet formation (mL/min)   |     0.5 |
+| `cleanup`        | float | duration of pre-droplet-formation cleanup siphoning |       0 |
+| `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
+
+
+### imagecap
+::: asdc.client.SDC.imagecap
+
+
+### reflectance
+slack command to collect a reflectance linescan ([implementation][asdc.client.SDC.reflectance]).
+
+!!! warning
+    The `reflectance` command translates the sample stage
+    (see [reflectance_linescan][asdc.client.SDC.reflectance_linescan]).
+    Ensure that the z-stage is such that the cell is not in contact
+    with the sample to avoid dragging, which could potentially damage
+    the sample or the cell.
+
+
+### comment
+
+slack command to provide unstructured feedback on an experiment and store it directly in a string field in the database.
+
+Since this command is not intended for programmatic use, it uses a (brittle) positional string format of the form
+`#!bash comment ${primary_key} ${comment_text}`. Invoking the `comment` command multiple times for a given experiment
+will append subsequent comments to the comment field in the database. (refer to the [docs][asdc.client.SDC.comment] for more precision)
+
+**Example:** record feedback on experiment 1
+
+`#!json @sdc comment 1 we observed something strange with this deposition`
+
+
+### bubble
+::: asdc.client.SDC.bubble
+
+**Example:**
+
+`#!json @sdc bubble 1`
+
+
+### checkpoint
+
+
+### flag
+
+
+### coverage
+
+
+## SDC Client implementation
+
+::: asdc.client.SDC
+
 
 ## configuration
 
@@ -68,8 +204,3 @@ Here is a collection of debug flags that toggles debug functionality
 |------------------|------|--------------------------------------------------|---------------------|
 | `experiment_file | str` | json file for predefined experimental protocol   | `instructions.json` |
 | `domain_file     | str` | json file defining active learning design space. | `domain.json`       |
-
-
-## SDC
-
-::: asdc.client.SDC

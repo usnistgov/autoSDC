@@ -18,7 +18,7 @@ Apply a constant potential for a fixed interval.
 
 Example:
 
-```python
+```json
 {
     "op": "potentiostatic",
     "potential": 0.5,
@@ -44,7 +44,7 @@ Multi-cycle cyclic voltammetry -- apply a triangular wave potential pattern and 
 
 Example:
 
-```python
+```json
 {
     "op": "cv",
     "initial_potential": 0.0,

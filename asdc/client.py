@@ -14,7 +14,7 @@ from datetime import datetime
 from aioconsole import ainput, aprint
 from contextlib import asynccontextmanager
 
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Dict, Optional, Tuple
 
 import traceback
 
@@ -332,7 +332,7 @@ class SDC(scirc.SlackClient):
             msgdata: slack message metadata
             args: json string containing command arguments
 
-       Note:
+        Note:
             json arguments:
 
             - `x`: wafer x coordinate (`mm`)
@@ -680,8 +680,27 @@ class SDC(scirc.SlackClient):
             with self.db as tx:
                 tx['experiment'].update({'id': primary_key, 'reflectance': reflectance_readout}, ['id'])
 
-    async def reflectance_linescan(self, stepsize=0.00015, n_steps=28):
+    async def reflectance_linescan(
+            self,
+            stepsize: float = 0.00015,
+            n_steps: int = 28
+    ) -> Tuple[List[float], List[float]]:
+        """ perform a laser reflectance linescan
 
+        Arguments:
+            stepsize: distance between linescan measurements (meters)
+            n_steps: number of measurements in the scan
+
+        Returns:
+            mean: list of reflectance values forming the linescan
+            var:  uncertainty for reflectances in the linescan
+
+        Warning:
+            `reflectance_linescan` translates the sample stage.
+            Ensure that the z-stage is such that the cell is not in contact
+            with the sample to avoid dragging, which could potentially damage
+            the sample or the cell.
+        """
         mean, var = [], []
         async with sdc.position.acontroller(loop=self.loop, speed=self.speed) as stage:
 

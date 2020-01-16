@@ -23,5 +23,15 @@ plugins:
       watch:
       - ./asdc
 
+markdown_extensions:
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - codehilite
+  - pymdownx.inlinehilite
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+
+
 extra_css:
   - custom.css
