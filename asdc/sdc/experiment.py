@@ -5,7 +5,6 @@ import pandas as pd
 from datetime import datetime
 
 from asdc import slack
-# from .pump import PumpArray
 
 try:
     from . import potentiostat
@@ -190,6 +189,13 @@ def setup_cv(pstat, data, cell='INTERNAL'):
 
     return status, params
 
+potentiostat_ops = {
+    'potentiostatic': setup_potentiostatic,
+    'lsv': setup_lsv,
+    'lpr': setup_lpr,
+    'cv': setup_cv,
+    'corrosion_oc': setup_corrosion_oc
+}
 
 def run(instructions, cell='INTERNAL', verbose=False):
 
@@ -202,25 +208,16 @@ def run(instructions, cell='INTERNAL', verbose=False):
         _params = []
         for instruction in instructions:
             params = None
-            if instruction.get('op') == 'potentiostatic':
-                status, params = setup_potentiostatic(pstat, instruction, cell=cell)
+            opname = instruction.get('op')
+            op = potentiostat_ops.get(opname)
 
-            elif instruction.get('op') == 'lsv':
-                status, params = setup_lsv(pstat, instruction, cell=cell)
+            if op is not None:
+                status, params = op(pstat, instruction, cell=cell)
 
-            elif instruction.get('op') == 'lpr':
-                status, params = setup_lpr(pstat, instruction, cell=cell)
+                if params:
+                    _params.append(params)
 
-            elif instruction.get('op') == 'cv':
-                status, params = setup_cv(pstat, instruction, cell=cell)
-
-            elif instruction.get('op') == 'corrosion_oc':
-                status, params = setup_corrosion_oc(pstat, instruction, cell=cell)
-
-            if params:
-                _params.append(params)
-
-            # elif instruction.get('op') == 'set_pH':
+            # elif opname == 'set_pH':
             #     print('setting the pH!')
             #     params = f"pH={instruction.get('pH')}"
             #     pump_array.set_pH(setpoint=instruction.get('pH'))
@@ -231,9 +228,6 @@ def run(instructions, cell='INTERNAL', verbose=False):
 
         slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
-        # if pump_array:
-        #     pump_array.stop_all()
-        #     time.sleep(60)
 
     metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
     metadata['parameters'] = json.dumps(_params)
