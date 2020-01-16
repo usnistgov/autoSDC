@@ -97,6 +97,11 @@ class PeristalticPump(MicrocontrollerInterface):
         """ start pumping """
         return self.eval({"op": "stop"})
 
+
+    def get_flow(self) -> float:
+        """ get voltage encoding flow rate from the board... """
+        return self.eval({"op": "get_flow"})
+
     def set_flow(self, rate: float):
         """ set pumping rate to counterbalance a nominal target flow rate in mL/min
 
