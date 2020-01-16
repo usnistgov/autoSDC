@@ -546,7 +546,7 @@ class SDC(scirc.SlackClient):
                         await self.move_stage(x_combi, y_combi, self.laser_frame, stage=stage)
                         await self._reflectance(primary_key=meta['id'], stage=stage)
 
-                    await self.move_stage(x_combi, y_combi, self.cell_frame, height=self.step_height)
+                    await self.move_stage(x_combi, y_combi, self.cell_frame)
 
             self.pump_array.counterpump.stop()
 
