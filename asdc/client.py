@@ -407,7 +407,7 @@ class SDC(scirc.SlackClient):
                 self.pump_array.stop_all(counterbalance='full')
                 time.sleep(self.cleanup_pause)
 
-            await self.move_stage(x_combi, y_combi, self.cell_frame, height=self.step_height)
+            await self.move_stage(x_combi, y_combi, self.cell_frame)
 
             height_difference = self.characterization_height - self.wetting_height
             height_difference = max(0, height_difference)
@@ -535,7 +535,7 @@ class SDC(scirc.SlackClient):
                     if self.notify:
                         slack.post_message(f"inspecting deposit quality")
 
-                    await self.move_stage(x_combi, y_combi, self.camera_frame, height=self.step_height)
+                    await self.move_stage(x_combi, y_combi, self.camera_frame)
                     await self._capture_image(primary_key=meta['id'])
 
                     if self.notify:
