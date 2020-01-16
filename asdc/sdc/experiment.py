@@ -217,15 +217,6 @@ def run(instructions, cell='INTERNAL', verbose=False):
                 if params:
                     _params.append(params)
 
-            # elif opname == 'set_pH':
-            #     print('setting the pH!')
-            #     params = f"pH={instruction.get('pH')}"
-            #     pump_array.set_pH(setpoint=instruction.get('pH'))
-            #     pump_array.run_all()
-            #     hold_time = instruction.get('hold_time', 0)
-            #     print(f'waiting {hold_time} (s) for solution composition to reach steady state')
-            #     time.sleep(hold_time)
-
         slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
 
