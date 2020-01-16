@@ -258,7 +258,7 @@ class PumpArray():
                     time.sleep(0.05)
 
         print(self.flow_setpoint)
-        print(f'counter: {counterbalance_setpoint}')
+        print(f'counter: {counterbalance_setpoint} mL/min')
 
         if start:
             self.run_all()

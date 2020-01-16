@@ -549,8 +549,6 @@ class SDC(scirc.SlackClient):
     async def droplet(self, ws, msgdata, args):
         """ slack bot command for prototyping droplet contact routine
 
-
-
         #### json arguments
 
         | Name             | Type  | Description                                         | Default |
@@ -562,9 +560,9 @@ class SDC(scirc.SlackClient):
         | `shrink_rate`    | float | counterpumping ratio during droplet wetting phase   |     1.1 |
         | `shrink_time`    | float | droplet wetting duration (s)                        |    None |
         | `flow_rate`      | float | total flow rate during droplet formation (mL/min)   |     0.5 |
+        | `target_rate`    | float | final flow rate after droplet formation  (mL/min)   |    0.05 |
         | `cleanup`        | float | duration of pre-droplet-formation cleanup siphoning |       0 |
         | `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
-
 
         """
         instructions = json.loads(args)
@@ -576,8 +574,10 @@ class SDC(scirc.SlackClient):
         shrink_ratio = instructions.get('shrink_rate', 1.1)
         shrink_time = instructions.get('shrink_time', None)
         flow_rate = instructions.get('flow_rate', 0.5)
+        target_rate = instructions.get('target_rate', 0.05)
         cleanup_duration = instructions.get('cleanup', 0)
         stage_speed = instructions.get('stage_speed', self.speed)
+
 
         # stage speed is specified in m/s
         stage_speed = min(stage_speed, 1e-3)
@@ -588,6 +588,8 @@ class SDC(scirc.SlackClient):
         solution = self.solutions[0]
         s = next(iter(solution))
         rates = {s: flow_rate}
+
+        target_rates = self._scale_flow(rates, nominal_rate=target_rate)
 
         # start at zero
         async with sdc.position.z_step(loop=self.loop, height=wetting_height, speed=stage_speed):
@@ -602,29 +604,37 @@ class SDC(scirc.SlackClient):
             async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=stage_speed):
 
                 # counterpump slower to fill the droplet
+                print('filling droplet')
                 self.pump_array.set_rates(rates, counterpump_ratio=fill_ratio, start=True)
                 fill_start = time.time()
                 if fill_time is None:
-                    await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
+                    await ainput('*filling droplet*: press enter to continue...', loop=self.loop)
                 else:
                     time.sleep(fill_time)
                 fill_time = time.time() - fill_start
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
+            print('shrinking droplet')
             self.pump_array.set_rates(rates, counterpump_ratio=shrink_ratio)
             shrink_start = time.time()
             if shrink_time is None:
-                await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
+                await ainput('*shrinking droplet*: press enter to continue...', loop=self.loop)
             else:
                 time.sleep(shrink_time)
             shrink_time = time.time() - shrink_start
 
+            print('equalizing differential pumping rate')
             self.pump_array.set_rates(rates)
 
         # drop down to contact height
         instructions['fill_time'] = fill_time
         instructions['shrink_time'] = shrink_time
+
+        time.sleep(3)
+
+        print(f'stepping flow rates to {rates}')
+        self.pump_array.set_rates(target_rates, counterpump_ratio=0.95)
 
         slack.post_message(f"contact routine with {json.dumps(instructions)}")
 
