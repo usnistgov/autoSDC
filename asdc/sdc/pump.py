@@ -255,7 +255,7 @@ class PumpArray():
                 if setpoint > 0:
                     self.flow_setpoint[pump_id] = setpoint
                     self.infusion_rate(pump_id=pump_id, ser=ser, rate=setpoint, units=units)
-                    time.sleep(0.05)
+                    time.sleep(0.25)
 
         print(self.flow_setpoint)
         print(f'counter: {counterbalance_setpoint} mL/min')
