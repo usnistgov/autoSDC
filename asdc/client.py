@@ -595,7 +595,7 @@ class SDC(scirc.SlackClient):
 
         # just pump from the first syringe pump
         # solution = next(iter(self.solutions))
-        if pump_ids is None:
+        if solutions is None:
             solution = self.solutions[0]
             s = next(iter(solution))
             _rates = {s: flow_rate}
