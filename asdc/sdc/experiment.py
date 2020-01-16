@@ -120,7 +120,7 @@ def setup_lpr(pstat, data, cell='INTERNAL'):
     }
     """
 
-    vs = data.get("vs", "VS OC"),
+    vs = data.get("vs", "VS OC")
 
     status, params = pstat.linear_polarization_resistance(
         initial_potential=data.get('initial_potential'),
