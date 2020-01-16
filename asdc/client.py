@@ -402,7 +402,7 @@ class SDC(scirc.SlackClient):
                 self.pump_array.stop_all(counterbalance='full')
                 time.sleep(self.cleanup_pause)
 
-            await self.move_stage(x_combi, y_combi, self.cell_frame, stage=stage)
+            await self.move_stage(x_combi, y_combi, self.cell_frame, height=self.step_height)
 
             height_difference = self.characterization_height - self.wetting_height
             height_difference = max(0, height_difference)
@@ -512,7 +512,7 @@ class SDC(scirc.SlackClient):
                         slack.post_image(figpath, title=f"CV {meta['id']}")
 
         # run cleanup and optical characterization
-        async with sdc.position.z_step(loop=self.loop, height=self.step_height, speed=self.speed):
+        async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
 
             self.pump_array.stop_all(counterbalance='full')
 
@@ -530,16 +530,16 @@ class SDC(scirc.SlackClient):
                     if self.notify:
                         slack.post_message(f"inspecting deposit quality")
 
-                    await self.move_stage(x_combi, y_combi, self.camera_frame)
+                    await self.move_stage(x_combi, y_combi, self.camera_frame, height=self.step_height)
                     await self._capture_image(primary_key=meta['id'])
 
                     if self.notify:
                         slack.post_message(f"acquiring laser reflectance data")
 
-                    await self.move_stage(x_combi, y_combi, self.laser_frame)
+                    await self.move_stage(x_combi, y_combi, self.laser_frame, height=self.step_height)
                     await self._reflectance(primary_key=meta['id'])
 
-                    await self.move_stage(x_combi, y_combi, self.cell_frame)
+                    await self.move_stage(x_combi, y_combi, self.cell_frame, height=self.step_height)
 
             self.pump_array.counterpump.stop()
 
