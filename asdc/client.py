@@ -572,6 +572,7 @@ class SDC(scirc.SlackClient):
         | `target_rate`    | float | final flow rate after droplet formation  (mL/min)   |    0.05 |
         | `cleanup`        | float | duration of pre-droplet-formation cleanup siphoning |       0 |
         | `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
+        | `pump_ids`       | List[str]   | list of solutions to pump with                |   None  |
 
         """
         instructions = json.loads(args)
@@ -586,7 +587,7 @@ class SDC(scirc.SlackClient):
         target_rate = instructions.get('target_rate', 0.05)
         cleanup_duration = instructions.get('cleanup', 0)
         stage_speed = instructions.get('stage_speed', self.speed)
-
+        solutions = instructions.get('solutions')
 
         # stage speed is specified in m/s
         stage_speed = min(stage_speed, 1e-3)
@@ -594,11 +595,15 @@ class SDC(scirc.SlackClient):
 
         # just pump from the first syringe pump
         # solution = next(iter(self.solutions))
-        solution = self.solutions[0]
-        s = next(iter(solution))
-        rates = {s: flow_rate}
+        if pump_ids is None:
+            solution = self.solutions[0]
+            s = next(iter(solution))
+            _rates = {s: flow_rate}
+        else:
+            _rates = {s: 1.0 for s in solutions}
 
-        target_rates = self._scale_flow(rates, nominal_rate=target_rate)
+        rates = self._scale_flow(_rates, nominal_rate=flow_rate)
+        target_rates = self._scale_flow(_rates, nominal_rate=target_rate)
 
         # start at zero
         async with sdc.position.z_step(loop=self.loop, height=wetting_height, speed=stage_speed):
