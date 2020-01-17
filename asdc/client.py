@@ -406,7 +406,7 @@ class SDC(scirc.SlackClient):
 
             if self.cleanup_pause > 0:
                 print('cleaning up...')
-                self.pump_array.stop_all(counterbalance='full')
+                self.pump_array.stop_all(counterbalance='full', fast=True)
                 time.sleep(self.cleanup_pause)
 
             await self.move_stage(x_combi, y_combi, self.cell_frame)
@@ -417,17 +417,17 @@ class SDC(scirc.SlackClient):
 
                 # counterpump slower to fill the droplet
                 print('differentially pumping to grow the droplet')
-                self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.fill_ratio, start=True)
+                self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.fill_ratio, start=True, fast=True)
                 time.sleep(self.fill_time)
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
             print('differentially pumping to shrink the droplet')
-            self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.shrink_ratio)
+            self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.shrink_ratio, start=True, fast=True)
             time.sleep(self.shrink_time)
 
             print('equalizing differential pumping rate')
-            self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.95)
+            self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.95, start=True, fast=True)
 
         # flush lines with cell in contact
         if line_flush_needed:
@@ -437,7 +437,7 @@ class SDC(scirc.SlackClient):
         time.sleep(3)
 
         print(f'stepping flow rates to {rates}')
-        self.pump_array.set_rates(rates, counterpump_ratio=0.95)
+        self.pump_array.set_rates(rates, counterpump_ratio=0.95, start=True, fast=True)
 
         # end droplet workflow
 
@@ -518,7 +518,7 @@ class SDC(scirc.SlackClient):
                         slack.post_message(f"finished experiment {meta['id']}: {summary}")
                         slack.post_image(figpath, title=f"CV {meta['id']}")
 
-        self.pump_array.stop_all(counterbalance='full')
+        self.pump_array.stop_all(counterbalance='full', fast=True)
         time.sleep(0.25)
 
         # run cleanup and optical characterization
