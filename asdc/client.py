@@ -613,7 +613,7 @@ class SDC(scirc.SlackClient):
 
             if cleanup_duration > 0:
                 print('cleaning up...')
-                self.pump_array.stop_all(counterbalance='full')
+                self.pump_array.stop_all(counterbalance='full', fast=True)
                 time.sleep(cleanup_duration)
 
             height_difference = prep_height - wetting_height
@@ -622,7 +622,7 @@ class SDC(scirc.SlackClient):
 
                 # counterpump slower to fill the droplet
                 print('filling droplet')
-                self.pump_array.set_rates(rates, counterpump_ratio=fill_ratio, start=True)
+                self.pump_array.set_rates(rates, counterpump_ratio=fill_ratio, start=True, fast=True)
                 fill_start = time.time()
                 if fill_time is None:
                     await ainput('*filling droplet*: press enter to continue...', loop=self.loop)
@@ -633,7 +633,7 @@ class SDC(scirc.SlackClient):
             # drop down to wetting height
             # counterpump faster to shrink the droplet
             print('shrinking droplet')
-            self.pump_array.set_rates(rates, counterpump_ratio=shrink_ratio)
+            self.pump_array.set_rates(rates, counterpump_ratio=shrink_ratio, fast=True)
             shrink_start = time.time()
             if shrink_time is None:
                 await ainput('*shrinking droplet*: press enter to continue...', loop=self.loop)
@@ -642,7 +642,7 @@ class SDC(scirc.SlackClient):
             shrink_time = time.time() - shrink_start
 
             print('equalizing differential pumping rate')
-            self.pump_array.set_rates(rates)
+            self.pump_array.set_rates(rates, fast=True, start=True)
 
         # drop down to contact height
         instructions['fill_time'] = fill_time
@@ -651,7 +651,7 @@ class SDC(scirc.SlackClient):
         time.sleep(3)
 
         print(f'stepping flow rates to {rates}')
-        self.pump_array.set_rates(target_rates, counterpump_ratio=0.95)
+        self.pump_array.set_rates(target_rates, counterpump_ratio=0.95, fast=True, start=True)
 
         slack.post_message(f"contact routine with {json.dumps(instructions)}")
 
