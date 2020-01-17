@@ -132,15 +132,15 @@ class PumpArray():
         print(f'asking pump {pump_id} to run')
         self.eval('run', pump_id=pump_id)
 
-    def run_all(self):
+    def run_all(self, fast=False):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
             for pump_id in self.solutions.keys():
                 if self.flow_setpoint[pump_id] > 0:
-                    self.eval('run', pump_id=pump_id, ser=ser)
-                    time.sleep(0.05)
+                    self.eval('run', pump_id=pump_id, ser=ser, fast=fast)
+                    time.sleep(0.25)
                 else:
-                    self.eval('stop', pump_id=pump_id, ser=ser)
-                    time.sleep(0.05)
+                    self.eval('stop', pump_id=pump_id, ser=ser, fast=fast)
+                    time.sleep(0.25)
 
     def refresh_all(self):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
@@ -151,10 +151,11 @@ class PumpArray():
     def stop(self, pump_id=0):
         self.eval('stop', pump_id=pump_id)
 
-    def stop_all(self, counterbalance='off'):
+    def stop_all(self, counterbalance='off', fast=False):
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
             for pump_id in self.solutions.keys():
-                self.eval('stop', pump_id=pump_id, ser=ser)
+                self.eval('stop', pump_id=pump_id, ser=ser, fast=fast)
+                time.sleep(0.25)
 
         if counterbalance == 'full':
             # set counterbalance pumping rate
@@ -206,7 +207,7 @@ class PumpArray():
             if q in value:
                 return key
 
-    def set_rates(self, setpoints, units='ml/min', counterpump_ratio=None, start=False):
+    def set_rates(self, setpoints, units='ml/min', counterpump_ratio=None, start=False, fast=False):
         """ directly set absolute flow rates
 
         flow_setpoint is a dict containing absolute flow rates for each syringe
@@ -254,14 +255,16 @@ class PumpArray():
                 print(pump_id)
                 if setpoint > 0:
                     self.flow_setpoint[pump_id] = setpoint
-                    self.infusion_rate(pump_id=pump_id, ser=ser, rate=setpoint, units=units)
+                    self.infusion_rate(pump_id=pump_id, ser=ser, rate=setpoint, units=units, fast=fast)
                     time.sleep(0.25)
 
-        print(self.flow_setpoint)
-        print(f'counter: {counterbalance_setpoint} mL/min')
+        time.sleep(0.25)
 
         if start:
             self.run_all()
+
+        print(self.flow_setpoint)
+        print(f'counter: {counterbalance_setpoint} mL/min')
 
         # set counterbalance pumping rate
         self.counterpump.set_flow(counterbalance_setpoint)
