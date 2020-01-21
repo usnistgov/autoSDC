@@ -171,6 +171,7 @@ class SDC(scirc.SlackClient):
             self.pump_array = None
 
         self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
+        self.light = sdc.microcontroller.Light(port=adafruit_port)
 
     def get_last_known_position(self, x_versa, y_versa, resume=False):
 
@@ -788,15 +789,24 @@ class SDC(scirc.SlackClient):
         mean_reflectance = await self._reflectance(primary_key=primary_key)
         print('reflectance:', mean_reflectance)
 
+    @contextmanager
+    def light_on(self):
+        """ context manager to toggle the light on and off for image acquisition """
+        self.light.set("on")
+        yield
+        self.light.set("off")
+
     async def _capture_image(self, primary_key=None):
         """ capture an image from the webcam.
 
         pass an experiment index to serialize metadata to db
         """
-        camera = cv2.VideoCapture(self.camera_index)
-        # give the camera enough time to come online before reading data...
-        time.sleep(0.5)
-        status, frame = camera.read()
+
+        with self.light_on():
+            camera = cv2.VideoCapture(self.camera_index)
+            # give the camera enough time to come online before reading data...
+            time.sleep(0.5)
+            status, frame = camera.read()
 
         # BGR --> RGB format
         frame = frame[...,::-1].copy()

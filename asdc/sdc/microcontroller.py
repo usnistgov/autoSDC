@@ -123,3 +123,21 @@ class PeristalticPump(MicrocontrollerInterface):
 
         """
         self.eval({"op": "set_flow", "rate": proportion})
+
+class Light(MicrocontrollerInterface):
+    """ microcontroller interface for the light (for illumination during optical characterization """
+
+    def set(self, value):
+        """ set the light state to on/off """
+        if value in ("on", "off"):
+            self.eval({"op": "light", "value": value})
+        else:
+            raise ValueError
+
+    def on(self):
+        """ turn the light on """
+        self.set("on")
+
+    def off(self):
+        """ turn the light off """
+        self.set("off")
