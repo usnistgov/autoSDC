@@ -2,6 +2,8 @@
 
 from __future__ import absolute_import
 
+import sys
+
 # try:
 #     raise ModuleNotFoundError
 # except NameError:
@@ -13,11 +15,12 @@ from . import pump
 from . import experiment
 from . import microcontroller
 
-try:
+if sys.platform == 'win32':
     from . import position
     from . import potentiostat
 
-except ModuleNotFoundError:
+else:
+# except ModuleNotFoundError:
 
     from .shims import pump
     from .shims import position

@@ -1,3 +1,4 @@
+import sys
 import json
 import time
 import numpy as np
@@ -6,9 +7,10 @@ from datetime import datetime
 
 from asdc import slack
 
-try:
+if sys.platform == 'win32':
     from . import potentiostat
-except ModuleNotFoundError:
+else:
+    # except ModuleNotFoundError:
     from .shims import potentiostat
 
 # the 3F potentiostat
