@@ -32,7 +32,7 @@ from asdc import emulation
 from asdc import visualization
 
 import enum
-Action = enum.Enum('Action', ['REPEAT', 'CORRODE', 'QUERY'])
+Action = enum.Enum('Action', ['QUERY', 'REPEAT', 'PHOTONS', 'CORRODE'])
 
 BOT_TOKEN = open('slack_bot_token.txt', 'r').read().strip()
 SDC_TOKEN = open('slacktoken.txt', 'r').read().strip()
@@ -511,6 +511,10 @@ class Controller(slackbot.SlackBot):
                     action = Action.REPEAT
                 else:
                     action = Action.QUERY
+
+            elif intent == 'photons':
+                action = Action.PHOTONS
+
             elif intent == 'corrosion':
                 action = Action.CORRODE
         else:
@@ -535,6 +539,10 @@ class Controller(slackbot.SlackBot):
             target_idx = self.db['experiment'].count(intent='deposition')
             target = self.targets.iloc[target_idx]
             pos = {'x': target.x, 'y': target.y}
+
+        elif action == Action.PHOTONS:
+            pos = None
+            experiment_id = int(previous_op.get('experiment_id'))
 
         elif action == Action.CORRODE:
             experiment_id = int(previous_op.get('experiment_id'))
@@ -563,12 +571,18 @@ class Controller(slackbot.SlackBot):
                 instructions = corrosion_instructions(experiment_id=experiment_id)
 
         # update the intent block to include the target position
-        instructions[0].update(pos)
+        if pos is not None:
+            instructions[0].update(pos)
+
         instructions[0].update({'experiment_id': experiment_id})
 
         print(instructions)
         # send the experiment command
-        await self.dm_sdc(web_client, f"<@UHT11TM6F> run_experiment {json.dumps(instructions)}")
+
+        if action in {Action.QUERY, Action.REPEAT, Action.CORRODE}:
+            await self.dm_sdc(web_client, f"<@UHT11TM6F> run_experiment {json.dumps(instructions)}")
+        elif action == Action.PHOTONS:
+            await self.dm_sdc(web_client, f"<@UHT11TM6F> run_characterization {json.dumps(instructions)}")
 
         return
 

@@ -377,26 +377,10 @@ class SDC(slackbot.SlackBot):
 
         return {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
-    @command
-    async def run_experiment(self, args: str, msgdata: Dict, web_client: Any):
-        """ run an SDC experiment """
+    async def establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict):
+        """ align the stage with a sample point, form a droplet, and flush lines if needed """
 
-        # args should contain a sequence of SDC experiments -- basically the "instructions"
-        # segment of an autoprotocol protocol
-        # that comply with the SDC experiment schema (TODO: finalize and enforce schema)
-        instructions = json.loads(args)
-
-        # check for an instruction group name/intent
-        intent = instructions[0].get('intent')
-        experiment_id = instructions[0].get('experiment_id')
-
-        if intent is not None:
-            header = instructions[0]
-            instructions = instructions[1:]
-
-        x_combi, y_combi = header.get('x'), header.get('y')
-
-        rates = instructions[0].get('rates')
+        rates = flow_instructions.get('rates')
         cell_fill_rates = self._scale_flow(rates, nominal_rate=0.5)
 
         # if relative flow rates don't match, purge solution
@@ -412,7 +396,7 @@ class SDC(slackbot.SlackBot):
                 self.pump_array.stop_all(counterbalance='full', fast=True)
                 time.sleep(self.cleanup_pause)
 
-            await self.move_stage(x_combi, y_combi, self.cell_frame)
+            await self.move_stage(x_wafer, y_wafer, self.cell_frame)
 
             height_difference = self.characterization_height - self.wetting_height
             height_difference = max(0, height_difference)
@@ -442,7 +426,28 @@ class SDC(slackbot.SlackBot):
         print(f'stepping flow rates to {rates}')
         self.pump_array.set_rates(rates, counterpump_ratio=0.95, start=True, fast=True)
 
-        # end droplet workflow
+        return
+
+    @command
+    async def run_experiment(self, args: str, msgdata: Dict, web_client: Any):
+        """ run an SDC experiment """
+
+        # args should contain a sequence of SDC experiments -- basically the "instructions"
+        # segment of an autoprotocol protocol
+        # that comply with the SDC experiment schema (TODO: finalize and enforce schema)
+        instructions = json.loads(args)
+
+        # check for an instruction group name/intent
+        intent = instructions[0].get('intent')
+        experiment_id = instructions[0].get('experiment_id')
+
+        if intent is not None:
+            header = instructions[0]
+            instructions = instructions[1:]
+
+        x_combi, y_combi = header.get('x'), header.get('y')
+
+        await establish_droplet(x_combi, y_combi, instructions[0])
 
         meta = {
             'intent': intent,
@@ -521,18 +526,54 @@ class SDC(slackbot.SlackBot):
                         _slack.post_message(f"finished experiment {meta['id']}: {summary}")
                         _slack.post_image(figpath, title=f"CV {meta['id']}")
 
+        # run cleanup and optical characterization
         self.pump_array.stop_all(counterbalance='full', fast=True)
         time.sleep(0.25)
 
-        # run cleanup and optical characterization
         async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
 
             if self.cleanup_pause > 0:
                 time.sleep(self.cleanup_pause)
 
-            replicates = self.db['experiment'].count(experiment_id=experiment_id)
-            #  and (replicates == 2):
-            if (intent == 'deposition'):
+            self.pump_array.counterpump.stop()
+
+        await self.dm_controller('<@UHNHM7198> go')
+
+
+    @command
+    async def run_characterization(self, ws, msgdata, args):
+        """ perform cell cleanup and characterization
+
+        the header instruction should contain a list of primary keys
+        corresponding to sample points that should be characterized.
+        """
+
+        # the header block should contain
+        instructions = json.loads(args)
+
+        header = instructions[0]
+        instructions = instructions[1:]
+
+        # check for an instruction group name/intent
+        intent = header.get('intent')
+        experiment_id = header.get('experiment_id')
+
+        # get all relevant samples
+        samples = self.db['experiment'].find(experiment_id=experiment_id)
+
+
+        for sample in samples:
+            x_combi = sample.get('x_combi')
+            y_combi = sample.get('y_combi')
+            primary_key = sample.get('id')
+
+            await establish_droplet(x_combi, y_combi, instructions[0])
+
+            # run cleanup and optical characterization
+            async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
+
+                if self.cleanup_pause > 0:
+                    time.sleep(self.cleanup_pause)
 
                 height_difference = self.characterization_height - self.wetting_height
                 height_difference = max(0, height_difference)
@@ -542,20 +583,25 @@ class SDC(slackbot.SlackBot):
                         _slack.post_message(f"inspecting deposit quality")
 
                     await self.move_stage(x_combi, y_combi, self.camera_frame)
-                    await self._capture_image(primary_key=meta['id'])
+                    await self._capture_image(primary_key=primary_key)
 
                     if self.notify:
                         _slack.post_message(f"acquiring laser reflectance data")
 
                     async with sdc.position.z_step(loop=self.loop, height=self.laser_scan_height, speed=self.speed) as stage:
                         await self.move_stage(x_combi, y_combi, self.laser_frame, stage=stage)
-                        await self._reflectance(primary_key=meta['id'], stage=stage)
+                        await self._reflectance(primary_key=primary_key, stage=stage)
 
                     await self.move_stage(x_combi, y_combi, self.cell_frame)
 
-            self.pump_array.counterpump.stop()
+                self.pump_array.counterpump.stop()
 
-        await self.dm_controller('<@UHNHM7198> go')
+        for sample in samples:
+                slack.post_message(f"x-ray ops go here...")
+                time.sleep(3)
+
+    await self.dm_controller('<@UHNHM7198> go')
+
 
     @command
     async def droplet(self, args: str, msgdata: Dict, web_client: Any):
