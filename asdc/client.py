@@ -3,6 +3,7 @@ import sys
 import json
 import time
 import click
+import signal
 import asyncio
 import dataset
 import functools
@@ -58,6 +59,12 @@ def to_vec(x, frame):
 def to_coords(x, frame):
     """ express coordinates in specified reference frame """
     return frame.origin.locate_new('P', to_vec(x, frame))
+
+async def shutdown(signal, loop, pump_array):
+    """ signal handler kernel to gracefully shut down the pump array """
+    print(f'quitting due to exit signal {signal.name}')
+    pump_array.stop_all(counterbalance='off', fast=True)
+    loop.stop()
 
 class SDC(scirc.SlackClient):
     """ scanning droplet cell """
@@ -172,6 +179,14 @@ class SDC(scirc.SlackClient):
 
         self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
         self.light = sdc.microcontroller.Light(port=adafruit_port)
+
+        # set up signal handler to gracefully shut down pump array
+        signals = (signal.CTRL_C_EVENT, signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+        for signal in signals:
+            self.loop.add_signal_handler(
+                signal,
+                lambda signal=signal: asyncio.create_task(shutdown(signal, self.loop, self.pump_array))
+            )
 
     def get_last_known_position(self, x_versa, y_versa, resume=False):
 
