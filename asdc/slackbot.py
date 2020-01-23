@@ -52,7 +52,8 @@ class SlackBot(object):
             except ValueError:
                 command, args = m.strip(), None
 
-            print(command)
+            print('cmd: ', command)
+            print('args: ', args)
 
             if command not in self.command:
                 user = data['user']
@@ -73,14 +74,12 @@ class SlackBot(object):
                 # dispatch command method by name
                 # await getattr(self, command)(ws, msgdata, args)
                 web_client = payload['web_client']
-                await getattr(self, command)(web_client, args, data)
+                getattr(self, command)(web_client, args, data)
 
     @command
-    async def echo(self, web_client, text, data):
+    def echo(self, web_client, text, data):
         r = f"recieved command {text}"
-        channel = data.get('channel_id')
-        if channel is None:
-            channel = data.get('channel')
+        channel = data.get('channel')
         print(r)
         web_client.chat_postMessage(
             channel=channel,
@@ -88,14 +87,11 @@ class SlackBot(object):
             thread_ts=data['ts']
         )
 
-    async def main(self):
+    def main(self):
 
-        self.loop = asyncio.get_event_loop()
-        self.client = slack.RTMClient(token=BOT_TOKEN, run_async=True, loop=self.loop)
-        # rtm_client = slack.RTMClient(token=BOT_TOKEN, run_async=True, loop=self.loop)
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        await asyncio.ensure_future(self.client.start())
+        self.client = slack.RTMClient(token=BOT_TOKEN)
+        self.client.start()
 
 if __name__ == "__main__":
     bot = SlackBot()
-    asyncio.run(bot.main())
+    bot.main()
