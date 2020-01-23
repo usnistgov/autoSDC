@@ -5,7 +5,7 @@ import slack
 with open('slacktoken.txt', 'r') as f:
     SLACK_TOKEN = f.read()
 
-sc = slackclient.SlackClient(SLACK_TOKEN)
+sc = slack.WebClient(SLACK_TOKEN)
 
 def post_message(message, sleep=1):
     """ post text to #asdc
