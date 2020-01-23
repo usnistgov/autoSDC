@@ -12,7 +12,7 @@ import pandas as pd
 from ruamel import yaml
 from datetime import datetime
 from aioconsole import ainput, aprint
-from contextlib import asynccontextmanager
+from contextlib import contextmanager, asynccontextmanager
 
 from typing import Any, List, Dict, Optional, Tuple
 
