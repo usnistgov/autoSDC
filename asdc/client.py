@@ -881,34 +881,20 @@ class SDC(slackbot.SlackBot):
         with self.db as tx:
             tx['experiment'].update({'id': primary_key, 'comment': comment}, ['id'])
 
-    async def dm_controller(self, text, channel='DHNHM74TU'):
-        response = await self.slack_api_call(
-            'chat.postMessage',
-            data={'channel': channel, 'text': text, 'as_user': False, 'username': 'sdc'},
-            token=CTL_TOKEN
-        )
+    async def dm_controller(self, web_client, text, channel='DHNHM74TU'):
+        web_client.chat_postMessage(channel=channel, text=text)
 
     @command
     async def dm(self, args: str, msgdata: Dict, web_client: Any):
         """ echo random string to DM channel """
         dm_channel = 'DHNHM74TU'
         print('got a dm command: ', args)
-        response = await self.slack_api_call(
-            'chat.postMessage',
-            data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'sdc'},
-            token=CTL_TOKEN
-        )
+        web_client.chat_postMessage(channel=channel, text=args)
 
     @command
     async def stop_pumps(self, args: str, msgdata: Dict, web_client: Any):
         """ shut off the syringe and counterbalance pumps """
         self.pump_array.stop_all(counterbalance='off')
-
-    # async def post(self, msg, ws, channel):
-    #     # TODO: move this to the base Client class...
-    #     response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
-    #     self.msg_id += 1
-    #     await ws.send_str(json.dumps(response))
 
     @command
     async def _abort_running_handlers(self, args: str, msgdata: Dict, web_client: Any):
@@ -920,15 +906,13 @@ class SDC(slackbot.SlackBot):
         we could register the coroutine address when we start it up, and broadcast that so it's cancellable...?
         """
 
+        channel = '<@UC537488J>'
         text = f"sdc: {msgdata['user']} said abort_running_handlers"
         print(text)
 
         # dm UC537488J (brian)
-        response = await self.slack_api_call(
-            'chat.postMessage',
-            data={'channel': '<@UC537488J>', 'text': text, 'as_user': False, 'username': 'sdc'},
-            token=CTL_TOKEN
-        )
+        web_client.chat_postMessage(channel=channel, text=args)
+
         return
 
         current_task = asyncio.current_task()
@@ -944,7 +928,6 @@ class SDC(slackbot.SlackBot):
 
         # ask the controller to cancel the caller task too...!
         await self.dm_controller('<@UHNHM7198> abort_running_handlers')
-
 
 @click.command()
 @click.argument('config-file', type=click.Path())

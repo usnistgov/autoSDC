@@ -308,10 +308,10 @@ class Controller(slackbot.SlackBot):
         xx, yy = np.meshgrid(self.levels[0], self.levels[1])
         self.candidates = np.c_[xx.flatten(),yy.flatten()]
 
-    async def dm_sdc(self, text, channel='DHY5REQ0H'):
-        response = await self.slack_api_call(
-            'chat.postMessage',
-            data={'channel': channel, 'text': text, 'as_user': False, 'username': 'ctl'},
+    async def dm_sdc(self, web_client, text, channel='DHY5REQ0H'):
+        web_client.chat_postMessage(
+            channel=channel,
+            text=text,
             token=SDC_TOKEN
         )
 
@@ -568,7 +568,7 @@ class Controller(slackbot.SlackBot):
 
         print(instructions)
         # send the experiment command
-        await self.dm_sdc(f"<@UHT11TM6F> run_experiment {json.dumps(instructions)}")
+        await self.dm_sdc(web_client, f"<@UHT11TM6F> run_experiment {json.dumps(instructions)}")
 
         return
 
@@ -585,9 +585,12 @@ class Controller(slackbot.SlackBot):
         dm_channel = 'DHY5REQ0H'
         # dm_channel = 'DHNHM74TU'
 
-        response = await self.slack_api_call(
-            'chat.postMessage', token=SDC_TOKEN,
-            data={'channel': dm_channel, 'text': args, 'as_user': False, 'username': 'ctl'}
+        web_client.chat_postMessage(
+            channel=dm_channel,
+            text=args,
+            as_user=False,
+            username='ctl',
+            token=CTL_TOKEN
         )
 
     @command
@@ -598,17 +601,19 @@ class Controller(slackbot.SlackBot):
 
         we could register the coroutine address when we start it up, and broadcast that so it's cancellable...?
         """
+
+        channel = '<@UC537488J>'
+
         text = f"sdc: {msgdata['username']} said abort_running_handlers"
         print(text)
 
         # dm UC537488J (brian)
-        response = await self.slack_api_call(
-            'chat.postMessage',
-            data={'channel': '<@UC537488J>', 'text': text, 'as_user': False, 'username': 'sdc'},
+        web_client.chat_postMessage(
+            channel=channel,
+            text=text,
+            username='ctl'
             token=CTL_TOKEN
         )
-        return
-
 
         current_task = asyncio.current_task()
 
