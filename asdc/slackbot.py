@@ -1,9 +1,13 @@
+import os
 import re
 import slack
 import time
 import asyncio
 import concurrent
 from datetime import datetime
+
+# check if there is a proxy between localhost and the internet
+PROXY = os.environ.get('https_proxy')
 
 BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
 
@@ -90,9 +94,18 @@ class SlackBot(object):
 
     async def main(self):
 
+        if PROXY is not None:
+            proxy_address = f'http://{PROXY}'
+        else:
+            proxy_address = None
+
         self.loop = asyncio.get_event_loop()
-        self.client = slack.RTMClient(token=BOT_TOKEN, run_async=True, loop=self.loop)
-        # rtm_client = slack.RTMClient(token=BOT_TOKEN, run_async=True, loop=self.loop)
+        self.client = slack.RTMClient(
+            token=BOT_TOKEN,
+            proxy=proxy_address,
+            run_async=True,
+            loop=self.loop
+        )
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         await asyncio.ensure_future(self.client.start())
 
