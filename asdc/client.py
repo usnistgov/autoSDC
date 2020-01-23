@@ -88,6 +88,9 @@ class SDC(slackbot.SlackBot):
         self.command.update(super().command)
         self.msg_id = 0
 
+        self.verbose = verbose
+        self.logfile = logfile
+
         with sdc.position.controller(ip='192.168.10.11') as pos:
             initial_versastat_position = pos.current_position()
             if self.verbose:
