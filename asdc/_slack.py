@@ -1,6 +1,6 @@
 import os
 import time
-import slackclient
+import slack
 
 with open('slacktoken.txt', 'r') as f:
     SLACK_TOKEN = f.read()
@@ -11,11 +11,11 @@ def post_message(message, sleep=1):
     """ post text to #asdc
     by default, sleep for 1s to respect slack's API limits
     """
-    sc.api_call(
-        "chat.postMessage",
-        channel="#asdc",
-        text=message
+    sc.chat_postMessage(
+        channel='#asdc',
+        text=message,
     )
+
     time.sleep(sleep)
 
 def post_image(image_path, title='an image...', sleep=1):
@@ -24,8 +24,7 @@ def post_image(image_path, title='an image...', sleep=1):
     """
 
     with open(image_path, 'rb') as file_content:
-        status = sc.api_call(
-            "files.upload",
+        status = sc.files_upload(
             channels='#asdc',
             file=file_content,
             title=title,
