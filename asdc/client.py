@@ -27,11 +27,10 @@ from sympy.vector import CoordSys3D, BodyOrienter, Point
 
 sys.path.append('../scirc')
 sys.path.append('.')
-import scirc
 
 from asdc import sdc
 from asdc import _slack
-
+from asdc import slackbot
 from asdc import visualization
 
 asdc_channel = 'CDW5JFZAR'
@@ -60,10 +59,10 @@ def to_coords(x, frame):
     """ express coordinates in specified reference frame """
     return frame.origin.locate_new('P', to_vec(x, frame))
 
-class SDC(scirc.SlackClient):
+class SDC(slackbot.SlackBot):
     """ scanning droplet cell """
 
-    command = scirc.CommandRegistry()
+    command = slackbot.CommandRegistry()
 
     def __init__(
             self,
@@ -85,7 +84,7 @@ class SDC(scirc.SlackClient):
             verbose: toggle additional debugging output
 
         """
-        super().__init__(verbose=verbose, logfile=logfile, token=token)
+        super().__init__(name='sdc', token=token)
         self.command.update(super().command)
         self.msg_id = 0
 
@@ -331,15 +330,15 @@ class SDC(scirc.SlackClient):
         return
 
     @command
-    async def move(self, ws: websockets.client.WebSocketClientProtocol, msgdata: Dict, args: str):
+    async def move(self, args: str, msgdata: Dict, web_client: Any):
         """ slack bot command to move the stage
 
         A thin json wrapper for [move_stage][asdc.client.SDC.move_stage].
 
         Arguments:
-            ws: websocket connection
-            msgdata: slack message metadata
             args: json string containing command arguments
+            msgdata: slack message metadata
+            ws: slack WebClient connection
 
         Note:
             json arguments:
@@ -377,7 +376,7 @@ class SDC(scirc.SlackClient):
         return {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
     @command
-    async def run_experiment(self, ws, msgdata, args):
+    async def run_experiment(self, args: str, msgdata: Dict, web_client: Any):
         """ run an SDC experiment """
 
         # args should contain a sequence of SDC experiments -- basically the "instructions"
@@ -557,7 +556,7 @@ class SDC(scirc.SlackClient):
         await self.dm_controller('<@UHNHM7198> go')
 
     @command
-    async def droplet(self, ws, msgdata, args):
+    async def droplet(self, args: str, msgdata: Dict, web_client: Any):
         """ slack bot command for prototyping droplet contact routine
 
         #### json arguments
@@ -660,7 +659,7 @@ class SDC(scirc.SlackClient):
         return
 
     @command
-    async def checkpoint(self, ws, msgdata, args):
+    async def checkpoint(self, args: str, msgdata: Dict, web_client: Any):
         """ hold until user input is given to allow experiment to proceed """
 
         if self.notify:
@@ -670,7 +669,7 @@ class SDC(scirc.SlackClient):
         return await self.dm_controller('<@UHNHM7198> go')
 
     @command
-    async def flag(self, ws, msgdata, args):
+    async def flag(self, args: str, msgdata: Dict, web_client: Any):
         """ mark a datapoint as bad
         TODO: format checking
         """
@@ -680,7 +679,7 @@ class SDC(scirc.SlackClient):
             tx['experiment'].update({'id': primary_key, 'flag': True}, ['id'])
 
     @command
-    async def coverage(self, ws, msgdata, args):
+    async def coverage(self, args: str, msgdata: Dict, web_client: Any):
         """ record deposition coverage on (0.0,1.0). """
         primary_key, text = args.split(' ', 1)  # need to do format checking...
         primary_key = int(primary_key)
@@ -695,7 +694,7 @@ class SDC(scirc.SlackClient):
                 tx['experiment'].update({'id': primary_key, 'coverage': coverage_estimate}, ['id'])
 
     @command
-    async def refl(self, ws, msgdata, args):
+    async def refl(self, args: str, msgdata: Dict, web_client: Any):
         """ record the reflectance of the deposit (0.0,inf). """
         primary_key, text = args.split(' ', 1)  # need to do format checking...
         primary_key = int(primary_key)
@@ -779,7 +778,7 @@ class SDC(scirc.SlackClient):
         return mean
 
     @command
-    async def reflectance(self, ws, msgdata, args):
+    async def reflectance(self, args: str, msgdata: Dict, web_client: Any):
         """ record the reflectance of the deposit (0.0,inf). """
 
         if len(args) > 0:
@@ -836,7 +835,7 @@ class SDC(scirc.SlackClient):
         return
 
     @command
-    async def imagecap(self, ws, msgdata, args):
+    async def imagecap(self, args: str, msgdata: Dict, web_client: Any):
         """ capture an image from the webcam.
 
         pass an experiment index to serialize metadata to db
@@ -849,7 +848,7 @@ class SDC(scirc.SlackClient):
         await self._capture_image(primary_key=primary_key)
 
     @command
-    async def bubble(self, ws, msgdata, args):
+    async def bubble(self, args: str, msgdata: Dict, web_client: Any):
         """ slack bot command to record a bubble in the deposit
 
         trigger with `@sdc bubble ${primary_key: int}`.
@@ -863,7 +862,7 @@ class SDC(scirc.SlackClient):
             tx['experiment'].update({'id': primary_key, 'has_bubble': True}, ['id'])
 
     @command
-    async def comment(self, ws, msgdata, args):
+    async def comment(self, args: str, msgdata: Dict, web_client: Any):
         """ add a comment """
         primary_key, text = args.split(' ', 1)  # need to do format checking...
         primary_key = int(primary_key)
@@ -888,7 +887,7 @@ class SDC(scirc.SlackClient):
         )
 
     @command
-    async def dm(self, ws, msgdata, args):
+    async def dm(self, args: str, msgdata: Dict, web_client: Any):
         """ echo random string to DM channel """
         dm_channel = 'DHNHM74TU'
         print('got a dm command: ', args)
@@ -899,18 +898,18 @@ class SDC(scirc.SlackClient):
         )
 
     @command
-    async def stop_pumps(self, ws, msgdata, args):
+    async def stop_pumps(self, args: str, msgdata: Dict, web_client: Any):
         """ shut off the syringe and counterbalance pumps """
         self.pump_array.stop_all(counterbalance='off')
 
-    async def post(self, msg, ws, channel):
-        # TODO: move this to the base Client class...
-        response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
-        self.msg_id += 1
-        await ws.send_str(json.dumps(response))
+    # async def post(self, msg, ws, channel):
+    #     # TODO: move this to the base Client class...
+    #     response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
+    #     self.msg_id += 1
+    #     await ws.send_str(json.dumps(response))
 
     @command
-    async def _abort_running_handlers(self, ws, msgdata, args):
+    async def _abort_running_handlers(self, args: str, msgdata: Dict, web_client: Any):
         """ cancel all currently running task handlers...
 
         Warning:
@@ -919,7 +918,7 @@ class SDC(scirc.SlackClient):
         we could register the coroutine address when we start it up, and broadcast that so it's cancellable...?
         """
 
-        text = f"sdc: {msgdata['username']} said abort_running_handlers"
+        text = f"sdc: {msgdata['user']} said abort_running_handlers"
         print(text)
 
         # dm UC537488J (brian)
@@ -978,8 +977,8 @@ def sdc_client(config_file, resume, verbose):
     logfile = config.get('command_logfile', 'commands.log')
     logfile = os.path.join(config['data_dir'], logfile)
 
-    sdc = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume)
-    sdc.run()
+    sdc_bot = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume)
+    asyncio.run(sdc_bot.main())
 
 if __name__ == '__main__':
     sdc_client()

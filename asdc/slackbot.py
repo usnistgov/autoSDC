@@ -29,11 +29,15 @@ class CommandRegistry(set):
 class SlackBot(object):
     command = CommandRegistry()
 
-    def __init__(self, name='sdc'):
+    def __init__(self, name='sdc', token=None):
         self.name = name
         # self._pattern = f'@{self.name}'
         self._pattern = bot_patterns.get(name) # '<@UHT11TM6F>'
-        # self.command = {}
+
+        if token is None:
+            self.token = BOT_TOKEN
+        else:
+            self.token = token
 
         slack.RTMClient.run_on(event='message')(self.handle_message)
 
@@ -77,10 +81,10 @@ class SlackBot(object):
                 # dispatch command method by name
                 # await getattr(self, command)(ws, msgdata, args)
                 web_client = payload['web_client']
-                await getattr(self, command)(web_client, args, data)
+                await getattr(self, command)(args, data, web_client)
 
     @command
-    async def echo(self, web_client, text, data):
+    async def echo(self, text, data, web_client):
         r = f"recieved command {text}"
         channel = data.get('channel_id')
         if channel is None:
