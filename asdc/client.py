@@ -30,7 +30,8 @@ sys.path.append('.')
 import scirc
 
 from asdc import sdc
-from asdc import slack
+from asdc import _slack
+
 from asdc import visualization
 
 asdc_channel = 'CDW5JFZAR'
@@ -467,17 +468,17 @@ class SDC(scirc.SlackClient):
 
             if self.confirm_experiment:
                 if self.notify:
-                    slack.post_message(f'*confirm*: {_msg}')
+                    _slack.post_message(f'*confirm*: {_msg}')
                 else:
                     print(f'*confirm*: {_msg}')
                 await ainput('press enter to allow running the experiment...', loop=self.loop)
 
             elif self.notify:
-                slack.post_message(_msg)
+                _slack.post_message(_msg)
 
             f = functools.partial(sdc.experiment.run, instructions, cell=self.cell, verbose=self.verbose)
             if self.test_cell:
-                slack.post_message(f"we would run the experiment here...")
+                _slack.post_message(f"we would run the experiment here...")
                 await self.loop.run_in_executor(None, time.sleep, 10)
 
             else:
@@ -492,7 +493,7 @@ class SDC(scirc.SlackClient):
                 if np.median(np.abs(results['current'])) < self.current_threshold:
                     print(f'WARNING: median current below {self.current_threshold} threshold')
                     if self.notify:
-                        slack.post_message(
+                        _slack.post_message(
                             f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
                         )
 
@@ -508,16 +509,16 @@ class SDC(scirc.SlackClient):
                     visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
 
                     if self.notify:
-                        slack.post_message(f"finished experiment {meta['id']}: {summary}")
-                        slack.post_image(figpath, title=f"current vs time {meta['id']}")
+                        _slack.post_message(f"finished experiment {meta['id']}: {summary}")
+                        _slack.post_image(figpath, title=f"current vs time {meta['id']}")
 
                 if self.plot_cv:
                     figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
                     visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
 
                     if self.notify:
-                        slack.post_message(f"finished experiment {meta['id']}: {summary}")
-                        slack.post_image(figpath, title=f"CV {meta['id']}")
+                        _slack.post_message(f"finished experiment {meta['id']}: {summary}")
+                        _slack.post_image(figpath, title=f"CV {meta['id']}")
 
         self.pump_array.stop_all(counterbalance='full', fast=True)
         time.sleep(0.25)
@@ -537,13 +538,13 @@ class SDC(scirc.SlackClient):
                 async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
 
                     if self.notify:
-                        slack.post_message(f"inspecting deposit quality")
+                        _slack.post_message(f"inspecting deposit quality")
 
                     await self.move_stage(x_combi, y_combi, self.camera_frame)
                     await self._capture_image(primary_key=meta['id'])
 
                     if self.notify:
-                        slack.post_message(f"acquiring laser reflectance data")
+                        _slack.post_message(f"acquiring laser reflectance data")
 
                     async with sdc.position.z_step(loop=self.loop, height=self.laser_scan_height, speed=self.speed) as stage:
                         await self.move_stage(x_combi, y_combi, self.laser_frame, stage=stage)
@@ -654,7 +655,7 @@ class SDC(scirc.SlackClient):
         print(f'stepping flow rates to {rates}')
         self.pump_array.set_rates(target_rates, counterpump_ratio=0.95, fast=True, start=True)
 
-        slack.post_message(f"contact routine with {json.dumps(instructions)}")
+        _slack.post_message(f"contact routine with {json.dumps(instructions)}")
 
         return
 
@@ -663,7 +664,7 @@ class SDC(scirc.SlackClient):
         """ hold until user input is given to allow experiment to proceed """
 
         if self.notify:
-            slack.post_message('*checkpoint reached*')
+            _slack.post_message('*checkpoint reached*')
 
         await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
         return await self.dm_controller('<@UHNHM7198> go')
@@ -686,7 +687,7 @@ class SDC(scirc.SlackClient):
         coverage_estimate = float(text)
 
         if coverage_estimate < 0.0 or coverage_estimate > 1.0:
-            slack.post_message(
+            _slack.post_message(
                 f':terriblywrong: *error:* coverage estimate should be in the range (0.0, 1.0)'
             )
         else:
@@ -701,7 +702,7 @@ class SDC(scirc.SlackClient):
         reflectance_readout = float(text)
 
         if reflectance_readout < 0.0:
-            slack.post_message(
+            _slack.post_message(
                 f':terriblywrong: *error:* reflectance readout should be positive'
             )
         else:
