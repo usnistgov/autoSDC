@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-from asdc import slack
+from asdc import _slack
 
 if sys.platform == 'win32':
     from . import potentiostat
@@ -225,7 +225,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
                 if params:
                     _params.append(params)
 
-        slack.post_message(f'starting experiment sequence')
+        _slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
 
     metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
