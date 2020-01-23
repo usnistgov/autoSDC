@@ -22,11 +22,11 @@ from scipy import spatial
 from scipy import integrate
 from datetime import datetime
 
-sys.path.append('../scirc')
 sys.path.append('.')
-import scirc
+
 import cycvolt
-from asdc import slack
+from asdc import _slack
+from asdc import slackbot
 from asdc import analyze
 from asdc import emulation
 from asdc import visualization
@@ -246,15 +246,18 @@ def plot_map(vals, X, guess, extent, figpath):
     plt.savefig(figpath, bbox_inches='tight')
     plt.clf()
 
-class Controller(scirc.SlackClient):
+class Controller(slackbot.SlackBot):
     """ autonomous scanning droplet cell client """
 
     command = scirc.CommandRegistry()
     def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN):
-        super().__init__(verbose=verbose, logfile=logfile, token=token)
+        super().__init__(name='ctl', token=token)
         self.command.update(super().command)
         self.msg_id = 0
         self.update_event = asyncio.Event(loop=self.loop)
+
+        self.verbose = verbose
+        self.logfile = logfile
 
         self.confirm = config.get('confirm', True)
         self.notify = config.get('notify_slack', True)
@@ -304,12 +307,6 @@ class Controller(scirc.SlackClient):
         self.extent = [np.min(self.levels[0]), np.max(self.levels[0]), np.min(self.levels[1]), np.max(self.levels[1])]
         xx, yy = np.meshgrid(self.levels[0], self.levels[1])
         self.candidates = np.c_[xx.flatten(),yy.flatten()]
-
-    async def post(self, msg, ws, channel):
-        # TODO: move this to the base Client class...
-        response = {'id': self.msg_id, 'type': 'message', 'channel': channel, 'text': msg}
-        self.msg_id += 1
-        await ws.send_str(json.dumps(response))
 
     async def dm_sdc(self, text, channel='DHY5REQ0H'):
         response = await self.slack_api_call(
@@ -369,7 +366,7 @@ class Controller(scirc.SlackClient):
         # weights = [0.0, 1.0]
 
         if self.notify:
-            slack.post_message(f'sampled objective fn weights: {weights}')
+            _slack.post_message(f'sampled objective fn weights: {weights}')
 
         mask = None
         criteria = []
@@ -399,13 +396,13 @@ class Controller(scirc.SlackClient):
     def gp_acquisition(self, resolution=100, t=0):
 
         if self.notify:
-            slack.post_message(f'analyzing CV features...')
+            _slack.post_message(f'analyzing CV features...')
 
         # make sure all experiments are postprocessed and have values in the results table
         self.analyze_corrosion_features()
 
         if self.notify:
-            slack.post_message(f'fitting GP models')
+            _slack.post_message(f'fitting GP models')
 
         # load positions, compositions, and measured values from db
         d = pd.DataFrame(self.db['experiment'].all())
@@ -454,7 +451,7 @@ class Controller(scirc.SlackClient):
         ]
 
         if self.notify:
-            slack.post_message(f'evaluating acquisition function')
+            _slack.post_message(f'evaluating acquisition function')
 
         # evaluate the acquisition function on a grid
         # acq = criterion.evaluate(candidates)
@@ -466,7 +463,7 @@ class Controller(scirc.SlackClient):
 
         # visualization.scatter_wafer(candidates*scale_factor, acq, label='acquisition', figpath=figpath)
         # if self.notify:
-        #     slack.post_image(figpath, title=f"acquisition at t={t}")
+        #     _slack.post_image(figpath, title=f"acquisition at t={t}")
 
         query_idx = np.argmin(acq)
         guess = self.candidates[query_idx]
@@ -479,7 +476,7 @@ class Controller(scirc.SlackClient):
         plot_map(acq.reshape(self.ndim), X, guess, extent, figpath)
 
         if self.notify:
-            slack.post_image(figpath, title=f"acquisition at t={t}")
+            _slack.post_image(figpath, title=f"acquisition at t={t}")
 
         for objective, model in zip(self.objectives, models):
             loc, scale = model.predict_y(self.candidates)
@@ -492,7 +489,7 @@ class Controller(scirc.SlackClient):
         return query
 
     @command
-    async def go(self, ws, msgdata, args):
+    async def go(self, args: str, msgdata: Dict, web_client: Any):
         """ keep track of target positions and experiment list
 
         target and experiment indices start at 0
@@ -576,14 +573,14 @@ class Controller(scirc.SlackClient):
         return
 
     @command
-    async def update(self, ws, msgdata, args):
+    async def update(self, args: str, msgdata: Dict, web_client: Any):
         update_type, rest = args.split(' ', 1)
         print(update_type)
         self.update_event.set()
         return
 
     @command
-    async def dm(self, ws, msgdata, args):
+    async def dm(self, args: str, msgdata: Dict, web_client: Any):
         """ echo random string to DM channel """
         dm_channel = 'DHY5REQ0H'
         # dm_channel = 'DHNHM74TU'
@@ -594,7 +591,7 @@ class Controller(scirc.SlackClient):
         )
 
     @command
-    async def abort_running_handlers(self, ws, msgdata, args):
+    async def abort_running_handlers(self, args: str, msgdata: Dict, web_client: Any):
         """ cancel all currently running task handlers...
 
         WARNING: does not do any checks on the potentiostat -- don't call this while an experiment is running...
@@ -657,8 +654,8 @@ def sdc_controller(config_file, verbose):
     logfile = 'controller.log'
     logfile = os.path.join(config['data_dir'], logfile)
 
-    ctl = Controller(verbose=verbose, config=config, logfile=logfile)
-    ctl.run()
+    ctl_bot = Controller(verbose=verbose, config=config, logfile=logfile)
+    asyncio.run(ctl_bot.main())
 
 if __name__ == '__main__':
     sdc_controller()

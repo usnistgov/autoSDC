@@ -25,7 +25,6 @@ import sympy
 from sympy.vector import express
 from sympy.vector import CoordSys3D, BodyOrienter, Point
 
-sys.path.append('../scirc')
 sys.path.append('.')
 
 from asdc import sdc
