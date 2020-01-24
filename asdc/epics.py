@@ -31,9 +31,8 @@ CA_PUT = str(EPICS_LIB / 'caput.exe')
 CA_REPEATER = str(EPICS_LIB / EPICS_EXTRA_BIN / 'caRepeater.exe')
 
 print(f"subprocess.Popen(['{CA_REPEATER}'])")
-if CA_REPEATER.is_file():
+if os.path.isfile(CA_REPEATER):
     subprocess.Popen([CA_REPEATER])
-
 
 def caget(key: str) -> str:
     response = subprocess.check_output([CA_GET, key]).decode()
