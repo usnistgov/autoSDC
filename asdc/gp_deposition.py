@@ -248,6 +248,20 @@ def plot_map(vals, X, guess, extent, figpath):
     plt.savefig(figpath, bbox_inches='tight')
     plt.clf()
 
+def filter_experiments(instructions, num_previous):
+    """ filter out instructions files -- count only operations that add rows to the db """
+    expt_count = 0
+
+    for idx, expt in enumerate(instructions):
+        intent = expt[0].get('intent')
+        if intent in ('deposition', 'corrosion'):
+            if expt_count == num_previous:
+                break
+            expt_count += 1
+            print(expt_count, intent)
+
+    return instructions[idx:]
+
 class Controller(slackbot.SlackBot):
     """ autonomous scanning droplet cell client """
 
@@ -273,14 +287,11 @@ class Controller(slackbot.SlackBot):
         self.experiment_table = self.db['experiment']
 
         self.targets = pd.read_csv(config['target_file'], index_col=0)
-        self.experiments = load_experiment_json(config['experiment_file'], dir=self.data_dir)
+        instructions = load_experiment_json(config['experiment_file'], dir=self.data_dir)
 
         # remove experiments if there are records in the database
-        num_prev = self.db['experiment'].count()
-        if num_prev < len(self.experiments):
-            self.experiments = self.experiments[num_prev:]
-        else:
-            self.experiments = []
+        num_previous = self.db['experiment'].count()
+        self.experiments = filter_experiments(instructions, num_previous)
 
         # gpflowopt minimizes objectives...
         # UCB switches to maximizing objectives...
