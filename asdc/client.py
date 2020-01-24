@@ -386,6 +386,7 @@ class SDC(slackbot.SlackBot):
 
         rates = flow_instructions.get('rates')
         cell_fill_rates = self._scale_flow(rates, nominal_rate=0.5)
+        line_flush_rates = self._scale_flow(rates, nominal_rate=1.0)
 
         # if relative flow rates don't match, purge solution
         line_flush_duration = flow_instructions.get('hold_time', 0)
@@ -418,7 +419,7 @@ class SDC(slackbot.SlackBot):
             time.sleep(self.shrink_time)
 
             print('equalizing differential pumping rate')
-            self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=0.95, start=True, fast=True)
+            self.pump_array.set_rates(line_flush_rates, counterpump_ratio=0.95, start=True, fast=True)
 
         # flush lines with cell in contact
         if line_flush_needed:
