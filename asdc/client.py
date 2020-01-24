@@ -607,7 +607,7 @@ class SDC(slackbot.SlackBot):
             epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
 
 
-    await self.dm_controller('<@UHNHM7198> go')
+        await self.dm_controller('<@UHNHM7198> go')
 
 
     @command
