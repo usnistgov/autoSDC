@@ -62,6 +62,7 @@ def dispatch_xrays(name, data_dir):
     os.makedirs(data_dir, exist_ok=True)
 
     caput(PV, name)
+    time.sleep(5)
     while True:
         time.sleep(1)
         response = caget(PV)

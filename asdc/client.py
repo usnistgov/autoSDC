@@ -560,12 +560,21 @@ class SDC(slackbot.SlackBot):
         # get all relevant samples
         samples = self.db['experiment'].find(experiment_id=experiment_id)
 
+        if instructions[0].get("op") == "set_flow":
+            for sample in samples:
+                x_combi = sample.get('x_combi')
+                y_combi = sample.get('y_combi')
+                primary_key = sample.get('id')
+
+                await self.establish_droplet(x_combi, y_combi, instructions[0])
+                instructions = instructions[1:]
+
+
+        # if instructions[0].get("op") == "pics":
         for sample in samples:
             x_combi = sample.get('x_combi')
             y_combi = sample.get('y_combi')
             primary_key = sample.get('id')
-
-            await self.establish_droplet(x_combi, y_combi, instructions[0])
 
             # run cleanup and optical characterization
             async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
@@ -594,7 +603,27 @@ class SDC(slackbot.SlackBot):
 
                 self.pump_array.counterpump.stop()
 
+        await self.dm_controller(web_client, '<@UHNHM7198> go')
+
+    @command
+    async def xrays(self, args: str, msgdata: Dict, web_client: Any):
+        """ perform 06BM x-ray routine
+
+        `@sdc xrays {"experiment_id": 1}
+
+        the header instruction should contain a list of primary keys
+        corresponding to sample points that should be characterized.
+        """
+
+        # the header block should contain
+        instructions = json.loads(args)
+        experiment_id = instructions.get('experiment_id')
+
+        # get all relevant samples
+        samples = self.db['experiment'].find(experiment_id=experiment_id)
+
         for sample in samples:
+            print('xrd')
             web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
             x_combi = sample.get('x_combi')
             y_combi = sample.get('y_combi')
@@ -602,12 +631,12 @@ class SDC(slackbot.SlackBot):
             await self.move_stage(x_combi, y_combi, self.camera_frame)
             time.sleep(1)
 
+
             prefix = f'sdc-{primary_key:04d}'
+            print(f'starting x-rays for {prefix}')
             epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
 
-
-        await self.dm_controller(web_client, '<@UHNHM7198> go')
-
+        # await self.dm_controller(web_client, '<@UHNHM7198> go')
 
     @command
     async def droplet(self, args: str, msgdata: Dict, web_client: Any):
