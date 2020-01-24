@@ -249,7 +249,7 @@ def plot_map(vals, X, guess, extent, figpath):
 class Controller(slackbot.SlackBot):
     """ autonomous scanning droplet cell client """
 
-    command = scirc.CommandRegistry()
+    command = slackbot.CommandRegistry()
     def __init__(self, config=None, verbose=False, logfile=None, token=BOT_TOKEN):
         super().__init__(name='ctl', token=token)
         self.command.update(super().command)
