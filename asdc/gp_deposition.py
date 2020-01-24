@@ -256,7 +256,7 @@ class Controller(slackbot.SlackBot):
         super().__init__(name='ctl', token=token)
         self.command.update(super().command)
         self.msg_id = 0
-        self.update_event = asyncio.Event(loop=self.loop)
+        # self.update_event = asyncio.Event(loop=self.loop)
 
         self.verbose = verbose
         self.logfile = logfile
@@ -588,12 +588,12 @@ class Controller(slackbot.SlackBot):
 
         return
 
-    @command
-    async def update(self, args: str, msgdata: Dict, web_client: Any):
-        update_type, rest = args.split(' ', 1)
-        print(update_type)
-        self.update_event.set()
-        return
+    # @command
+    # async def update(self, args: str, msgdata: Dict, web_client: Any):
+    #     update_type, rest = args.split(' ', 1)
+    #     print(update_type)
+    #     self.update_event.set()
+    #     return
 
     @command
     async def dm(self, args: str, msgdata: Dict, web_client: Any):
