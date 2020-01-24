@@ -709,7 +709,8 @@ class SDC(slackbot.SlackBot):
         print(f'stepping flow rates to {rates}')
         self.pump_array.set_rates(target_rates, counterpump_ratio=0.95, fast=True, start=True)
 
-        _slack.post_message(f"contact routine with {json.dumps(instructions)}")
+        message = f"contact routine with {json.dumps(instructions)}"
+        web_client.chat_postMessage(channel='#asdc', text=message)
 
         return
 
