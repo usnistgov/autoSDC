@@ -365,8 +365,8 @@ class Controller(slackbot.SlackBot):
         weights = stats.dirichlet.rvs(self.objective_alphas).squeeze()
         # weights = [0.0, 1.0]
 
-        if self.notify:
-            _slack.post_message(f'sampled objective fn weights: {weights}')
+        # if self.notify:
+        #     _slack.post_message(f'sampled objective fn weights: {weights}')
 
         mask = None
         criteria = []
@@ -395,14 +395,14 @@ class Controller(slackbot.SlackBot):
 
     def gp_acquisition(self, resolution=100, t=0):
 
-        if self.notify:
-            _slack.post_message(f'analyzing CV features...')
+        # if self.notify:
+        #     _slack.post_message(f'analyzing CV features...')
 
         # make sure all experiments are postprocessed and have values in the results table
         self.analyze_corrosion_features()
 
-        if self.notify:
-            _slack.post_message(f'fitting GP models')
+        # if self.notify:
+        #     _slack.post_message(f'fitting GP models')
 
         # load positions, compositions, and measured values from db
         d = pd.DataFrame(self.db['experiment'].all())
@@ -450,8 +450,8 @@ class Controller(slackbot.SlackBot):
             emulation.model_property(X_ref, Y_ref[:, 0][:,None], dx=dx, optimize=True),
         ]
 
-        if self.notify:
-            _slack.post_message(f'evaluating acquisition function')
+        # if self.notify:
+        #     _slack.post_message(f'evaluating acquisition function')
 
         # evaluate the acquisition function on a grid
         # acq = criterion.evaluate(candidates)

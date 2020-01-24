@@ -18,13 +18,13 @@ def post_message(message, sleep=1):
 
     time.sleep(sleep)
 
-def post_image(image_path, title='an image...', sleep=1):
+def post_image(web_client, image_path, title='an image...', sleep=1):
     """ post a figure to #asdc
     by default, sleep for 1s to respect slack's API limits
     """
 
     with open(image_path, 'rb') as file_content:
-        status = sc.files_upload(
+        status = web_client.files_upload(
             channels='#asdc',
             file=file_content,
             title=title,

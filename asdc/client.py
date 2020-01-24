@@ -475,17 +475,17 @@ class SDC(slackbot.SlackBot):
 
             if self.confirm_experiment:
                 if self.notify:
-                    _slack.post_message(f'*confirm*: {_msg}')
+                    web_client.chat_postMessage(channel='#asdc', text=f'*confirm*: {_msg}')
                 else:
                     print(f'*confirm*: {_msg}')
                 await ainput('press enter to allow running the experiment...', loop=self.loop)
 
             elif self.notify:
-                _slack.post_message(_msg)
+                web_client.chat_postMessage(channel='#asdc', text=_msg)
 
             f = functools.partial(sdc.experiment.run, instructions, cell=self.cell, verbose=self.verbose)
             if self.test_cell:
-                _slack.post_message(f"we would run the experiment here...")
+                web_client.chat_postMessage(channel='#asdc', text=f"we would run the experiment here...")
                 await self.loop.run_in_executor(None, time.sleep, 10)
 
             else:
@@ -500,9 +500,8 @@ class SDC(slackbot.SlackBot):
                 if np.median(np.abs(results['current'])) < self.current_threshold:
                     print(f'WARNING: median current below {self.current_threshold} threshold')
                     if self.notify:
-                        _slack.post_message(
-                            f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
-                        )
+                        msg = f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
+                        web_client.chat_postMessage(channel='#asdc', text=msg)
 
                 meta.update(metadata)
                 meta['datafile'] = datafile
@@ -516,16 +515,15 @@ class SDC(slackbot.SlackBot):
                     visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
 
                     if self.notify:
-                        _slack.post_message(f"finished experiment {meta['id']}: {summary}")
-                        _slack.post_image(figpath, title=f"current vs time {meta['id']}")
+                        web_client.chat_postMessage(channel='#asdc', text=f"finished experiment {meta['id']}: {summary}")
+                        _slack.post_image(web_client, figpath, title=f"current vs time {meta['id']}")
 
                 if self.plot_cv:
                     figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
                     visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
 
                     if self.notify:
-                        _slack.post_message(f"finished experiment {meta['id']}: {summary}")
-                        _slack.post_image(figpath, title=f"CV {meta['id']}")
+                        _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
 
         # run cleanup and optical characterization
         self.pump_array.stop_all(counterbalance='full', fast=True)
