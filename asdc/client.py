@@ -386,7 +386,7 @@ class SDC(slackbot.SlackBot):
         cell_fill_rates = self._scale_flow(rates, nominal_rate=0.5)
 
         # if relative flow rates don't match, purge solution
-        line_flush_duration = instructions[0].get('hold_time', 0)
+        line_flush_duration = flow_instructions[0].get('hold_time', 0)
         line_flush_needed = relative_flow(rates) != relative_flow(self.pump_array.flow_setpoint)
 
         # droplet workflow -- start at zero
