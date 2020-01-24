@@ -71,7 +71,7 @@ def dispatch_xrays(name, data_dir):
 
     print('fetching the data')
 
-    scp_get_files(f'{XRF_DIR}/{name}*.dat', remotehost='6bm', dest=data_dir)
-    scp_get_files(f'{PILATUS_DIR}/{name}*.tiff', remotehost='6bm', dest=data_dir)
+    scp_get_files(f'{XRF_DIR}/{name}*', remotehost='6bm', dest=data_dir)
+    scp_get_files(f'{PILATUS_DIR}/{name}*', remotehost='6bm', dest=data_dir)
 
     return
