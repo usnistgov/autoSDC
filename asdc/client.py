@@ -622,19 +622,23 @@ class SDC(slackbot.SlackBot):
         # get all relevant samples
         samples = self.db['experiment'].find(experiment_id=experiment_id)
 
-        for sample in samples:
-            print('xrd')
-            web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
-            x_combi = sample.get('x_combi')
-            y_combi = sample.get('y_combi')
-            primary_key = sample.get('id')
-            await self.move_stage(x_combi, y_combi, self.camera_frame)
-            time.sleep(1)
+        async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
+            for sample in samples:
+                print('xrd')
+                web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
+                x_combi = sample.get('x_combi')
+                y_combi = sample.get('y_combi')
+                primary_key = sample.get('id')
+                await self.move_stage(x_combi, y_combi, self.camera_frame)
+                time.sleep(1)
 
 
-            prefix = f'sdc-{primary_key:04d}'
-            print(f'starting x-rays for {prefix}')
-            epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
+                prefix = f'sdc-{primary_key:04d}'
+                print(f'starting x-rays for {prefix}')
+                epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
+
+            # move back to the cell frame for the second spot
+            await self.move_stage(x_combi, y_combi, self.cell_frame)
 
         # await self.dm_controller(web_client, '<@UHNHM7198> go')
 
