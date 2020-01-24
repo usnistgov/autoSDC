@@ -517,7 +517,7 @@ class Controller(slackbot.SlackBot):
                 else:
                     action = Action.QUERY
 
-            elif intent == 'photons':
+            elif intent == 'characterize':
                 action = Action.PHOTONS
 
             elif intent == 'corrosion':
