@@ -869,10 +869,10 @@ class SDC(slackbot.SlackBot):
     async def reflectance(self, args: str, msgdata: Dict, web_client: Any):
         """ record the reflectance of the deposit (0.0,inf). """
 
-        if if args and len(args) > 0:
-            primary_key = int(args)
-        else:
+        if args is None:
             primary_key = None
+        elif len(args) > 0:
+            primary_key = int(args)
 
         mean_reflectance = await self._reflectance(primary_key=primary_key)
         print('reflectance:', mean_reflectance)
