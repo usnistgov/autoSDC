@@ -537,7 +537,7 @@ class SDC(slackbot.SlackBot):
 
             self.pump_array.counterpump.stop()
 
-        await self.dm_controller('<@UHNHM7198> go')
+        await self.dm_controller(web_client, '<@UHNHM7198> go')
 
     @command
     async def run_characterization(self, args: str, msgdata: Dict, web_client: Any):
@@ -606,7 +606,7 @@ class SDC(slackbot.SlackBot):
             epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
 
 
-        await self.dm_controller('<@UHNHM7198> go')
+        await self.dm_controller(web_client, '<@UHNHM7198> go')
 
 
     @command
