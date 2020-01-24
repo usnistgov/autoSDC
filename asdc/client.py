@@ -120,6 +120,11 @@ class SDC(slackbot.SlackBot):
         h = max(0.0, h)
         self.laser_scan_height = h
 
+        # define a positive height to perform characterization
+        h = float(config.get('xrays_height', 0.02))
+        h = max(0.0, h)
+        self.xrays_height = h
+
         self.camera_index = int(config.get('camera_index', 2))
 
         # droplet workflow configuration
@@ -622,7 +627,7 @@ class SDC(slackbot.SlackBot):
         # get all relevant samples
         samples = self.db['experiment'].find(experiment_id=experiment_id)
 
-        async with sdc.position.z_step(loop=self.loop, height=self.characterization_height, speed=self.speed):
+        async with sdc.position.z_step(loop=self.loop, height=self.xrays_height, speed=self.speed):
             for sample in samples:
                 print('xrd')
                 web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
@@ -631,7 +636,6 @@ class SDC(slackbot.SlackBot):
                 primary_key = sample.get('id')
                 await self.move_stage(x_combi, y_combi, self.camera_frame)
                 time.sleep(1)
-
 
                 prefix = f'sdc-{primary_key:04d}'
                 print(f'starting x-rays for {prefix}')
