@@ -225,7 +225,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
                 if params:
                     _params.append(params)
 
-        _slack.post_message(f'starting experiment sequence')
+        # _slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
 
     metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
