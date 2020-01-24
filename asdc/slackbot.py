@@ -105,7 +105,7 @@ class SlackBot(object):
 
         self.loop = asyncio.get_event_loop()
         self.client = slack.RTMClient(
-            token=BOT_TOKEN,
+            token=self.token,
             proxy=proxy_address,
             run_async=True,
             loop=self.loop
