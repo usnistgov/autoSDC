@@ -309,8 +309,8 @@ class SDC(slackbot.SlackBot):
             if self.verbose:
                 print(f'position update: {delta} (mm)')
 
-            if self.notify:
-                slack.post_message(f'*confirm update*: (delta={delta})')
+            # if self.notify:
+            #     slack.post_message(f'*confirm update*: (delta={delta})')
 
             if stage is None:
                 async with sdc.position.acontroller(loop=self.loop, z_step=self.step_height, speed=self.speed) as stage:
@@ -540,7 +540,7 @@ class SDC(slackbot.SlackBot):
         await self.dm_controller('<@UHNHM7198> go')
 
     @command
-    async def run_characterization(self, ws, msgdata, args):
+    async def run_characterization(self, args: str, msgdata: Dict, web_client: Any):
         """ perform cell cleanup and characterization
 
         the header instruction should contain a list of primary keys
@@ -565,7 +565,7 @@ class SDC(slackbot.SlackBot):
             y_combi = sample.get('y_combi')
             primary_key = sample.get('id')
 
-            await establish_droplet(x_combi, y_combi, instructions[0])
+            await self.establish_droplet(x_combi, y_combi, instructions[0])
 
             # run cleanup and optical characterization
             async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
@@ -578,13 +578,13 @@ class SDC(slackbot.SlackBot):
                 async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
 
                     if self.notify:
-                        _slack.post_message(f"inspecting deposit quality")
+                        web_client.chat_postMessage(channel='#asdc', text=f"inspecting deposit quality")
 
                     await self.move_stage(x_combi, y_combi, self.camera_frame)
                     await self._capture_image(primary_key=primary_key)
 
                     if self.notify:
-                        _slack.post_message(f"acquiring laser reflectance data")
+                        web_client.chat_postMessage(channel='#asdc', text=f"acquiring laser reflectance data")
 
                     async with sdc.position.z_step(loop=self.loop, height=self.laser_scan_height, speed=self.speed) as stage:
                         await self.move_stage(x_combi, y_combi, self.laser_frame, stage=stage)
@@ -595,7 +595,7 @@ class SDC(slackbot.SlackBot):
                 self.pump_array.counterpump.stop()
 
         for sample in samples:
-            slack.post_message(f"x-ray ops go here...")
+            web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
             x_combi = sample.get('x_combi')
             y_combi = sample.get('y_combi')
             primary_key = sample.get('id')
