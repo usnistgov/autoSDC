@@ -449,7 +449,7 @@ class SDC(slackbot.SlackBot):
 
         x_combi, y_combi = header.get('x'), header.get('y')
 
-        await establish_droplet(x_combi, y_combi, instructions[0])
+        await self.establish_droplet(x_combi, y_combi, instructions[0])
 
         meta = {
             'intent': intent,
