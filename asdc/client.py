@@ -126,6 +126,7 @@ class SDC(slackbot.SlackBot):
         # droplet workflow configuration
         # TODO: document me
         self.wetting_height = max(0, config.get('wetting_height', 0.0011))
+        self.droplet_height = max(0, config.get('droplet_height', 0.004))
         self.fill_ratio = config.get('fill_rate', 0.7)
         self.fill_time = config.get('fill_time', 19)
         self.shrink_ratio = config.get('shrink_rate', 1.3)
@@ -401,7 +402,7 @@ class SDC(slackbot.SlackBot):
 
             await self.move_stage(x_wafer, y_wafer, self.cell_frame)
 
-            height_difference = self.characterization_height - self.wetting_height
+            height_difference = self.droplet_height - self.wetting_height
             height_difference = max(0, height_difference)
             async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
 
