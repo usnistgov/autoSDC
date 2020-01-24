@@ -12,6 +12,8 @@ import pandas as pd
 from ruamel import yaml
 from aioconsole import ainput
 
+from typing import Any, List, Dict, Optional, Tuple
+
 import matplotlib.pyplot as plt
 
 import gpflow
