@@ -314,7 +314,9 @@ class Controller(slackbot.SlackBot):
         web_client.chat_postMessage(
             channel=channel,
             text=text,
-            token=SDC_TOKEN
+            token=SDC_TOKEN,
+            as_user=False,
+            username='ctl'
         )
 
     def load_experiment_indices(self):
