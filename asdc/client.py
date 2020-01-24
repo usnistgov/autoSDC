@@ -572,25 +572,25 @@ class SDC(slackbot.SlackBot):
 
                 await self.establish_droplet(x_combi, y_combi, flow_instructions)
 
-        # run laser and camera scans
-        samples = self.db['experiment'].find(experiment_id=experiment_id)
-        for idx, sample in enumerate(samples):
+        # run cleanup and optical characterization
+        self.pump_array.stop_all(counterbalance='full', fast=True)
+        time.sleep(0.25)
+        async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
 
-            x_combi = sample.get('x_combi')
-            y_combi = sample.get('y_combi')
-            primary_key = sample.get('id')
+            if idx == 0 and self.cleanup_pause > 0:
+                time.sleep(self.cleanup_pause)
 
-            # run cleanup and optical characterization
-            self.pump_array.stop_all(counterbalance='full', fast=True)
-            time.sleep(0.25)
-            async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
+            height_difference = self.characterization_height - self.wetting_height
+            height_difference = max(0, height_difference)
+            async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
 
-                if idx == 0 and self.cleanup_pause > 0:
-                    time.sleep(self.cleanup_pause)
+                # run laser and camera scans
+                samples = self.db['experiment'].find(experiment_id=experiment_id)
+                for idx, sample in enumerate(samples):
 
-                height_difference = self.characterization_height - self.wetting_height
-                height_difference = max(0, height_difference)
-                async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
+                    x_combi = sample.get('x_combi')
+                    y_combi = sample.get('y_combi')
+                    primary_key = sample.get('id')
 
                     if self.notify:
                         web_client.chat_postMessage(channel='#asdc', text=f"inspecting deposit quality")
@@ -615,7 +615,8 @@ class SDC(slackbot.SlackBot):
                         print(f'starting x-rays for {prefix}')
                         epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
 
-            await self.move_stage(x_combi, y_combi, self.cell_frame)
+                await self.move_stage(x_combi, y_combi, self.cell_frame)
+
         self.pump_array.counterpump.stop()
 
         await self.dm_controller(web_client, '<@UHNHM7198> go')
