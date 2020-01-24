@@ -291,6 +291,7 @@ class SDC(slackbot.SlackBot):
         """
 
         async def _execute_update(stage, delta, loop, confirm, verbose):
+
             if confirm:
                 await ainput('press enter to allow lateral cell motion...', loop=loop)
 

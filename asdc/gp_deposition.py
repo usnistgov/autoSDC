@@ -625,7 +625,7 @@ class Controller(slackbot.SlackBot):
         web_client.chat_postMessage(
             channel=channel,
             text=text,
-            username='ctl'
+            username='ctl',
             token=CTL_TOKEN
         )
 
