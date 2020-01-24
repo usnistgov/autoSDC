@@ -367,7 +367,7 @@ class SDC(slackbot.SlackBot):
         await self.move_stage(args['x'], args['y'], frame)
 
         # @ctl -- update the semaphore in the controller process
-        await self.dm_controller('<@UHNHM7198> update position is set.')
+        await self.dm_controller(web_client, '<@UHNHM7198> update position is set.')
 
     def _scale_flow(self, rates: Dict, nominal_rate: float = 0.5) -> Dict:
         """ high nominal flow_rate for running out to steady state """
@@ -754,7 +754,7 @@ class SDC(slackbot.SlackBot):
             _slack.post_message('*checkpoint reached*')
 
         await ainput('*checkpoint*: press enter to continue...', loop=self.loop)
-        return await self.dm_controller('<@UHNHM7198> go')
+        return await self.dm_controller(web_client, '<@UHNHM7198> go')
 
     @command
     async def flag(self, args: str, msgdata: Dict, web_client: Any):
@@ -1014,7 +1014,7 @@ class SDC(slackbot.SlackBot):
                 task.cancel()
 
         # ask the controller to cancel the caller task too...!
-        await self.dm_controller('<@UHNHM7198> abort_running_handlers')
+        await self.dm_controller(web_client, '<@UHNHM7198> abort_running_handlers')
 
 @click.command()
 @click.argument('config-file', type=click.Path())
