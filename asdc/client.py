@@ -28,6 +28,7 @@ from sympy.vector import CoordSys3D, BodyOrienter, Point
 sys.path.append('.')
 
 from asdc import sdc
+from asdc import epics
 from asdc import _slack
 from asdc import slackbot
 from asdc import visualization
@@ -539,7 +540,6 @@ class SDC(slackbot.SlackBot):
 
         await self.dm_controller('<@UHNHM7198> go')
 
-
     @command
     async def run_characterization(self, ws, msgdata, args):
         """ perform cell cleanup and characterization
@@ -560,7 +560,6 @@ class SDC(slackbot.SlackBot):
 
         # get all relevant samples
         samples = self.db['experiment'].find(experiment_id=experiment_id)
-
 
         for sample in samples:
             x_combi = sample.get('x_combi')
@@ -597,8 +596,16 @@ class SDC(slackbot.SlackBot):
                 self.pump_array.counterpump.stop()
 
         for sample in samples:
-                slack.post_message(f"x-ray ops go here...")
-                time.sleep(3)
+            slack.post_message(f"x-ray ops go here...")
+            x_combi = sample.get('x_combi')
+            y_combi = sample.get('y_combi')
+            primary_key = sample.get('id')
+            await self.move_stage(x_combi, y_combi, self.camera_frame)
+            time.sleep(1)
+
+            prefix = f'sdc-{primary_key:04d'
+            epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
+
 
     await self.dm_controller('<@UHNHM7198> go')
 
@@ -621,7 +628,7 @@ class SDC(slackbot.SlackBot):
         | `target_rate`    | float | final flow rate after droplet formation  (mL/min)   |    0.05 |
         | `cleanup`        | float | duration of pre-droplet-formation cleanup siphoning |       0 |
         | `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
-        | `pump_ids`       | List[str]   | list of solutions to pump with                |   None  |
+        | `solutions`      | List[str]   | list of solutions to pump with                |   None  |
 
         """
         instructions = json.loads(args)

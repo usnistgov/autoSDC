@@ -1,10 +1,17 @@
 import os
 import re
 import sys
+import time
 import shutil
 import typing
 import pathlib
 import subprocess
+
+# the epics channel used to trigger x-ray measurements
+PV = 'XF:06BM-ES:1{Sclr:1}.NM29'
+
+XRF_DIR = '/home/xf06bm/Data/Visitors/Howard\ Joress/2020-01-22'
+PILATUS_DIR = '/nist/xf06bm/experiments/XAS/Pilatus/Howard_Joress'
 
 EPICS_VERSION = 'CA-3.15.6'
 
@@ -49,3 +56,22 @@ def scp_get_files(pattern: str, remotehost: str = '6bm', dest='./'):
     print(pattern)
     print(f'{remotehost}:{pattern}')
     subprocess.check_call([SCP, f'{remotehost}:{pattern}', dest])
+
+def dispatch_xrays(name, data_dir):
+    """ signal to 06-BM automation tooling to perform XRF and XRD measurements """
+
+    os.makedirs(data_dir, exist_ok=True)
+
+    caput(PV, name)
+    while True:
+        time.sleep(1)
+        response = caget(PV)
+        if response == '':
+            break
+
+    print('fetching the data')
+
+    scp_get_files(f'{XRF_DIR}/{name}*.dat', remotehost='6bm', dest=data_dir)
+    scp_get_files(f'{PILATUS_DIR}/{name}*.tiff', remotehost='6bm', dest=data_dir)
+
+    return
