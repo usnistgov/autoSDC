@@ -622,7 +622,7 @@ class SDC(slackbot.SlackBot):
         # get all relevant samples
         samples = self.db['experiment'].find(experiment_id=experiment_id)
 
-        async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
+        async with sdc.position.z_step(loop=self.loop, height=self.characterization_height, speed=self.speed):
             for sample in samples:
                 print('xrd')
                 web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
