@@ -116,14 +116,10 @@ class SDC(slackbot.SlackBot):
         self.characterization_height = h
 
         # define a positive height to perform characterization
-        h = float(config.get('laser_scan_height', 0.01))
+        h = float(config.get('laser_scan_height', 0.015))
         h = max(0.0, h)
         self.laser_scan_height = h
-
-        # define a positive height to perform characterization
-        h = float(config.get('xrays_height', 0.02))
-        h = max(0.0, h)
-        self.xrays_height = h
+        self.xrays_height = self.laser_scan_height
 
         self.camera_index = int(config.get('camera_index', 2))
 
@@ -531,16 +527,16 @@ class SDC(slackbot.SlackBot):
                     if self.notify:
                         _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
 
-        # run cleanup and optical characterization
-        self.pump_array.stop_all(counterbalance='full', fast=True)
-        time.sleep(0.25)
+        # # run cleanup
+        # self.pump_array.stop_all(counterbalance='full', fast=True)
+        # time.sleep(0.25)
 
-        async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
+        # async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
 
-            if self.cleanup_pause > 0:
-                time.sleep(self.cleanup_pause)
+        #     if self.cleanup_pause > 0:
+        #         time.sleep(self.cleanup_pause)
 
-            self.pump_array.counterpump.stop()
+        #     self.pump_array.counterpump.stop()
 
         await self.dm_controller(web_client, '<@UHNHM7198> go')
 
@@ -552,7 +548,8 @@ class SDC(slackbot.SlackBot):
         corresponding to sample points that should be characterized.
         """
 
-        # the header block should contain
+        # the header block should contain the `experiment_id`
+        # for the spots to be characterized
         instructions = json.loads(args)
 
         header = instructions[0]
@@ -566,25 +563,28 @@ class SDC(slackbot.SlackBot):
         samples = self.db['experiment'].find(experiment_id=experiment_id)
 
         if instructions[0].get("op") == "set_flow":
+            flow_instructions = instructions[0]
             for sample in samples:
                 x_combi = sample.get('x_combi')
                 y_combi = sample.get('y_combi')
                 primary_key = sample.get('id')
 
-                await self.establish_droplet(x_combi, y_combi, instructions[0])
-                instructions = instructions[1:]
+                await self.establish_droplet(x_combi, y_combi, flow_instructions)
 
+        # run laser and camera scans
+        samples = self.db['experiment'].find(experiment_id=experiment_id)
+        for idx, sample in enumerate(samples):
 
-        # if instructions[0].get("op") == "pics":
-        for sample in samples:
             x_combi = sample.get('x_combi')
             y_combi = sample.get('y_combi')
             primary_key = sample.get('id')
 
             # run cleanup and optical characterization
+            self.pump_array.stop_all(counterbalance='full', fast=True)
+            time.sleep(0.25)
             async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
 
-                if self.cleanup_pause > 0:
+                if idx == 0 and self.cleanup_pause > 0:
                     time.sleep(self.cleanup_pause)
 
                 height_difference = self.characterization_height - self.wetting_height
@@ -601,12 +601,21 @@ class SDC(slackbot.SlackBot):
                         web_client.chat_postMessage(channel='#asdc', text=f"acquiring laser reflectance data")
 
                     async with sdc.position.z_step(loop=self.loop, height=self.laser_scan_height, speed=self.speed) as stage:
+                        # laser scan
                         await self.move_stage(x_combi, y_combi, self.laser_frame, stage=stage)
                         await self._reflectance(primary_key=primary_key, stage=stage)
 
-                    await self.move_stage(x_combi, y_combi, self.cell_frame)
+                        # xray scan
+                        web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
+                        await self.move_stage(x_combi, y_combi, self.camera_frame)
+                        time.sleep(1)
 
-                self.pump_array.counterpump.stop()
+                        prefix = f'sdc-{primary_key:04d}'
+                        print(f'starting x-rays for {prefix}')
+                        epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
+
+            await self.move_stage(x_combi, y_combi, self.cell_frame)
+        self.pump_array.counterpump.stop()
 
         await self.dm_controller(web_client, '<@UHNHM7198> go')
 
