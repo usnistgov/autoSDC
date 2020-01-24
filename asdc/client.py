@@ -934,7 +934,8 @@ class SDC(slackbot.SlackBot):
         with self.db as tx:
             tx['experiment'].update({'id': primary_key, 'comment': comment}, ['id'])
 
-    async def dm_controller(self, web_client, text, channel='DHNHM74TU'):
+    async def dm_controller(self, web_client, text, channel='#asdc'):
+        #                     , channel='DHNHM74TU'):
         web_client.chat_postMessage(channel=channel, text=text)
 
     @command

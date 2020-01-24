@@ -310,7 +310,8 @@ class Controller(slackbot.SlackBot):
         xx, yy = np.meshgrid(self.levels[0], self.levels[1])
         self.candidates = np.c_[xx.flatten(),yy.flatten()]
 
-    async def dm_sdc(self, web_client, text, channel='DHY5REQ0H'):
+    async def dm_sdc(self, web_client, text, channel='#asdc'):
+       #              channel='DHY5REQ0H'):
         web_client.chat_postMessage(
             channel=channel,
             text=text,
