@@ -561,7 +561,7 @@ class SDC(slackbot.SlackBot):
         experiment_id = header.get('experiment_id')
 
         # get all relevant samples
-        samples = self.db['experiment'].find(experiment_id=experiment_id)
+        samples = self.db['experiment'].find(experiment_id=experiment_id, intent='deposition')
 
         if instructions[0].get("op") == "set_flow":
             flow_instructions = instructions[0]
@@ -577,7 +577,7 @@ class SDC(slackbot.SlackBot):
         time.sleep(0.25)
         async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
 
-            if idx == 0 and self.cleanup_pause > 0:
+            if self.cleanup_pause > 0:
                 time.sleep(self.cleanup_pause)
 
             height_difference = self.characterization_height - self.wetting_height
@@ -585,7 +585,7 @@ class SDC(slackbot.SlackBot):
             async with sdc.position.z_step(loop=self.loop, height=height_difference, speed=self.speed):
 
                 # run laser and camera scans
-                samples = self.db['experiment'].find(experiment_id=experiment_id)
+                samples = self.db['experiment'].find(experiment_id=experiment_id, intent='deposition')
                 for idx, sample in enumerate(samples):
 
                     x_combi = sample.get('x_combi')
