@@ -529,6 +529,15 @@ class SDC(slackbot.SlackBot):
                     if self.notify:
                         _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
 
+        # if the last op is a post_flush, flush the lines with the set rates...
+        final_op = instructions[-1]
+        if final_op.get('op') == 'post_flush':
+            rates = final_op.get('rates')
+            duration = final_op.get('duration')
+            print(f'flushing the lines with {rates} for {duration} s')
+            self.pump_array.set_rates(rates, counterpump_ratio=0.95, start=True, fast=True)
+            time.sleep(duration)
+
         # # run cleanup
         # self.pump_array.stop_all(counterbalance='full', fast=True)
         # time.sleep(0.25)
