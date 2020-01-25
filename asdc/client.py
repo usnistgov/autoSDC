@@ -139,7 +139,7 @@ class SDC(slackbot.SlackBot):
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
 
-        self.initialize_z_position = True
+        self.initialize_z_position = config.get('initialize_z_position', False)
 
         # which wafer direction is aligned with position controller +x direction?
         self.frame_orientation = config.get('frame_orientation', '-y')
