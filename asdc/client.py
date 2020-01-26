@@ -364,7 +364,8 @@ class SDC(slackbot.SlackBot):
         frame = {
             'cell': self.cell_frame,
             'laser': self.laser_frame,
-            'camera': self.camera_frame
+            'camera': self.camera_frame,
+            'xray': self.xray_frame
         }[reference]
 
         await self.move_stage(args['x'], args['y'], frame)
