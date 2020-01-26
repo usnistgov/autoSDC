@@ -157,6 +157,7 @@ class SDC(slackbot.SlackBot):
         self.cell_frame = CoordSys3D('cell')
         self.camera_frame = self.cell_frame.locate_new('camera', 38.3*self.cell_frame.i - 0.4*self.cell_frame.j)
         self.laser_frame = self.cell_frame.locate_new('laser', 38*self.cell_frame.i - 0.3*self.cell_frame.j)
+        self.xray_frame = self.cell_frame.locate_new('xray', 43.687*self.cell_frame.i -4.4035*self.cell_frame.j)
 
         if self.resume:
             self.stage_frame = self.sync_coordinate_systems(orientation=self.frame_orientation, register_initial=True, resume=self.resume)
@@ -618,7 +619,7 @@ class SDC(slackbot.SlackBot):
 
                         # xray scan
                         web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
-                        await self.move_stage(x_combi, y_combi, self.camera_frame)
+                        await self.move_stage(x_combi, y_combi, self.xray_frame)
                         time.sleep(1)
 
                         prefix = f'sdc-26-{primary_key:04d}'
@@ -655,7 +656,7 @@ class SDC(slackbot.SlackBot):
                 x_combi = sample.get('x_combi')
                 y_combi = sample.get('y_combi')
                 primary_key = sample.get('id')
-                await self.move_stage(x_combi, y_combi, self.camera_frame)
+                await self.move_stage(x_combi, y_combi, self.xray_frame)
                 time.sleep(1)
 
                 prefix = f'sdc-26-{primary_key:04d}'
