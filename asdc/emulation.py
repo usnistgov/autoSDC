@@ -90,6 +90,11 @@ def model_property(X, y, dx=1.0, optimize=False):
 
 def model_quality(X, y, dx=1.0, likelihood='beta', optimize=False):
 
+    sel = np.isfinite(y).flat
+    X, y = X[sel], y[sel]
+    N, D = X.shape
+
+
     if likelihood == 'beta':
         # bounded regression
         lik = gpflow.likelihoods.Beta()
@@ -97,7 +102,6 @@ def model_quality(X, y, dx=1.0, likelihood='beta', optimize=False):
         # classification
         lik = gpflow.likelihoods.Bernoulli()
 
-    D = X.shape[1]
     with gpflow.defer_build():
         model = gpflow.models.VGP(
             X, y,
