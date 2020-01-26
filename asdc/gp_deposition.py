@@ -507,7 +507,7 @@ class Controller(slackbot.SlackBot):
         gpflow.reset_default_graph_and_session()
 
         # set up models
-        dx = 0.25*np.ptp(self.candidates)
+        dx = 0.15*np.ptp(self.candidates)
         models = [
             emulation.model_quality(X, Ni, dx=dx, likelihood='beta', optimize=True),
             emulation.model_property(X, Ni_variance, dx=dx, optimize=True),
