@@ -32,6 +32,7 @@ from asdc import slackbot
 from asdc import analyze
 from asdc import emulation
 from asdc import visualization
+from asdc import characterization
 
 import enum
 Action = enum.Enum('Action', ['QUERY', 'REPEAT', 'PHOTONS', 'CORRODE'])
@@ -41,6 +42,17 @@ SDC_TOKEN = open('slacktoken.txt', 'r').read().strip()
 
 def deposition_instructions(query, experiment_id=0):
     """ TODO: do something about deposition duration.... """
+    # query = pd.Series({'Ni_fraction': guess[0], 'metal_fraction': guess[1], 'potential': guess[2]})
+
+    total_flow = 0.15
+    relative_rates = {
+        'KCl': (1-query['metal_fraction']),
+        'NiCl2': query['metal_fraction'] * query['Ni_fraction'],
+        'ZnCl2': query['metal_fraction'] * (1-query['Ni_fraction'])
+    }
+    rates = {key: value*total_flow for key, value in relative_rates.items()}
+
+
     instructions = [
         {
             "intent": "deposition",
@@ -48,17 +60,35 @@ def deposition_instructions(query, experiment_id=0):
         },
         {
             "op": "set_flow",
-            "rates": {"CuSO4": query["flow_rate"]},
-            "hold_time": 120
+            "rates": rates,
+            "hold_time": 180
         },
         {
             "op": "potentiostatic",
             "potential": query["potential"],
-            "duration": 300,
-            "current_range": "20MA"
+            "duration": 600,
+            "current_range": "2MA"
+        },
+        {
+            "op": "post_flush",
+            "rates": {
+                "H2O": 1.0
+            },
+            "duration": 120
         }
     ]
     return instructions
+
+def characterize_instructions(experiment_id=0):
+  return [
+    {
+        "intent": "characterize",
+        "experiment_id": experiment_id
+    },
+    {
+      "op": "photons"
+    }
+  ]
 
 def corrosion_instructions(experiment_id=0):
     instructions = [
@@ -68,14 +98,30 @@ def corrosion_instructions(experiment_id=0):
         },
         {
             "op": "set_flow",
-            "rates": {"H2SO4": 0.1},
+            "rates": {"NaCl": 0.1},
             "hold_time": 120
         },
         {
-            "op": "potentiostatic",
-            "potential": 0.1,
-            "duration": 120,
-            "current_range": "20MA"
+            "op": "lpr",
+            "initial_potential": -0.03,
+            "final_potential": 0.03,
+            "step_size": 0.0005,
+            "step_time": 1.0,
+            "current_range": "2MA"
+        },
+        {
+            "op": "lsv",
+            "initial_potential": -1.0,
+            "final_potential": 0.5,
+            "scan_rate": 0.075,
+            "current_range": "2MA"
+        },
+        {
+            "op": "post_flush",
+            "rates": {
+                "H2O": 0.5
+            },
+            "duration": 90
         }
     ]
     return instructions
@@ -105,7 +151,7 @@ def exp_id(db):
 
     return intent, fit_gp
 
-def select_action(db, threshold=0.9):
+def select_action(db, run_replicates=True, threshold=0.9):
     """ run two depositions, followed by a corrosion experiment if the deposits are acceptable.
     """
     prev_id = db['experiment'].count()
@@ -143,6 +189,24 @@ def select_action(db, threshold=0.9):
             else:
                 print(f'poor coverage ({min_coverage})')
                 return Action.QUERY
+
+def select_action_single(db, run_replicates=True, threshold=0.9):
+    """ run single depositions, followed by a corrosion experiment if the deposits are acceptable.
+    """
+    prev_id = db['experiment'].count()
+
+    prev = db['experiment'].find_one(id=prev_id)
+
+    if prev['intent'] == 'corrosion':
+        return Action.QUERY
+
+    elif prev['intent'] == 'deposition':
+        expt = db['experiment'].find_one(experiment_id=prev['experiment_id'])
+
+        if expt['image_name'] is None:
+            return Action.PHOTONS
+
+        return Action.CORRODE
 
 def load_cv(row, data_dir='data', segment=2, half=True, log=True):
     """ load CV data and process it... """
@@ -224,6 +288,18 @@ def confidence_bound(model, candidates, sign=1, cb_beta=0.25):
     criterion = (sign*mean) - cb_weight*np.sqrt(var)
     return criterion
 
+def composition_loss_confidence_bound(model, candidates, target, sign=1, cb_beta=0.25):
+    # set per-model confidence bound beta
+    # default to lower confidence bound
+    t = model.X.shape[0]
+    cb_weight = cb_beta * np.log(2*t + 1)
+
+    mean, var = model.predict_y(candidates)
+    composition_loss = np.abs(mean - target)
+    criterion = composition_loss - cb_weight*np.sqrt(var)
+
+    return criterion
+
 def classification_criterion(model, candidates):
     """ compute the classification criterion from 10.1007/s11263-009-0268-3 """
     loc, scale = model.predict_f(candidates)
@@ -260,7 +336,7 @@ def filter_experiments(instructions, num_previous):
             expt_count += 1
             print(expt_count, intent)
 
-    return instructions[idx:]
+    return instructions[idx+1:]
 
 class Controller(slackbot.SlackBot):
     """ autonomous scanning droplet cell client """
@@ -297,11 +373,11 @@ class Controller(slackbot.SlackBot):
         # UCB switches to maximizing objectives...
         # classification criterion: minimization
         # confidence bound using LCB variant
-        # swap signs for things we want to maximize (just coverage...)
-        self.objectives = ('integral_current', 'coverage', 'reflectance')
+        # swap signs for things we want to maximize (just polarization_resistance...)
+        self.objectives = ('Ni_loss', 'Ni_variance', 'polarization_resistance')
         self.objective_alphas = [3, 2, 1]
         # self.objective_alphas = [1, 1, 1]
-        self.sgn = np.array([1, -1, -1])
+        self.sgn = np.array([1, 1, -1])
 
         # set up the optimization domain
         with open(os.path.join(self.data_dir, os.pardir, self.domain_file), 'r') as f:
@@ -313,13 +389,14 @@ class Controller(slackbot.SlackBot):
         #     np.linspace(dmn['min'], dmn['max'], 50)
         # ]
         self.levels = [
-            np.linspace(0.030, 0.30, 100),
-            np.linspace(dmn['min'], dmn['max'], 100)
+            np.linspace(0.0, 1.0, 100), # Ni fraction in solution
+            np.linspace(0.1, 1.0, 100), # metal fraction in solution
+            np.linspace(-1.5, -1.3, 50) # deposition potential
         ]
         self.ndim = [len(l) for l in self.levels][::-1]
         self.extent = [np.min(self.levels[0]), np.max(self.levels[0]), np.min(self.levels[1]), np.max(self.levels[1])]
-        xx, yy = np.meshgrid(self.levels[0], self.levels[1])
-        self.candidates = np.c_[xx.flatten(),yy.flatten()]
+        xx, yy, zz = np.meshgrid(self.levels[0], self.levels[1], self.levels[2])
+        self.candidates = np.c_[xx.flatten(),yy.flatten(), zz.flatten()]
 
     async def dm_sdc(self, web_client, text, channel='#asdc'):
        #              channel='DHY5REQ0H'):
@@ -381,16 +458,17 @@ class Controller(slackbot.SlackBot):
         weights = stats.dirichlet.rvs(self.objective_alphas).squeeze()
         # weights = [0.0, 1.0]
 
-        # if self.notify:
-        #     _slack.post_message(f'sampled objective fn weights: {weights}')
-
         mask = None
         criteria = []
         for idx, model in enumerate(models):
 
             sign = self.sgn[idx]
 
-            if model.likelihood.name in ('Gaussian', 'Beta'):
+            if idx == 0:
+                # first model is the composition model -- target 15% Ni!
+                criterion = composition_loss_confidence_bound(model, candidates, target=0.15, sign=sign, cb_beta=cb_beta)
+
+            elif model.likelihood.name in ('Gaussian', 'Beta'):
                 criterion = confidence_bound(model, candidates, sign=sign, cb_beta=cb_beta)
             elif model.likelihood.name == 'Bernoulli':
                 criterion = classification_criterion(model, candidates)
@@ -411,49 +489,15 @@ class Controller(slackbot.SlackBot):
 
     def gp_acquisition(self, resolution=100, t=0):
 
-        # if self.notify:
-        #     _slack.post_message(f'analyzing CV features...')
+        df = characterization.load_characterization_results(self.db_file)
 
-        # make sure all experiments are postprocessed and have values in the results table
-        self.analyze_corrosion_features()
+        Ni_fraction = df['NiCl2'] / (df['NiCl2'] + df['ZnCl2'])
+        metal_fraction = (df['NiCl2'] + df['ZnCl2']) / (df['NiCl2'] + df['ZnCl2'] + df['KCl'])
 
-        # if self.notify:
-        #     _slack.post_message(f'fitting GP models')
-
-        # load positions, compositions, and measured values from db
-        d = pd.DataFrame(self.db['experiment'].all())
-        print(d.columns)
-        r = pd.DataFrame(self.db['result'].all())
-
-        # get deposition metadata from instructions...
-        d['flow_rate'] = d['instructions'].apply(deposition_flow_rate)
-        d['potential'] = deposition_potential(d)
-        d[['flow_rate', 'potential']] = d[['flow_rate','potential']].fillna(method='ffill')
-
-        # split records into deposition and corrosion subsets...
-        dep = d.loc[d['intent'] == 'deposition', ('id', 'experiment_id', 'flow_rate', 'potential', 'coverage', 'reflectance')]
-        cor = d.loc[d['intent'] == 'corrosion', ('id', 'experiment_id', 'flow_rate', 'potential')]
-        cor = cor.merge(r, on='id')
-
-        # merge deposition quality into corrosion table...
-        # drop any corrosion experiments where the coverage was below spec
-        cor = cor.merge(d.loc[:,('experiment_id', 'coverage')].groupby('experiment_id').min(), on='experiment_id')
-        cor = cor[cor['coverage'] > self.coverage_threshold]
-        print(cor.shape)
-
-        X_dep = dep.loc[:,('flow_rate', 'potential')].values
-        Y_dep = (dep['coverage'].values > self.coverage_threshold).astype(float)
-
-        X_cor = cor.loc[:,('flow_rate', 'potential')].values
-        Y_cor = cor['integral_current'].values[:,None]
-
-        # fit reflectance model only where coverage is good
-        ref_selection = Y_dep == 1.0
-        X_ref = X_dep[ref_selection]
-        Y_ref = dep['reflectance'].values[ref_selection][:,None]
-
-        print(X_ref)
-        print(Y_ref)
+        X = np.vstack((Ni_fraction, metal_fraction, df['potential'])).T
+        Ni = df['Ni_ratio'].values[:,None]
+        Ni_variance = df['Ni_variance'].values[:,None]
+        pr = df['polarization_resistance'].values[:,None]
 
         # reset tf graph -- long-running program!
         gpflow.reset_default_graph_and_session()
@@ -461,46 +505,23 @@ class Controller(slackbot.SlackBot):
         # set up models
         dx = 0.25*np.ptp(self.candidates)
         models = [
-            emulation.model_property(X_cor, Y_cor[:, 0][:,None], dx=dx, optimize=True),
-            emulation.model_quality(X_dep, Y_dep[:,None], dx=dx, likelihood='bernoulli', optimize=True),
-            emulation.model_property(X_ref, Y_ref[:, 0][:,None], dx=dx, optimize=True),
+            emulation.model_quality(X, Ni, dx=dx, likelihood='beta', optimize=True),
+            emulation.model_property(X, Ni_variance, dx=dx, optimize=True),
+            emulation.model_property(X, pr, dx=dx, optimize=True),
         ]
-
-        # if self.notify:
-        #     _slack.post_message(f'evaluating acquisition function')
 
         # evaluate the acquisition function on a grid
         # acq = criterion.evaluate(candidates)
         acq = self.random_scalarization_cb(models, self.candidates)
 
         # remove previously measured candidates
-        mindist = spatial.distance.cdist(X_dep, self.candidates).min(axis=0)
+        mindist = spatial.distance.cdist(X, self.candidates).min(axis=0)
         acq[mindist < 1e-5] = np.inf
-
-        # visualization.scatter_wafer(candidates*scale_factor, acq, label='acquisition', figpath=figpath)
-        # if self.notify:
-        #     _slack.post_image(figpath, title=f"acquisition at t={t}")
 
         query_idx = np.argmin(acq)
         guess = self.candidates[query_idx]
 
-        X = np.vstack((X_dep, X_cor))
-
-        # plot the acquisition function...
-        figpath = os.path.join(self.figure_dir, f'acquisition_plot_{t}.png')
-        extent = self.extent
-        plot_map(acq.reshape(self.ndim), X, guess, extent, figpath)
-
-        if self.notify:
-            _slack.post_image(figpath, title=f"acquisition at t={t}")
-
-        for objective, model in zip(self.objectives, models):
-            loc, scale = model.predict_y(self.candidates)
-            vals = loc.reshape(self.ndim)
-            figpath = os.path.join(self.figure_dir, f'{objective}_plot_{t}.png')
-            plot_map(vals, X, guess, extent, figpath)
-
-        query = pd.Series({'flow_rate': guess[0], 'potential': guess[1]})
+        query = pd.Series({'Ni_fraction': guess[0], 'metal_fraction': guess[1], 'potential': guess[2]})
         print(query)
         return query
 
@@ -513,6 +534,8 @@ class Controller(slackbot.SlackBot):
         """
 
         previous_op = self.db['experiment'].find_one(id=self.db['experiment'].count())
+
+        print(previous_op)
 
         if len(self.experiments) > 0:
             instructions = self.experiments.pop(0)
@@ -534,8 +557,9 @@ class Controller(slackbot.SlackBot):
             elif intent == 'corrosion':
                 action = Action.CORRODE
         else:
+            print('selecting an action')
             instructions = None
-            action = select_action(self.db, threshold=self.coverage_threshold)
+            action = select_action_single(self.db, threshold=self.coverage_threshold)
             print(action)
             # intent, fit_gp = exp_id(self.db)
 
@@ -583,6 +607,8 @@ class Controller(slackbot.SlackBot):
             elif action == Action.REPEAT:
                 instructions = json.loads(previous_op['instructions'])
                 instructions = [{'intent': 'deposition', 'experiment_id': experiment_id}] + instructions
+            elif action == Action.PHOTONS:
+                instructions = characterize_instructions(experiment_id=experiment_id)
             elif action == Action.CORRODE:
                 instructions = corrosion_instructions(experiment_id=experiment_id)
 
@@ -594,6 +620,7 @@ class Controller(slackbot.SlackBot):
 
         print(instructions)
         # send the experiment command
+        return
 
         if action in {Action.QUERY, Action.REPEAT, Action.CORRODE}:
             await self.dm_sdc(web_client, f"<@UHT11TM6F> run_experiment {json.dumps(instructions)}")

@@ -113,7 +113,7 @@ def xrf_Ni_ratio(expt, midpoint=False, data_dir='data'):
 
     xrf = xrf / xrf['I0'][:,None]
 
-    bg = load_reference_xrf()
+    bg = load_reference_xrf(data_dir=data_dir)
 
     Ni_counts = xrf['DTC1'] - bg['Ni']
     Zn_counts = xrf['DTC2_1'] - bg['Zn']
