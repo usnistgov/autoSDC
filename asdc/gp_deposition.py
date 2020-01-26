@@ -408,7 +408,8 @@ class Controller(slackbot.SlackBot):
             text=text,
             token=SDC_TOKEN,
             as_user=False,
-            username='ctl'
+            username='ctl',
+            icon_emoji=':robot_face:'
         )
 
     def load_experiment_indices(self):

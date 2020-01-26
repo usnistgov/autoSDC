@@ -996,7 +996,7 @@ class SDC(slackbot.SlackBot):
 
     async def dm_controller(self, web_client, text, channel='#asdc'):
         #                     , channel='DHNHM74TU'):
-        web_client.chat_postMessage(channel=channel, text=text)
+        web_client.chat_postMessage(channel=channel, text=text, icon_emoji=':sciencebear:')
 
     @command
     async def dm(self, args: str, msgdata: Dict, web_client: Any):
