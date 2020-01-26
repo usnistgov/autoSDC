@@ -109,13 +109,13 @@ def corrosion_instructions(experiment_id=0):
             "step_time": 1.0,
             "current_range": "2MA"
         },
-        {
-            "op": "lsv",
-            "initial_potential": -1.0,
-            "final_potential": 0.5,
-            "scan_rate": 0.075,
-            "current_range": "2MA"
-        },
+        # {
+        #     "op": "lsv",
+        #     "initial_potential": -1.0,
+        #     "final_potential": 0.5,
+        #     "scan_rate": 0.075,
+        #     "current_range": "2MA"
+        # },
         {
             "op": "post_flush",
             "rates": {
