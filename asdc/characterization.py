@@ -86,9 +86,9 @@ def load_xrf_data(expt, data_dir='data', scan='middle'):
 
     if scan == 'slits':
         # switch to sdc-25-{id:04d}_slitscan.dat
-        datafile = data_dir / 'xray' / f'sdc-25-{id:04d}_slitscan.dat'
+        datafile = data_dir / 'xray' / f'sdc-26-{id:04d}_slitscan.dat'
     else
-        datafile = data_dir / 'xray' / f'sdc-25-{id:04d}_linescan_{scan}.dat'
+        datafile = data_dir / 'xray' / f'sdc-26-{id:04d}_linescan_{scan}.dat'
 
     try:
         return load_xrf_file(datafile)

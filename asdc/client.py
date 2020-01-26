@@ -621,7 +621,7 @@ class SDC(slackbot.SlackBot):
                         await self.move_stage(x_combi, y_combi, self.camera_frame)
                         time.sleep(1)
 
-                        prefix = f'sdc-{primary_key:04d}'
+                        prefix = f'sdc-26-{primary_key:04d}'
                         print(f'starting x-rays for {prefix}')
                         epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
 
@@ -658,7 +658,7 @@ class SDC(slackbot.SlackBot):
                 await self.move_stage(x_combi, y_combi, self.camera_frame)
                 time.sleep(1)
 
-                prefix = f'sdc-{primary_key:04d}'
+                prefix = f'sdc-26-{primary_key:04d}'
                 print(f'starting x-rays for {prefix}')
                 epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
 
