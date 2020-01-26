@@ -163,8 +163,8 @@ def load_results(expt, experiment_table, data_dir, scan='middle'):
         'refl': np.mean(load_laser_data(expt, data_dir=data_dir)),
         # 'Ni_ratio': xrf_Ni_ratio(expt, midpoint=True),
         'potential': deposition_potential(expt),
-        'Ni_ratio': np.median(xrf_Ni_ratio(expt, data_dir=data_dir, scan=scan)[25:35]),
-        'Ni_variance': np.var(xrf_Ni_ratio(expt, data_dir=data_dir, scan=scan)[15:45]),
+        'Ni_ratio': np.median(xrf_Ni_ratio(expt, data_dir=data_dir, scan=scan)[7:14]),
+        'Ni_variance': np.var(xrf_Ni_ratio(expt, data_dir=data_dir, scan=scan)[3:18]),
         'integral_current': integral_corrosion_current(expt, experiment_table, data_dir=data_dir),
         'polarization_resistance': polarization_resistance(expt, experiment_table, data_dir=data_dir)
     }
