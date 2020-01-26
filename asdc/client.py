@@ -157,7 +157,7 @@ class SDC(slackbot.SlackBot):
         self.cell_frame = CoordSys3D('cell')
         self.camera_frame = self.cell_frame.locate_new('camera', 38.3*self.cell_frame.i - 0.4*self.cell_frame.j)
         self.laser_frame = self.cell_frame.locate_new('laser', 38*self.cell_frame.i - 0.3*self.cell_frame.j)
-        self.xray_frame = self.cell_frame.locate_new('xray', 43.687*self.cell_frame.i -4.4035*self.cell_frame.j)
+        self.xray_frame = self.cell_frame.locate_new('xray', 44.74*self.cell_frame.i -4.4035*self.cell_frame.j)
 
         if self.resume:
             self.stage_frame = self.sync_coordinate_systems(orientation=self.frame_orientation, register_initial=True, resume=self.resume)
