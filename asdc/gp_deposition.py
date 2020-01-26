@@ -620,7 +620,6 @@ class Controller(slackbot.SlackBot):
 
         print(instructions)
         # send the experiment command
-        return
 
         if action in {Action.QUERY, Action.REPEAT, Action.CORRODE}:
             await self.dm_sdc(web_client, f"<@UHT11TM6F> run_experiment {json.dumps(instructions)}")
