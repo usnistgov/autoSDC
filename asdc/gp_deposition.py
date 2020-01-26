@@ -328,6 +328,9 @@ def filter_experiments(instructions, num_previous):
     """ filter out instructions files -- count only operations that add rows to the db """
     expt_count = 0
 
+    if num_previous == 0:
+        return instructions
+
     for idx, expt in enumerate(instructions):
         intent = expt[0].get('intent')
         if intent in ('deposition', 'corrosion'):
