@@ -43,8 +43,11 @@ def polarization_resistance(expt, experiment_table, data_dir='data'):
 
     pr = corr[corr['segment'] == 0]
 
-    n_skip = int(pr.shape[0] * 0.25)
-    slc = slice(n_skip,-n_skip)
+    log_I = np.log10(np.abs(pr['current']))
+    idx = log_I.idxmin()
+    n_skip = int(pr.shape[0] * 0.3)
+    slc = slice(idx-n_skip, idx+n_skip)
+
     lm = linear_model.HuberRegressor()
     lm.fit(pr['potential'][slc,None], pr['current'][slc])
 
@@ -73,11 +76,20 @@ def load_xrf_file(datafile, header_rows=32):
 
     return pd.read_csv(datafile, skiprows=header_rows+1, delim_whitespace=True, names=names)
 
-def load_xrf_data(expt, data_dir='data'):
+def load_xrf_data(expt, data_dir='data', scan='middle'):
     id = expt['id']
 
+    if scan not in ('down', 'middle', 'up', 'slits'):
+        raise ValueError('scans should be one of {down, middle, up}')
+
     data_dir = pathlib.Path(data_dir)
-    datafile = data_dir / 'xray' / f'sdc-25-{id:04d}_linescan_middle.dat'
+
+    if scan == 'slits':
+        # switch to sdc-25-{id:04d}_slitscan.dat
+        datafile = data_dir / 'xray' / f'sdc-25-{id:04d}_slitscan.dat'
+    else
+        datafile = data_dir / 'xray' / f'sdc-25-{id:04d}_linescan_{scan}.dat'
+
     try:
         return load_xrf_file(datafile)
     except FileNotFoundError:
@@ -96,7 +108,7 @@ def load_reference_xrf(reference_datafile='rawgold.dat', data_dir='data'):
 
     return {'Ni': Ni_bg, 'Zn': Zn_bg}
 
-def xrf_Ni_ratio(expt, midpoint=False, data_dir='data'):
+def xrf_Ni_ratio(expt, midpoint=False, data_dir='data', scan='middle'):
     """
     Dead-time-corrected counts:
     Ni: DTC1  Zn: DTC2_1  Au: DTC3_1
@@ -106,7 +118,7 @@ def xrf_Ni_ratio(expt, midpoint=False, data_dir='data'):
     Au: ROI3_1
     """
     data_dir = pathlib.Path(data_dir)
-    xrf = load_xrf_data(expt, data_dir=data_dir)
+    xrf = load_xrf_data(expt, data_dir=data_dir, scan=scan)
 
     if xrf is None:
         return [np.nan]
@@ -144,15 +156,15 @@ def integral_corrosion_current(expt, experiment_table, start_time=5, data_dir='d
     integral_current = integrate.trapz(corr['current'][s], corr['elapsed_time'][s])
     return integral_current
 
-def load_results(expt, experiment_table, data_dir):
+def load_results(expt, experiment_table, data_dir, scan='middle'):
 
     rates = load_rates(expt)
     res = {
         'refl': np.mean(load_laser_data(expt, data_dir=data_dir)),
         # 'Ni_ratio': xrf_Ni_ratio(expt, midpoint=True),
         'potential': deposition_potential(expt),
-        'Ni_ratio': np.median(xrf_Ni_ratio(expt, data_dir=data_dir)[25:35]),
-        'Ni_variance': np.var(xrf_Ni_ratio(expt, data_dir=data_dir)[15:45]),
+        'Ni_ratio': np.median(xrf_Ni_ratio(expt, data_dir=data_dir, scan=scan)[25:35]),
+        'Ni_variance': np.var(xrf_Ni_ratio(expt, data_dir=data_dir, scan=scan)[15:45]),
         'integral_current': integral_corrosion_current(expt, experiment_table, data_dir=data_dir),
         'polarization_resistance': polarization_resistance(expt, experiment_table, data_dir=data_dir)
     }
@@ -160,7 +172,7 @@ def load_results(expt, experiment_table, data_dir):
     res['id'] = expt['experiment_id']
     return res
 
-def load_characterization_results(dbfile):
+def load_characterization_results(dbfile, scan='slits'):
 
     dbfile = pathlib.Path(dbfile)
     data_dir = dbfile.parent
@@ -168,5 +180,10 @@ def load_characterization_results(dbfile):
     db = dataset.connect(f'sqlite:///{str(dbfile)}')
     experiment_table = db['experiment']
 
-    df = pd.DataFrame([load_results(e, experiment_table, data_dir) for e in experiment_table.find(intent='deposition')])
+    df = pd.DataFrame(
+        [
+            load_results(e, experiment_table, data_dir, scan=scan)
+            for e in experiment_table.find(intent='deposition')
+        ]
+    )
     return df
