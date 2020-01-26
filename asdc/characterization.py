@@ -5,19 +5,26 @@ import pathlib
 import numpy as np
 import pandas as pd
 from scipy import integrate
-import matplotlib.pyplot as plt
+from sklearn import linear_model
 
 def load_rates(expt):
     instructions = json.loads(expt['instructions'])
     return instructions[0].get('rates')
 
+def deposition_potential(expt):
+    instructions = json.loads(expt['instructions'])
+    return instructions[1].get('potential')
+
 def load_image(expt, data_dir='data'):
+    data_dir = pathlib.Path(data_dir)
     return imageio.imread(data_dir / expt['image_name'])
 
 def load_deposition_data(expt, data_dir='data'):
+    data_dir = pathlib.Path(data_dir)
     return pd.read_csv(data_dir / expt['datafile'], index_col=0)
 
 def load_corrosion_data(experiment_table, expt, data_dir='data'):
+    data_dir = pathlib.Path(data_dir)
     first_rep = experiment_table.find_one(experiment_id=expt['experiment_id'])
     if expt['id'] != first_rep['id']:
         return None
@@ -25,7 +32,26 @@ def load_corrosion_data(experiment_table, expt, data_dir='data'):
     if corr is not None:
         return pd.read_csv(data_dir / corr['datafile'], index_col=0)
 
+def polarization_resistance(expt, experiment_table, data_dir='data'):
+    """ compute polarization resistance (Ohms) """
+
+    data_dir = pathlib.Path(data_dir)
+    corr = load_corrosion_data(experiment_table, expt, data_dir=data_dir)
+
+    if corr is None:
+        return np.nan
+
+    pr = corr[corr['segment'] == 0]
+
+    n_skip = int(pr.shape[0] * 0.25)
+    slc = slice(n_skip,-n_skip)
+    lm = linear_model.HuberRegressor()
+    lm.fit(pr['potential'][slc,None], pr['current'][slc])
+
+    return 1 / lm.coef_[0]
+
 def load_laser_data(expt, data_dir='data'):
+    data_dir = pathlib.Path(data_dir)
 
     if expt['reflectance_file'] is None:
         # print(expt['id'])
@@ -51,7 +77,7 @@ def load_xrf_data(expt, data_dir='data'):
     id = expt['id']
 
     data_dir = pathlib.Path(data_dir)
-    datafile = data_dir / 'xray' / f'sdc-{id:04d}_linescan_middle.dat'
+    datafile = data_dir / 'xray' / f'sdc-25-{id:04d}_linescan_middle.dat'
     try:
         return load_xrf_file(datafile)
     except FileNotFoundError:
@@ -79,6 +105,7 @@ def xrf_Ni_ratio(expt, midpoint=False, data_dir='data'):
     Zn: ROI2_1
     Au: ROI3_1
     """
+    data_dir = pathlib.Path(data_dir)
     xrf = load_xrf_data(expt, data_dir=data_dir)
 
     if xrf is None:
@@ -103,9 +130,16 @@ def xrf_Ni_ratio(expt, midpoint=False, data_dir='data'):
     return Ni
 
 def integral_corrosion_current(expt, experiment_table, start_time=5, data_dir='data'):
+
+    data_dir = pathlib.Path(data_dir)
     corr = load_corrosion_data(experiment_table, expt, data_dir=data_dir)
+
     if corr is None:
         return np.nan
+
+    if len(corr['segment'].unique()) > 1:
+        corr = corr[corr['segment'] == 1]
+
     s = corr['elapsed_time'] > start_time
     integral_current = integrate.trapz(corr['current'][s], corr['elapsed_time'][s])
     return integral_current
@@ -116,9 +150,11 @@ def load_results(expt, experiment_table, data_dir):
     res = {
         'refl': np.mean(load_laser_data(expt, data_dir=data_dir)),
         # 'Ni_ratio': xrf_Ni_ratio(expt, midpoint=True),
+        'potential': deposition_potential(expt),
         'Ni_ratio': np.median(xrf_Ni_ratio(expt, data_dir=data_dir)[25:35]),
         'Ni_variance': np.var(xrf_Ni_ratio(expt, data_dir=data_dir)[15:45]),
-        'integral_current': integral_corrosion_current(expt, experiment_table, data_dir=data_dir)
+        'integral_current': integral_corrosion_current(expt, experiment_table, data_dir=data_dir),
+        'polarization_resistance': polarization_resistance(expt, experiment_table, data_dir=data_dir)
     }
     res.update(rates)
     res['id'] = expt['experiment_id']

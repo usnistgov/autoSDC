@@ -65,7 +65,10 @@ def model_ternary(composition, target, reset_tf_graph=True, drop_last=True, opti
     return m
 
 def model_property(X, y, dx=1.0, optimize=False):
-    D = X.shape[1]
+
+    sel = np.isfinite(y).flat
+    X, y = X[sel], y[sel]
+    N, D = X.shape
 
     with gpflow.defer_build():
         model = gpflow.models.GPR(
