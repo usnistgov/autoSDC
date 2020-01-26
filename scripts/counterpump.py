@@ -1,4 +1,5 @@
 import sys
+sys.path.append('.')
 from asdc.sdc import microcontroller
 
 adafruit_port = 'COM9'
