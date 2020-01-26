@@ -307,7 +307,7 @@ class SDC(slackbot.SlackBot):
         # map position update to position controller frame
         delta = self.compute_position_update(x, y, frame)
 
-        if np.abs(delta.sum()) > threshold:
+        if np.abs(delta).sum() > threshold:
             if self.verbose:
                 print(f'position update: {delta} (mm)')
 
