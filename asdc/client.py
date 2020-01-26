@@ -481,7 +481,7 @@ class SDC(slackbot.SlackBot):
 
             if self.confirm_experiment:
                 if self.notify:
-                    web_client.chat_postMessage(channel='#asdc', text=f'*confirm*: {_msg}')
+                    web_client.chat_postMessage(channel='#asdc', text=f'*confirm*: {_msg}', icon_emoji=':sciencebear:')
                 else:
                     print(f'*confirm*: {_msg}')
                 await ainput('press enter to allow running the experiment...', loop=self.loop)
@@ -491,7 +491,9 @@ class SDC(slackbot.SlackBot):
 
             f = functools.partial(sdc.experiment.run, instructions, cell=self.cell, verbose=self.verbose)
             if self.test_cell:
-                web_client.chat_postMessage(channel='#asdc', text=f"we would run the experiment here...")
+                web_client.chat_postMessage(
+                    channel='#asdc', text=f"we would run the experiment here...", icon_emoji=':sciencebear:'
+                )
                 await self.loop.run_in_executor(None, time.sleep, 10)
 
             else:
@@ -507,7 +509,7 @@ class SDC(slackbot.SlackBot):
                     print(f'WARNING: median current below {self.current_threshold} threshold')
                     if self.notify:
                         msg = f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
-                        web_client.chat_postMessage(channel='#asdc', text=msg)
+                        web_client.chat_postMessage(channel='#asdc', text=msg, icon_emoji=':sciencebear:')
 
                 meta.update(metadata)
                 meta['datafile'] = datafile
@@ -521,7 +523,9 @@ class SDC(slackbot.SlackBot):
                     visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
 
                     if self.notify:
-                        web_client.chat_postMessage(channel='#asdc', text=f"finished experiment {meta['id']}: {summary}")
+                        web_client.chat_postMessage(
+                            channel='#asdc', text=f"finished experiment {meta['id']}: {summary}", icon_emoji=':sciencebear:'
+                        )
                         _slack.post_image(web_client, figpath, title=f"current vs time {meta['id']}")
 
                 if self.plot_cv:
@@ -605,13 +609,13 @@ class SDC(slackbot.SlackBot):
                     primary_key = sample.get('id')
 
                     if self.notify:
-                        web_client.chat_postMessage(channel='#asdc', text=f"inspecting deposit quality")
+                        web_client.chat_postMessage(channel='#asdc', text=f"inspecting deposit quality", icon_emoji=':sciencebear:')
 
                     await self.move_stage(x_combi, y_combi, self.camera_frame)
                     await self._capture_image(primary_key=primary_key)
 
                     if self.notify:
-                        web_client.chat_postMessage(channel='#asdc', text=f"acquiring laser reflectance data")
+                        web_client.chat_postMessage(channel='#asdc', text=f"acquiring laser reflectance data", icon_emoji=':sciencebear:')
 
                     async with sdc.position.z_step(loop=self.loop, height=self.laser_scan_height, speed=self.speed) as stage:
                         # laser scan
@@ -619,7 +623,6 @@ class SDC(slackbot.SlackBot):
                         await self._reflectance(primary_key=primary_key, stage=stage)
 
                         # xray scan
-                        web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
                         await self.move_stage(x_combi, y_combi, self.xray_frame)
                         time.sleep(1)
 
@@ -653,7 +656,7 @@ class SDC(slackbot.SlackBot):
         async with sdc.position.z_step(loop=self.loop, height=self.xrays_height, speed=self.speed):
             for sample in samples:
                 print('xrd')
-                web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...")
+                web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...", icon_emoji=':sciencebear:')
                 x_combi = sample.get('x_combi')
                 y_combi = sample.get('y_combi')
                 primary_key = sample.get('id')
@@ -769,7 +772,7 @@ class SDC(slackbot.SlackBot):
         self.pump_array.set_rates(target_rates, counterpump_ratio=0.95, fast=True, start=True)
 
         message = f"contact routine with {json.dumps(instructions)}"
-        web_client.chat_postMessage(channel='#asdc', text=message)
+        web_client.chat_postMessage(channel='#asdc', text=message, icon_emoji=':sciencebear:')
 
         return
 
@@ -1003,7 +1006,7 @@ class SDC(slackbot.SlackBot):
         """ echo random string to DM channel """
         dm_channel = 'DHNHM74TU'
         print('got a dm command: ', args)
-        web_client.chat_postMessage(channel=channel, text=args)
+        web_client.chat_postMessage(channel=channel, text=args, icon_emoji=':sciencebear:')
 
     @command
     async def stop_pumps(self, args: str, msgdata: Dict, web_client: Any):
@@ -1025,7 +1028,7 @@ class SDC(slackbot.SlackBot):
         print(text)
 
         # dm UC537488J (brian)
-        web_client.chat_postMessage(channel=channel, text=args)
+        web_client.chat_postMessage(channel=channel, text=args, icon_emoji=':sciencebear:')
 
         return
 
