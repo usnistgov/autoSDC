@@ -1,0 +1,136 @@
+import json
+import dataset
+import imageio
+import pathlib
+import numpy as np
+import pandas as pd
+from scipy import integrate
+import matplotlib.pyplot as plt
+
+def load_rates(expt):
+    instructions = json.loads(expt['instructions'])
+    return instructions[0].get('rates')
+
+def load_image(expt, data_dir='data'):
+    return imageio.imread(data_dir / expt['image_name'])
+
+def load_deposition_data(expt, data_dir='data'):
+    return pd.read_csv(data_dir / expt['datafile'], index_col=0)
+
+def load_corrosion_data(experiment_table, expt, data_dir='data'):
+    first_rep = experiment_table.find_one(experiment_id=expt['experiment_id'])
+    if expt['id'] != first_rep['id']:
+        return None
+    corr = experiment_table.find_one(experiment_id=expt['experiment_id'], intent='corrosion')
+    if corr is not None:
+        return pd.read_csv(data_dir / corr['datafile'], index_col=0)
+
+def load_laser_data(expt, data_dir='data'):
+
+    if expt['reflectance_file'] is None:
+        # print(expt['id'])
+        return [np.nan]
+
+    with open(data_dir / expt['reflectance_file'], 'r') as f:
+        data = json.load(f)
+
+    return data['reflectance']
+
+def load_xrf_file(datafile, header_rows=32):
+
+    # load the column names
+    with open(datafile, 'r') as f:
+        lines = f.readlines()
+
+    header = lines[header_rows]
+    names = header.strip()[2:].split()
+
+    return pd.read_csv(datafile, skiprows=header_rows+1, delim_whitespace=True, names=names)
+
+def load_xrf_data(expt, data_dir='data'):
+    id = expt['id']
+
+    data_dir = pathlib.Path(data_dir)
+    datafile = data_dir / 'xray' / f'sdc-{id:04d}_linescan_middle.dat'
+    try:
+        return load_xrf_file(datafile)
+    except FileNotFoundError:
+        return None
+
+def load_reference_xrf(reference_datafile='rawgold.dat', data_dir='data'):
+
+    data_dir = pathlib.Path(data_dir)
+
+    reference = load_xrf_file(data_dir / 'xray' / reference_datafile, header_rows=17)
+    reference = reference / reference['I0'][:,None]
+
+    Au_counts = np.median(reference['DTC3_1'])
+    Ni_bg = Au_counts / np.median(reference['DTC1'])
+    Zn_bg = Au_counts / np.median(reference['DTC2_1'])
+
+    return {'Ni': Ni_bg, 'Zn': Zn_bg}
+
+def xrf_Ni_ratio(expt, midpoint=False, data_dir='data'):
+    """
+    Dead-time-corrected counts:
+    Ni: DTC1  Zn: DTC2_1  Au: DTC3_1
+    Au vs elastic: DTC3_2
+    Ni: ROI1
+    Zn: ROI2_1
+    Au: ROI3_1
+    """
+    xrf = load_xrf_data(expt, data_dir=data_dir)
+
+    if xrf is None:
+        return [np.nan]
+
+    xrf = xrf / xrf['I0'][:,None]
+
+    bg = load_reference_xrf()
+
+    Ni_counts = xrf['DTC1'] - bg['Ni']
+    Zn_counts = xrf['DTC2_1'] - bg['Zn']
+
+    NiZn_counts = Ni_counts + Zn_counts
+
+
+    Ni = Ni_counts / NiZn_counts
+
+    if midpoint:
+        midpoint_idx = Ni.size // 2
+        return Ni[30]
+
+    return Ni
+
+def integral_corrosion_current(expt, experiment_table, start_time=5, data_dir='data'):
+    corr = load_corrosion_data(experiment_table, expt, data_dir=data_dir)
+    if corr is None:
+        return np.nan
+    s = corr['elapsed_time'] > start_time
+    integral_current = integrate.trapz(corr['current'][s], corr['elapsed_time'][s])
+    return integral_current
+
+def load_results(expt, experiment_table, data_dir):
+
+    rates = load_rates(expt)
+    res = {
+        'refl': np.mean(load_laser_data(expt, data_dir=data_dir)),
+        # 'Ni_ratio': xrf_Ni_ratio(expt, midpoint=True),
+        'Ni_ratio': np.median(xrf_Ni_ratio(expt, data_dir=data_dir)[25:35]),
+        'Ni_variance': np.var(xrf_Ni_ratio(expt, data_dir=data_dir)[15:45]),
+        'integral_current': integral_corrosion_current(expt, experiment_table, data_dir=data_dir)
+    }
+    res.update(rates)
+    res['id'] = expt['experiment_id']
+    return res
+
+def load_characterization_results(dbfile):
+
+    dbfile = pathlib.Path(dbfile)
+    data_dir = dbfile.parent
+
+    db = dataset.connect(f'sqlite:///{str(dbfile)}')
+    experiment_table = db['experiment']
+
+    df = pd.DataFrame([load_results(e, experiment_table, data_dir) for e in experiment_table.find(intent='deposition')])
+    return df
