@@ -49,9 +49,12 @@ def polarization_resistance(expt, experiment_table, data_dir='data'):
     slc = slice(idx-n_skip, idx+n_skip)
 
     lm = linear_model.HuberRegressor()
-    lm.fit(pr['potential'][slc,None], pr['current'][slc])
 
-    return 1 / lm.coef_[0]
+    try:
+        lm.fit(pr['potential'][slc,None], pr['current'][slc])
+        return 1 / lm.coef_[0]
+    except ValueError:
+        return np.nan
 
 def load_laser_data(expt, data_dir='data'):
     data_dir = pathlib.Path(data_dir)
@@ -86,10 +89,11 @@ def load_xrf_data(expt, data_dir='data', scan='middle'):
 
     if scan == 'slits':
         # switch to sdc-25-{id:04d}_slitscan.dat
-        datafile = data_dir / 'xray' / f'sdc-26-{id:04d}_slitscan.dat'
+        datafile = data_dir / 'xray' / f'sdc-26-{id:04d}slitscan.dat'
     else:
         datafile = data_dir / 'xray' / f'sdc-26-{id:04d}_linescan_{scan}.dat'
 
+    print(datafile)
     try:
         return load_xrf_file(datafile)
     except FileNotFoundError:
@@ -118,7 +122,10 @@ def xrf_Ni_ratio(expt, midpoint=False, data_dir='data', scan='middle'):
     Au: ROI3_1
     """
     data_dir = pathlib.Path(data_dir)
+    print(data_dir)
     xrf = load_xrf_data(expt, data_dir=data_dir, scan=scan)
+
+    print(xrf)
 
     if xrf is None:
         return [np.nan]
@@ -174,6 +181,7 @@ def load_results(expt, experiment_table, data_dir, scan='middle'):
 
 def load_characterization_results(dbfile, scan='slits'):
 
+    print(scan)
     dbfile = pathlib.Path(dbfile)
     data_dir = dbfile.parent
 
