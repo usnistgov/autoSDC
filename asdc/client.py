@@ -487,7 +487,7 @@ class SDC(slackbot.SlackBot):
                 await ainput('press enter to allow running the experiment...', loop=self.loop)
 
             elif self.notify:
-                web_client.chat_postMessage(channel='#asdc', text=_msg)
+                web_client.chat_postMessage(channel='#asdc', text=_msg, icon_emoji=':sciencebear:')
 
             f = functools.partial(sdc.experiment.run, instructions, cell=self.cell, verbose=self.verbose)
             if self.test_cell:
@@ -533,7 +533,10 @@ class SDC(slackbot.SlackBot):
                     visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
 
                     if self.notify:
-                        _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
+                        try:
+                            _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
+                        except:
+                            pass
 
         # if the last op is a post_flush, flush the lines with the set rates...
         final_op = instructions[-1]
@@ -613,6 +616,13 @@ class SDC(slackbot.SlackBot):
 
                     await self.move_stage(x_combi, y_combi, self.camera_frame)
                     await self._capture_image(primary_key=primary_key)
+
+                    image_name = f'deposit_pic_{primary_key:03d}.png'
+                    figpath = os.path.join(self.data_dir, image_name)
+                    try:
+                        _slack.post_image(web_client, figpath, title=f"deposit {primary_key}")
+                    except:
+                        pass
 
                     if self.notify:
                         web_client.chat_postMessage(channel='#asdc', text=f"acquiring laser reflectance data", icon_emoji=':sciencebear:')
