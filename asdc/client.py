@@ -566,6 +566,14 @@ class SDC(slackbot.SlackBot):
 
         the header instruction should contain a list of primary keys
         corresponding to sample points that should be characterized.
+
+        run_characterization [
+            {"intent": "characterize", "experiment_id": 22},
+            {"op": "surface-cam"}
+            {"op": "laser-reflectance"}
+            {"op": "xrays"}
+        ]
+
         """
 
         # the header block should contain the `experiment_id`
@@ -594,6 +602,9 @@ class SDC(slackbot.SlackBot):
         # run cleanup and optical characterization
         self.pump_array.stop_all(counterbalance='full', fast=True)
         time.sleep(0.25)
+
+        characterization_ops = set(i.get('op') for i in instructions if 'op' in i)
+
         async with sdc.position.z_step(loop=self.loop, height=self.wetting_height, speed=self.speed):
 
             if self.cleanup_pause > 0:
@@ -611,34 +622,40 @@ class SDC(slackbot.SlackBot):
                     y_combi = sample.get('y_combi')
                     primary_key = sample.get('id')
 
-                    if self.notify:
-                        web_client.chat_postMessage(channel='#asdc', text=f"inspecting deposit quality", icon_emoji=':sciencebear:')
+                    if 'surface-cam' in characterization_ops:
+                        if self.notify:
+                            web_client.chat_postMessage(channel='#asdc', text=f"inspecting deposit quality", icon_emoji=':sciencebear:')
 
-                    await self.move_stage(x_combi, y_combi, self.camera_frame)
-                    await self._capture_image(primary_key=primary_key)
+                        await self.move_stage(x_combi, y_combi, self.camera_frame)
+                        await self._capture_image(primary_key=primary_key)
 
-                    image_name = f'deposit_pic_{primary_key:03d}.png'
-                    figpath = os.path.join(self.data_dir, image_name)
-                    try:
-                        _slack.post_image(web_client, figpath, title=f"deposit {primary_key}")
-                    except:
-                        pass
+                        image_name = f'deposit_pic_{primary_key:03d}.png'
+                        figpath = os.path.join(self.data_dir, image_name)
+                        try:
+                            _slack.post_image(web_client, figpath, title=f"deposit {primary_key}")
+                        except:
+                            pass
 
                     if self.notify:
                         web_client.chat_postMessage(channel='#asdc', text=f"acquiring laser reflectance data", icon_emoji=':sciencebear:')
 
                     async with sdc.position.z_step(loop=self.loop, height=self.laser_scan_height, speed=self.speed) as stage:
+
                         # laser scan
-                        await self.move_stage(x_combi, y_combi, self.laser_frame, stage=stage)
-                        await self._reflectance(primary_key=primary_key, stage=stage)
+                        if 'laser-reflectance' in characterization_ops:
+
+                            await self.move_stage(x_combi, y_combi, self.laser_frame, stage=stage)
+                            await self._reflectance(primary_key=primary_key, stage=stage)
 
                         # xray scan
-                        await self.move_stage(x_combi, y_combi, self.xray_frame)
-                        time.sleep(1)
+                        if 'xrays' in characterization_ops:
 
-                        prefix = f'sdc-26-{primary_key:04d}'
-                        print(f'starting x-rays for {prefix}')
-                        epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
+                            await self.move_stage(x_combi, y_combi, self.xray_frame)
+                            time.sleep(1)
+
+                            prefix = f'sdc-26-{primary_key:04d}'
+                            print(f'starting x-rays for {prefix}')
+                            epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
 
                 await self.move_stage(x_combi, y_combi, self.cell_frame)
 
