@@ -49,9 +49,12 @@ def polarization_resistance(expt, experiment_table, data_dir='data'):
     slc = slice(idx-n_skip, idx+n_skip)
 
     lm = linear_model.HuberRegressor()
-    lm.fit(pr['potential'][slc,None], pr['current'][slc])
+    try:
+        lm.fit(pr['potential'][slc,None], pr['current'][slc])
 
-    return 1 / lm.coef_[0]
+        return 1 / lm.coef_[0]
+    except ValueError:
+        return np.nan
 
 def load_laser_data(expt, data_dir='data'):
     data_dir = pathlib.Path(data_dir)
@@ -90,6 +93,7 @@ def load_xrf_data(expt, data_dir='data', scan='middle'):
     else:
         datafile = data_dir / 'xray' / f'sdc-26-{id:04d}_linescan_{scan}.dat'
 
+    print(datafile)
     try:
         return load_xrf_file(datafile)
     except FileNotFoundError:
