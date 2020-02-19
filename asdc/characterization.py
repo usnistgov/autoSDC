@@ -53,6 +53,7 @@ def polarization_resistance(expt, experiment_table, data_dir='data'):
     try:
         lm.fit(pr['potential'][slc,None], pr['current'][slc])
         return 1 / lm.coef_[0]
+        
     except ValueError:
         return np.nan
 
