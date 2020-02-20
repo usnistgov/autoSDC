@@ -154,11 +154,15 @@ class SDC(slackbot.SlackBot):
         self.resume = resume
 
         # define reference frames
-        # TODO: make camera and laser offsets configurable
+        # load camera and laser offsets from configuration file
+        camera_offset = config.get('camera_offset', [38.3, -0.4])
+        laser_offset = config.get('laser_offset', [38, -0.3])
+        xray_offset = config.get('xray_offset', [44.74, -4.4035])
+
         self.cell_frame = CoordSys3D('cell')
-        self.camera_frame = self.cell_frame.locate_new('camera', 38.3*self.cell_frame.i - 0.4*self.cell_frame.j)
-        self.laser_frame = self.cell_frame.locate_new('laser', 38*self.cell_frame.i - 0.3*self.cell_frame.j)
-        self.xray_frame = self.cell_frame.locate_new('xray', 44.74*self.cell_frame.i -4.4035*self.cell_frame.j)
+        self.camera_frame = self.cell_frame.locate_new('camera', camera_offset[0]*self.cell_frame.i + camera_offset[1]*self.cell_frame.j)
+        self.laser_frame = self.cell_frame.locate_new('laser', laser_offset[0]*self.cell_frame.i + laser_offset[1]*self.cell_frame.j)
+        self.xray_frame = self.cell_frame.locate_new('xray', xray_offset[0]*self.cell_frame.i + xray_offset[1]*self.cell_frame.j)
 
         if self.resume:
             self.stage_frame = self.sync_coordinate_systems(orientation=self.frame_orientation, register_initial=True, resume=self.resume)
