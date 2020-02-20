@@ -22,6 +22,7 @@ import cv2
 import imageio
 
 import sympy
+from sympy import geometry
 from sympy.vector import express
 from sympy.vector import CoordSys3D, BodyOrienter, Point
 
@@ -203,6 +204,36 @@ class SDC(slackbot.SlackBot):
             print(f'resuming from {ref}')
 
         return ref
+
+    def current_versa_xy(self):
+        """ get current stage coords in meters """
+
+        with sdc.position.controller() as pos:
+            x_versa = pos.x
+            y_versa = pos.y
+
+        return x_versa, y_versa
+
+    @command
+    async def locate_wafer_center(self, args: str, msgdata: Dict, web_client: Any):
+        """ align reference frames to wafer center
+
+        identify a circumcircle corresponding three points on the wafer edge
+        """
+        wafer_edge_coords = []
+        print('identify coordinates of three points on the wafer edge.')
+
+        for idx in range(3):
+            await ainput('press enter to register coordinates...', loop=self.loop)
+            wafer_edge_coords.append(self.current_versa_xy())
+
+        # unpack triangle coordinates
+        tri = geometry.Triangle(*wafer_edge_coords)
+        center = np.array(tri.circumcenter, dtype=float)
+
+        print(center)
+
+
 
     def sync_coordinate_systems(self, orientation=None, register_initial=False, resume=False):
 
