@@ -823,8 +823,10 @@ class SDC(slackbot.SlackBot):
             solution = self.solutions[0]
             s = next(iter(solution))
             _rates = {s: flow_rate}
-        else:
+        elif type(solutions) is list:
             _rates = {s: 1.0 for s in solutions}
+        elif type(solutions) is dict:
+            _rates = solutions
 
         rates = self._scale_flow(_rates, nominal_rate=flow_rate)
         target_rates = self._scale_flow(_rates, nominal_rate=target_rate)
