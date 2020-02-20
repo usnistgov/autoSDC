@@ -252,15 +252,13 @@ class SDC(slackbot.SlackBot):
             f = functools.partial(stage.update, delta=delta)
             await self.loop.run_in_executor(None, f)
 
+
         # set up the stage reference frame
-        # relative to the last recorded positions
+        # relative to the wafer center in the camera frame
         cam = self.camera_frame
 
         if self.frame_orientation == '-y':
             _stage = cam.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
-            self.stage_frame = _stage
-            return
-
         else:
             raise NotImplementedError
 
@@ -273,7 +271,7 @@ class SDC(slackbot.SlackBot):
 
         # now find the origin of the stage frame
         # xv_init = np.array([ref['x_versa'], ref['y_versa']])
-        xv_init = np.array(center)[:-1]
+        xv_init = np.array(center)
 
         l = xv_init - combi_origin
         v_origin = l[1]*cam.i + l[0]*cam.j
