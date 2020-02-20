@@ -269,7 +269,7 @@ class SDC(slackbot.SlackBot):
 
         # specify updates in the stage frame...
         async with sdc.position.acontroller(loop=self.loop, speed=self.speed) as stage:
-            await ainput('press enter to allow lateral cell motion...', loop=loop)
+            await ainput('press enter to allow lateral cell motion...', loop=self.loop)
 
             # move horizontally
             f = functools.partial(stage.update, delta=delta)
