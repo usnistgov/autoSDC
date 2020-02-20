@@ -264,24 +264,23 @@ class SDC(slackbot.SlackBot):
         else:
             raise NotImplementedError
 
-        # # find the origin of the combi wafer in the coincident stage frame
-        # v = 0.0*cam.i + 0.0*cam.j
-        # combi_origin = v.to_matrix(_stage)
+        # find the origin of the combi wafer in the coincident stage frame
+        v = 0.0*cam.i + 0.0*cam.j
+        combi_origin = v.to_matrix(_stage)
 
-        # # truncate to 2D vector
-        # combi_origin = np.array(combi_origin).squeeze()[:-1]
+        # truncate to 2D vector
+        combi_origin = np.array(combi_origin).squeeze()[:-1]
 
-        # # now find the origin of the stage frame
-        # # xv_init = np.array([ref['x_versa'], ref['y_versa']])
-        # xv_init = np.array(center)[:-1]
+        # now find the origin of the stage frame
+        # xv_init = np.array([ref['x_versa'], ref['y_versa']])
+        xv_init = np.array(center)[:-1]
 
-        # l = xv_init - combi_origin
-        # v_origin = l[1]*cam.i + l[0]*cam.j
+        l = xv_init - combi_origin
+        v_origin = l[1]*cam.i + l[0]*cam.j
 
-        # # construct the shifted stage frame
-        # stage = _stage.locate_new('stage', v_origin)
-        # self.stage_frame = stage
-
+        # construct the shifted stage frame
+        stage = _stage.locate_new('stage', v_origin)
+        self.stage_frame = stage
 
     def sync_coordinate_systems(self, orientation=None, register_initial=False, resume=False):
 
