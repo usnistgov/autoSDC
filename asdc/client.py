@@ -262,7 +262,7 @@ class SDC(slackbot.SlackBot):
             raise NotImplementedError
 
         # find the origin of the combi wafer in the coincident stage frame
-        v = 0.0*cell.i + 0.0*cell.j
+        v = 0.0*cam.i + 0.0*cam.j
         combi_origin = v.to_matrix(_stage)
 
         # truncate to 2D vector
@@ -273,7 +273,7 @@ class SDC(slackbot.SlackBot):
         xv_init = np.array(center)
 
         l = xv_init - combi_origin
-        v_origin = l[1]*cell.i + l[0]*cell.j
+        v_origin = l[1]*cam.i + l[0]*cam.j
 
         # construct the shifted stage frame
         stage = _stage.locate_new('stage', v_origin)
