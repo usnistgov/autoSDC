@@ -236,33 +236,7 @@ class SDC(slackbot.SlackBot):
         print(wafer_edge_coords)
         print(center)
 
-        # set up the stage reference frame
-        # relative to the last recorded positions
-        cam = self.camera_frame
-
-        if self.frame_orientation == '-y':
-            _stage = cam.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
-        else:
-            raise NotImplementedError
-
-        # find the origin of the combi wafer in the coincident stage frame
-        v = 0.0*cam.i + 0.0*cam.j
-        combi_origin = v.to_matrix(_stage)
-
-        # truncate to 2D vector
-        combi_origin = np.array(combi_origin).squeeze()[:-1]
-
-        # now find the origin of the stage frame
-        # xv_init = np.array([ref['x_versa'], ref['y_versa']])
-        xv_init = np.array(center)[:-1]
-
-        l = xv_init - combi_origin
-        v_origin = l[1]*cam.i + l[0]*cam.j
-
-        # construct the shifted stage frame
-        stage = _stage.locate_new('stage', v_origin)
-        self.stage_frame = stage
-
+        # move the stage to focus the camera on the center of the wafer...
         current = np.array(self.current_versa_xy())
         delta = center - current
 
@@ -277,6 +251,36 @@ class SDC(slackbot.SlackBot):
             # move horizontally
             f = functools.partial(stage.update, delta=delta)
             await self.loop.run_in_executor(None, f)
+
+        # set up the stage reference frame
+        # relative to the last recorded positions
+        cam = self.camera_frame
+
+        if self.frame_orientation == '-y':
+            _stage = cam.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
+            self.stage_frame = _stage
+            return
+
+        else:
+            raise NotImplementedError
+
+        # # find the origin of the combi wafer in the coincident stage frame
+        # v = 0.0*cam.i + 0.0*cam.j
+        # combi_origin = v.to_matrix(_stage)
+
+        # # truncate to 2D vector
+        # combi_origin = np.array(combi_origin).squeeze()[:-1]
+
+        # # now find the origin of the stage frame
+        # # xv_init = np.array([ref['x_versa'], ref['y_versa']])
+        # xv_init = np.array(center)[:-1]
+
+        # l = xv_init - combi_origin
+        # v_origin = l[1]*cam.i + l[0]*cam.j
+
+        # # construct the shifted stage frame
+        # stage = _stage.locate_new('stage', v_origin)
+        # self.stage_frame = stage
 
 
     def sync_coordinate_systems(self, orientation=None, register_initial=False, resume=False):
