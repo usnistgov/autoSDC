@@ -221,7 +221,7 @@ class SDC(slackbot.SlackBot):
         identify a circumcircle corresponding three points on the wafer edge
         """
         wafer_edge_coords = []
-        print('identify coordinates of three points on the wafer edge.')
+        print('identify coordinates of three points on the wafer edge. (start with the flat corners)')
 
         for idx in range(3):
             await ainput('press enter to register coordinates...', loop=self.loop)
@@ -231,8 +231,8 @@ class SDC(slackbot.SlackBot):
         tri = geometry.Triangle(*wafer_edge_coords)
         center = np.array(tri.circumcenter, dtype=float)
 
+        print(wafer_edge_coords)
         print(center)
-
 
 
     def sync_coordinate_systems(self, orientation=None, register_initial=False, resume=False):
