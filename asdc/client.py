@@ -240,12 +240,6 @@ class SDC(slackbot.SlackBot):
         current = np.array(self.current_versa_xy())
         delta = center - current
 
-        # move the stage to align the cell with the wafer center
-        P = to_coords(x, self.camera_frame)
-        camera_offset = np.array(P.express_coordinates(self.cell_frame), dtype=np.float)[:-1]
-
-        delta += camera_offset
-
         # convert to meters!
         delta = delta * 1e-3
         print(delta)
