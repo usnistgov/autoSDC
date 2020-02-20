@@ -240,7 +240,7 @@ class SDC(slackbot.SlackBot):
         # relative to the last recorded positions
         cam = self.camera_frame
 
-        if orientation == '-y':
+        if self.frame_orientation == '-y':
             _stage = cam.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
         else:
             raise NotImplementedError
