@@ -265,6 +265,9 @@ class SDC(slackbot.SlackBot):
 
         current = np.array(self.current_versa_xy())
         delta = center - current
+
+        # convert to meters!
+        delta = delta * 1e-3
         print(delta)
 
         # specify updates in the stage frame...
