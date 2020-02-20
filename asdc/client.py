@@ -206,11 +206,11 @@ class SDC(slackbot.SlackBot):
         return ref
 
     def current_versa_xy(self):
-        """ get current stage coords in meters """
+        """ get current stage coords in mm """
 
         with sdc.position.controller() as pos:
-            x_versa = pos.x
-            y_versa = pos.y
+            x_versa = pos.x * 1e3
+            y_versa = pos.y * 1e3
 
         return x_versa, y_versa
 
@@ -229,10 +229,51 @@ class SDC(slackbot.SlackBot):
 
         # unpack triangle coordinates
         tri = geometry.Triangle(*wafer_edge_coords)
+
+        # center is the versascan coordinate such that the camera frame is on the wafer origin
         center = np.array(tri.circumcenter, dtype=float)
 
         print(wafer_edge_coords)
         print(center)
+
+        # set up the stage reference frame
+        # relative to the last recorded positions
+        cam = self.camera_frame
+
+        if orientation == '-y':
+            _stage = cam.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
+        else:
+            raise NotImplementedError
+
+        # find the origin of the combi wafer in the coincident stage frame
+        v = 0.0*cam.i + 0.0*cam.j
+        combi_origin = v.to_matrix(_stage)
+
+        # truncate to 2D vector
+        combi_origin = np.array(combi_origin).squeeze()[:-1]
+
+        # now find the origin of the stage frame
+        # xv_init = np.array([ref['x_versa'], ref['y_versa']])
+        xv_init = np.array(center)[:-1]
+
+        l = xv_init - combi_origin
+        v_origin = l[1]*cam.i + l[0]*cam.j
+
+        # construct the shifted stage frame
+        stage = _stage.locate_new('stage', v_origin)
+        self.stage_frame = stage
+
+        current = np.array(self.current_versa_xy())
+        delta = center - current
+        print(delta)
+
+        # specify updates in the stage frame...
+        async with sdc.position.acontroller(loop=self.loop, z_step=self.step_height, speed=self.speed) as stage:
+            await ainput('press enter to allow lateral cell motion...', loop=loop)
+
+            # move horizontally
+            f = functools.partial(stage.update, delta=delta)
+            await loop.run_in_executor(None, f)
 
 
     def sync_coordinate_systems(self, orientation=None, register_initial=False, resume=False):
