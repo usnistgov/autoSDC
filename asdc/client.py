@@ -268,12 +268,12 @@ class SDC(slackbot.SlackBot):
         print(delta)
 
         # specify updates in the stage frame...
-        async with sdc.position.acontroller(loop=self.loop, z_step=self.step_height, speed=self.speed) as stage:
+        async with sdc.position.acontroller(loop=self.loop, speed=self.speed) as stage:
             await ainput('press enter to allow lateral cell motion...', loop=loop)
 
             # move horizontally
             f = functools.partial(stage.update, delta=delta)
-            await loop.run_in_executor(None, f)
+            await self.loop.run_in_executor(None, f)
 
 
     def sync_coordinate_systems(self, orientation=None, register_initial=False, resume=False):
