@@ -271,7 +271,8 @@ class SDC(slackbot.SlackBot):
 
         # now find the origin of the stage frame
         # xv_init = np.array([ref['x_versa'], ref['y_versa']])
-        xv_init = np.array(center)
+        # xv_init = np.array(center)
+        xv_init = np.array(self.current_versa_xy())
 
         l = xv_init - combi_origin
         v_origin = l[1]*cam.i + l[0]*cam.j
