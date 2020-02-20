@@ -240,6 +240,12 @@ class SDC(slackbot.SlackBot):
         current = np.array(self.current_versa_xy())
         delta = center - current
 
+        # move the stage to align the cell with the wafer center
+        P = to_coords(x, self.camera_frame)
+        camera_offset = np.array(P.express_coordinates(self.cell_frame), dtype=np.float)[:-1]
+
+        delta += camera_offset
+
         # convert to meters!
         delta = delta * 1e-3
         print(delta)
@@ -255,15 +261,15 @@ class SDC(slackbot.SlackBot):
 
         # set up the stage reference frame
         # relative to the wafer center in the camera frame
-        cam = self.camera_frame
+        cell = self.cell_frame
 
         if self.frame_orientation == '-y':
-            _stage = cam.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
+            _stage = cell.orient_new('_stage', BodyOrienter(sympy.pi/2, sympy.pi, 0, 'ZYZ'))
         else:
             raise NotImplementedError
 
         # find the origin of the combi wafer in the coincident stage frame
-        v = 0.0*cam.i + 0.0*cam.j
+        v = 0.0*cell.i + 0.0*cell.j
         combi_origin = v.to_matrix(_stage)
 
         # truncate to 2D vector
@@ -275,7 +281,7 @@ class SDC(slackbot.SlackBot):
         xv_init = np.array(self.current_versa_xy())
 
         l = xv_init - combi_origin
-        v_origin = l[1]*cam.i + l[0]*cam.j
+        v_origin = l[1]*cell.i + l[0]*cell.j
 
         # construct the shifted stage frame
         stage = _stage.locate_new('stage', v_origin)
