@@ -1066,7 +1066,7 @@ class SDC(slackbot.SlackBot):
 
         pass an experiment index to serialize metadata to db
         """
-        if len(args) > 0:
+        if args is not None and len(args) > 0:
             primary_key = int(args)
         else:
             primary_key = None
