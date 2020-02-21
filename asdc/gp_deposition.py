@@ -339,7 +339,7 @@ def filter_experiments(instructions, num_previous):
             expt_count += 1
             print(expt_count, intent)
 
-    return instructions[idx+1:]
+    return instructions[idx:]
 
 class Controller(slackbot.SlackBot):
     """ autonomous scanning droplet cell client """
