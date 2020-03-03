@@ -361,6 +361,8 @@ class Controller(slackbot.SlackBot):
         self.domain_file = config.get('domain_file')
         self.coverage_threshold = config.get('coverage_threshold', 0.9)
 
+        self.repeat_depositions = config.get('repeat_depositions', False)
+
         self.db_file = os.path.join(self.data_dir, config.get('db_file', 'test.db'))
         self.db = dataset.connect(f'sqlite:///{self.db_file}')
         self.experiment_table = self.db['experiment']
@@ -550,7 +552,7 @@ class Controller(slackbot.SlackBot):
                 # assume a deposition op following another deposition is a repeat
                 if previous_op is None:
                     action = Action.QUERY
-                elif previous_op['intent'] == 'deposition':
+                elif (self.repeat_depositions == True) and (previous_op['intent'] == 'deposition'):
                     action = Action.REPEAT
                 else:
                     action = Action.QUERY
