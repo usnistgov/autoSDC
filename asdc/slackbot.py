@@ -63,7 +63,7 @@ class SlackBot(object):
             print(command)
 
             if command not in self.command:
-                user = data['user']
+                user = data.get('user')
                 r = f"sorry <@{user}>, I didn't understand what you meant by `{m.strip()}`..."
                 print(r)
                 web_client = payload['web_client']
