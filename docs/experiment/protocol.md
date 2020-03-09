@@ -26,6 +26,60 @@ Example:
 }
 ```
 
+### LSV
+
+Linear scan voltammetry -- sweep the potential while measuring current.
+
+**Parameters**
+
+| Name                | Type                    | Description                                      | Default |
+|---------------------+-------------------------+--------------------------------------------------+---------|
+| `initial_potential` | `float`                 | starting potential (V)                           | None    |
+| `final_potential`   | `float`                 | ending potential (V)                             | None    |
+| `scan_rate`         | `float`                 | scan rate (V/s)                                  | None    |
+| `current_range`     | `str`                   | current range to use                             | 'AUTO'  |
+
+Example:
+
+```json
+{
+    "op": "lsv",
+    "initial_potential": 0.0,
+    "final_potential": 1.0,
+    "scan_rate": 0.075
+}
+```
+
+### LPR
+(Linear) Polarization Resistance -- sweep the potential with a step curve, while measuring current.
+
+**Parameters**
+
+| Name                | Type                    | Description                                      | Default |
+|---------------------+-------------------------+--------------------------------------------------+---------|
+| `initial_potential` | `float`                 | starting potential (V)                           | None    |
+| `final_potential`   | `float`                 | ending potential (V)                             | None    |
+| `vs`                | Enum['VS REF', 'VS OC'] | potential relative to reference electrode or OCP | 'VS OC' |
+| `step_size`         | `float`                 | potential step height (V)                        | None    |
+| `step_time`         | `float`                 | potential step length (s)                        | None    |
+| `current_range`     | `str`                   | current range to use                             | 'AUTO'  |
+
+
+Example:
+
+```json
+{
+    "op": "lpr",
+    "initial_potential": 0.0,
+    "final_potential": 1.0,
+    "step_size": 0.1,
+    "step_time": 0.1,
+    "vs": "VS OC"
+}
+```
+
+
+
 ### CV
 
 Multi-cycle cyclic voltammetry -- apply a triangular wave potential pattern and measure current.
