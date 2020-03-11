@@ -618,7 +618,6 @@ class Controller(slackbot.SlackBot):
                     target = targets[~(targets['has_bubble'] == True)].iloc[0]
                 except KeyError:
                     target = targets.iloc[0]
-<
             try:
                 pos = {'x': target['x_combi'], 'y': target['y_combi']}
             except KeyError:
