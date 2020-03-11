@@ -615,7 +615,10 @@ class Controller(slackbot.SlackBot):
             except KeyError:
                 target = targets.iloc[0]
 
-            pos = {'x': target['x_combi'], 'y': target['y_combi']}
+            try:
+                pos = {'x': target['x_combi'], 'y': target['y_combi']}
+            except KeyError:
+                pos = {'x': target['x'], 'y': target['y']}
 
         if instructions is None:
 
