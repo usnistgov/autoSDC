@@ -591,7 +591,16 @@ class Controller(slackbot.SlackBot):
             experiment_id = int(previous_op.get('experiment_id'))
 
         elif action == Action.CORRODE:
-            experiment_id = int(previous_op.get('experiment_id'))
+
+            if previous_op is None:
+                experiment_id = 1
+
+            elif previous_op['intent'] == 'deposition':
+                experiment_id = int(previous_op.get('experiment_id'))
+
+            else:
+                # if we are only doing corrosions...
+                experiment_id = int(previous_op.get('experiment_id')) + 1
 
         # if action is Action.CORRODE, select a target without a bubble to corrode
         if action == Action.CORRODE:
