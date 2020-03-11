@@ -605,7 +605,7 @@ class Controller(slackbot.SlackBot):
         # if action is Action.CORRODE, select a target without a bubble to corrode
         if action == Action.CORRODE:
 
-            if previous_op is None or previous_op['intent'] == 'deposition':
+            if previous_op is None or previous_op['intent'] == 'corrosion':
                 targets = self.targets
             else:
                 targets = pd.DataFrame(self.db['experiment'].find(experiment_id=experiment_id))
