@@ -4,6 +4,12 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+import tensorflow_probability as tfp
+from tensorflow_probability import distributions as tfd
+f64 = gpflow.utilities.to_default_float
+
+optimizer = gpflow.optimizers.Scipy()
+
 def simplex_grid(n=3, buffer=0.1):
     """ construct a regular grid on the ternary simplex """
 
@@ -19,7 +25,7 @@ def simplex_grid(n=3, buffer=0.1):
     s = buffer + s*scale
     return s
 
-def model_ternary(composition, target, reset_tf_graph=True, drop_last=True, optimize_noise_variance=True, initial_noise_var=1e-4):
+def model_ternary(composition, target, drop_last=False, optimize_noise_variance=True, initial_noise_var=1e-4):
 
     if drop_last:
         X = composition[:,:-1] # ignore the last composition column
@@ -32,59 +38,56 @@ def model_ternary(composition, target, reset_tf_graph=True, drop_last=True, opti
     X, Y = X[sel], Y[sel]
     N, D = X.shape
 
-    if reset_tf_graph:
-        gpflow.reset_default_graph_and_session()
-
-    with gpflow.defer_build():
-        m = gpflow.models.GPR(
-            X, Y,
-            # kern=gpflow.kernels.Linear(D, ARD=True) + gpflow.kernels.RBF(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D)
-            kern=gpflow.kernels.Matern52(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D, variance=initial_noise_var) # \sigma_noise = 0.01
-            # kern=gpflow.kernels.RationalQuadratic(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D, variance=initial_noise_var)
-        )
+    m = gpflow.models.GPR(
+        data=(X,Y),
+        # kernel=gpflow.kernels.Linear(D, ARD=True) + gpflow.kernels.RBF(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D),
+        kernel=gpflow.kernels.Matern52(D, ARD=True) + gpflow.kernels.Constant(D),
+        # kernel=gpflow.kernels.RationalQuadratic(D, ARD=True) + gpflow.kernels.Constant(D) + gpflow.kernels.White(D, variance=initial_noise_var),
+        noise_variance = 1e-3
+    )
 
     # set a weakly-informative lengthscale prior
     # e.g. half-normal(0, dx/3) -> gamma(0.5, 2*dx/3)
     # another choice might be to use an inverse gamma prior...
-    # m.kern.kernels[0].lengthscales.prior = gpflow.priors.Gamma(0.5, 2.0/3)
-    m.kern.kernels[0].lengthscales.prior = gpflow.priors.Gamma(0.5, 0.5)
+    # m.kernel.kernels[0].lengthscales.prior = tpf.Gamma(f64(0.5), f64(2.0/3))
+    m.kernel.kernels[0].lengthscales.prior = tfp.Gamma(f64(0.5), f64(0.5))
 
-    # m.kern.kernels[0].variance.prior = gpflow.priors.Gamma(0.5, 4.)
-    # m.kern.kernels[1].variance.prior = gpflow.priors.Gamma(0.5, 4.)
-    # m.kern.kernels[2].variance.prior = gpflow.priors.Gamma(0.5, 2.)
-    m.kern.kernels[0].variance.prior = gpflow.priors.Gamma(2.0, 2.0)
-    m.kern.kernels[1].variance.prior = gpflow.priors.Gamma(2.0, 2.0)
-    # m.kern.kernels[2].variance.prior = gpflow.priors.Gamma(2.0, 2.0)
+    # m.kernel.kernels[0].variance.prior = tpf.Gamma(f64(0.5), f64(4.))
+    # m.kernel.kernels[1].variance.prior = tpf.Gamma(f64(0.5), f64(4.))
+    m.kernel.kernels[0].variance.prior = tpf.Gamma(f64(2.0), f64(2.0))
+    m.kernel.kernels[1].variance.prior = tpf.Gamma(f64(2.0), f64(2.0))
 
     if not optimize_noise_variance:
-        m.kern.kernels[2].variance.trainable = False
+        gpflow.set_trainable(m.likelihood.variance, False)
 
-    m.likelihood.variance = 1e-6
-
-    m.compile()
     return m
 
-def model_property(X, y, dx=1.0, optimize=False):
+def model_property(X, y, dx=1.0):
 
     sel = np.isfinite(y).flat
     X, y = X[sel], y[sel]
     N, D = X.shape
 
-    with gpflow.defer_build():
-        model = gpflow.models.GPR(
-            X, y,
-            kern=gpflow.kernels.RBF(D, ARD=True) + gpflow.kernels.Constant(D),
-        )
+    ls = 10 * np.ones(D)
 
-        model.kern.kernels[0].variance.prior = gpflow.priors.Gamma(2,1/2)
-        model.kern.kernels[0].lengthscales.prior = gpflow.priors.Gamma(2.0, 2*dx/3)
-        model.likelihood.variance = 0.01
+    model = gpflow.models.GPR(
+        data=(X,y),
+        # kernel=gpflow.kernels.RBF(lengthscales=ls),
+        kernel=gpflow.kernels.RationalQuadratic(lengthscales=ls),
+        mean_function=gpflow.mean_functions.Constant(np.median(y)),
+        noise_variance=0.01
+    )
 
-    model.compile()
+    model.kernel.variance.prior = tfd.Gamma(f64(2), f64(1/2))
+    model.kernel.lengthscales.prior = tfd.Gamma(f64(2.0), f64(2*dx/3))
+    model.likelihood.variance.prior = tfd.Gamma(f64(1.0), f64(1.0))
 
     if optimize:
-        opt = gpflow.train.ScipyOptimizer()
-        opt.minimize(model)
+        optimizer.minimize(
+            model.training_loss,
+            model.trainable_variables,
+            options=dict(disp=True, maxiter=1000)
+        )
 
     return model
 
@@ -94,7 +97,6 @@ def model_quality(X, y, dx=1.0, likelihood='beta', optimize=False):
     X, y = X[sel], y[sel]
     N, D = X.shape
 
-
     if likelihood == 'beta':
         # bounded regression
         lik = gpflow.likelihoods.Beta()
@@ -102,22 +104,24 @@ def model_quality(X, y, dx=1.0, likelihood='beta', optimize=False):
         # classification
         lik = gpflow.likelihoods.Bernoulli()
 
-    with gpflow.defer_build():
-        model = gpflow.models.VGP(
-            X, y,
-            kern=gpflow.kernels.RBF(D, ARD=True),
-            likelihood=lik
-        )
+    ls = np.ones(D)
 
-        model.kern.variance.prior = gpflow.priors.Gamma(2,2)
-        model.kern.lengthscales.prior = gpflow.priors.Gamma(1.0, 2*dx/3)
-        model.likelihood.variance = 0.1
+    model = gpflow.models.VGP(
+        data=(X, y),
+        kern=gpflow.kernels.RBF(lengthscales=ls),
+        likelihood=lik
+    )
 
-    model.compile()
+    model.kernel.variance.prior = tfd.Gamma(f64(2), f64(1/2))
+    model.kernel.lengthscales.prior = tfd.Gamma(f64(2.0), f64(2*dx/3))
+
 
     if optimize:
-        opt = gpflow.train.ScipyOptimizer()
-        opt.minimize(model)
+        optimizer.minimize(
+            model.training_loss,
+            model.trainable_variables,
+            options=dict(disp=True, maxiter=1000)
+        )
 
     return model
 
