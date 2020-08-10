@@ -3,6 +3,7 @@ import dataset
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from gpflow.utilities import print_summary
 
 import tensorflow_probability as tfp
 from tensorflow_probability import distributions as tfd
@@ -62,40 +63,62 @@ def model_ternary(composition, target, drop_last=False, optimize_noise_variance=
 
     return m
 
-def model_property(X, y, dx=1.0):
+def model_property(X, y, dx=1.0, ls=None, optimize=True, kernel='RBF', return_report=False, noise_variance=0.01, verbose=False, use_prior=True):
 
     sel = np.isfinite(y).flat
     X, y = X[sel], y[sel]
     N, D = X.shape
 
-    ls = 10 * np.ones(D)
+    if ls is None:
+        ls = np.ones(D)
+
+    if kernel == 'RBF':
+        k = gpflow.kernels.RBF(lengthscales=ls)
+    elif kernel == 'RQ':
+        k = gpflow.kernels.RationalQuadratic(lengthscales=ls)
+    elif kernel == 'matern':
+        k = gpflow.kernels.Matern32(lengthscales=l)
+    elif kernel == 'gam':
+        # generalized additive model
+        k = gpflow.kernels.Sum(
+            [gpflow.kernels.RBF(lengthscales=ls, active_dims=[i]) for i in range(D)]
+        )
 
     model = gpflow.models.GPR(
         data=(X,y),
-        # kernel=gpflow.kernels.RBF(lengthscales=ls),
-        kernel=gpflow.kernels.RationalQuadratic(lengthscales=ls),
+        kernel=k,
         mean_function=gpflow.mean_functions.Constant(np.median(y)),
-        noise_variance=0.01
+        noise_variance=noise_variance
     )
 
-    model.kernel.variance.prior = tfd.Gamma(f64(2), f64(1/2))
-    model.kernel.lengthscales.prior = tfd.Gamma(f64(2.0), f64(2*dx/3))
-    model.likelihood.variance.prior = tfd.Gamma(f64(1.0), f64(1.0))
+    if use_prior:
+        model.kernel.variance.prior = tfd.Gamma(f64(2), f64(4))
+        model.kernel.lengthscales.prior = tfd.Gamma(f64(0.5), f64(2*dx/3))
+        model.likelihood.variance.prior = tfd.Gamma(f64(1.0), f64(1.0))
 
     if optimize:
-        optimizer.minimize(
-            model.training_loss,
-            model.trainable_variables,
-            options=dict(disp=True, maxiter=1000)
-        )
+        try:
+            res = optimizer.minimize(
+                model.training_loss,
+                model.trainable_variables,
+                options=dict(disp=verbose, maxiter=1000)
+            )
+        except tf.errors.InvalidArgumentError:
+            print_summary(model)
+
+    if return_report:
+        return model, res
 
     return model
 
-def model_quality(X, y, dx=1.0, likelihood='beta', optimize=False):
+def model_quality(X, y, dx=1.0, ls=None, likelihood='beta', optimize=True):
 
     sel = np.isfinite(y).flat
     X, y = X[sel], y[sel]
     N, D = X.shape
+
+    if ls is None:
+        ls = np.ones(D)
 
     if likelihood == 'beta':
         # bounded regression
@@ -104,11 +127,9 @@ def model_quality(X, y, dx=1.0, likelihood='beta', optimize=False):
         # classification
         lik = gpflow.likelihoods.Bernoulli()
 
-    ls = np.ones(D)
-
     model = gpflow.models.VGP(
         data=(X, y),
-        kern=gpflow.kernels.RBF(lengthscales=ls),
+        kernel=gpflow.kernels.RBF(lengthscales=ls),
         likelihood=lik
     )
 
@@ -217,3 +238,55 @@ class ExperimentEmulator():
                     return mu, var
                 else:
                     return mu.squeeze()
+
+class DatasetEmulator():
+    def __init__(self, echem, xray, components=['Al', 'Ti', 'Ni'], targets = ['V_oc', 'I_p', 'V_tp', 'slope', 'fwhm'], dx=1.0, ls=None, default_kernel='RBF', kernels=None, use_prior=True):
+        """ fit independent GP models for each target -- read compositions and targets from a csv file...
+
+        kernel can be a string to use the same base model form for each target
+        or a dict mapping targets to kernels to use
+        """
+
+        self.echem = echem
+        self.xray = xray
+        self.components = components
+        self.targets = targets
+        self.dx = dx
+        self.ls = ls
+        self.use_prior = use_prior
+        self.default_kernel = default_kernel
+        if kernels is None:
+            self.kernels = {target: default_kernel for target in targets}
+        else:
+            self.kernels = kernels
+
+        self.models = {}
+        self.fit_echem()
+
+    def fit_echem(self):
+
+        X = self.echem.loc[:,self.components].values
+
+        for target in self.targets:
+            kernel = self.kernels.get(target, self.default_kernel)
+            y = self.echem[target].values[:,None]
+            self.models[target] = model_property(X, y, dx=self.dx, ls=self.ls, optimize=True, kernel=kernel, use_prior=self.use_prior)
+
+    def likelihood_variance(self, target=None):
+        return self.models[target].likelihood.variance.value()
+
+    def __call__(self, composition, target=None, return_var=False, sample_posterior=False, n_samples=1, seed=None):
+        """ evaluate GP models on compositions """
+        model = self.models[target]
+
+        if sample_posterior:
+            if seed is not None:
+                tf.random.set_seed(seed)
+            mu = model.predict_f_samples(composition, n_samples)
+            return mu
+        else:
+            mu, var = model.predict_y(composition)
+            if return_var:
+                return mu, var
+            else:
+                return mu
