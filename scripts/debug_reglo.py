@@ -135,8 +135,26 @@ class Reglo():
 
         time.sleep(3)
 
-        print(f'stepping flow rates to {rates}')
+        # purge...
+        print('purging solution')
+        self.pump.continuousFlow(6.0, channel=Channel.SOURCE)
+        self.pump.continuousFlow(-6.0, channel=Channel.LOOP)
+        self.pump.continuousFlow(-6.0, channel=Channel.DUMP)
+
+        time.sleep(60)
+
+        # reverse the loop direction
+        self.pump.continuousFlow(6.0, channel=Channel.LOOP)
+
+        time.sleep(3)
+
+        # disable source and dump
+        self.pump.stop(channel=Channel.SOURCE)
+        self.pump.stop(-6.0, channel=Channel.DUMP)
+
+        # step to target flow rate
         self.pump.continuousFlow(target_rate, channel=Channel.LOOP)
+        self.pump.continuousFlow(-2.0, channel=Channel.NEEDLE)
 
         message = f"contact routine with {json.dumps(instructions)}"
         print(message)
