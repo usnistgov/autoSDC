@@ -125,10 +125,9 @@ class Reglo():
             shrink_time = time.time() - shrink_start
 
             print('equalizing differential pumping rate')
-            self.pump.stop(channel=Channel.SOURCE)
-            self.pump.stop(channel=Channel.DUMP)
-            self.pump.continuousFlow(fill_rate, channel=Channel.LOOP)
-
+            self.pump.continuousFlow(fill_rate, channel=Channel.SOURCE)
+            self.pump.continuousFlow(-fill_rate, channel=Channel.LOOP)
+            self.pump.continuousFlow(-fill_rate, channel=Channel.DUMP)
 
         # drop down to contact height
         instructions['fill_time'] = fill_time
