@@ -85,6 +85,7 @@ class Reglo():
 
                     time.sleep(cleanup_pulse_duration)
 
+                self.pump.stop(channel=Channel.SOURCE)
                 self.pump.stop(channel=Channel.LOOP)
                 self.pump.stop(channel=Channel.DUMP)
 
