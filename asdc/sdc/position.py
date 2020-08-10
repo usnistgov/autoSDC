@@ -49,6 +49,30 @@ def controller(ip=CONTROLLER_ADDRESS, speed=1e-4):
     finally:
         pos.controller.Disconnect()
 
+@contextmanager
+def sync_z_step(height=0.002, ip=CONTROLLER_ADDRESS, speed=1e-4):
+    """ sync controller context manager for z step
+    perform a vertical step with no horizontal movement
+    """
+
+    if height <= 0:
+        raise ValueError("z_step should be positive")
+
+    try:
+
+        with controller(ip=ip, speed=speed) as pos:
+            baseline_z = pos.z
+            pos.update_z(delta=height)
+
+        yield
+
+    finally:
+
+        with controller(ip=ip, speed=speed) as pos:
+            dz = baseline_z - pos.z
+            pos.update_z(delta=dz)
+
+
 @asynccontextmanager
 async def acontroller(loop=None, z_step=None, ip=CONTROLLER_ADDRESS, speed=1e-4):
     """ wrap position controller context manager
