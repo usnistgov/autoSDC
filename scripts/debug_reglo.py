@@ -42,6 +42,7 @@ class Reglo():
             flow_rate = 0.5,
             target_rate = 0.05,
             cleanup_duration = 0,
+            cleanup_pulse_duration = 0,
             stage_speed = 0.001,
     ):
         """ slack bot command for prototyping droplet contact routine
@@ -72,9 +73,21 @@ class Reglo():
         with sdc.position.sync_z_step(height=wetting_height, speed=stage_speed):
 
             if cleanup_duration > 0:
+                # TODO: turn on the needle
+                # make an option to pulse loop and dump simultaneously, same rate opposite directions?
                 print('cleaning up...')
-                self.pump.stop(channel=Channel.LOOP)
                 self.pump.continuousFlow(-10.0, channel=Channel.NEEDLE)
+
+                if cleanup_pulse_duration > 0:
+                    pulse_flowrate = -1.0
+                    self.pump.continuousFlow(pulse_flowrate, channel=Channel.LOOP)
+                    self.pump.continuousFlow(pulse_flowrate, channel=Channel.DUMP)
+
+                    time.sleep(cleanup_pulse_duration)
+
+                self.pump.stop(channel=Channel.LOOP)
+                self.pump.stop(channel=Channel.DUMP)
+
                 time.sleep(cleanup_duration)
 
             height_difference = prep_height - wetting_height
@@ -83,8 +96,10 @@ class Reglo():
 
                 # counterpump slower to fill the droplet
                 print('filling droplet')
-                self.pump.continuousFlow(fill_rate, channel=Channel.LOOP)
-                self.pump.continuousFlow(fill_rate*fill_counter_ratio, channel=Channel.NEEDLE)
+                counter_flowrate = fill_rate * fill_counter_ratio
+                self.pump.continuousFlow(fill_rate, channel=Channel.SOURCE)
+                self.pump.continuousFlow(-counter_flowrate, channel=Channel.LOOP)
+                self.pump.continuousFlow(-counter_flowrate, channel=Channel.DUMP)
 
                 fill_start = time.time()
                 if fill_time is None:
@@ -96,7 +111,10 @@ class Reglo():
             # drop down to wetting height
             # counterpump faster to shrink the droplet
             print('shrinking droplet')
-            self.pump.continuousFlow(fill_rate*shrink_counter_ratio, channel=Channel.NEEDLE)
+            shrink_flowrate = fill_rate * shrink_counter_ratio
+            self.pump.continuousFlow(-shrink_flowrate, channel=Channel.LOOP)
+            self.pump.continuousFlow(-shrink_flowrate, channel=Channel.DUMP)
+
 
             shrink_start = time.time()
             if shrink_time is None:
@@ -106,7 +124,9 @@ class Reglo():
             shrink_time = time.time() - shrink_start
 
             print('equalizing differential pumping rate')
-            self.pump.continuousFlow(fill_rate, channel=Channel.NEEDLE)
+            self.pump.stop(channel=Channel.SOURCE)
+            self.pump.stop(channel=Channel.DUMP)
+            self.pump.continuousFlow(fill_rate, channel=Channel.LOOP)
 
 
         # drop down to contact height
@@ -117,7 +137,6 @@ class Reglo():
 
         print(f'stepping flow rates to {rates}')
         self.pump.continuousFlow(target_rate, channel=Channel.LOOP)
-        self.pump.continuousFlow(0.95 * target_rate, channel=Channel.NEEDLE)
 
         message = f"contact routine with {json.dumps(instructions)}"
         print(message)
