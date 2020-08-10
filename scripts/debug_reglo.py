@@ -41,7 +41,7 @@ class Reglo():
             shrink_time = None,
             flow_rate = 0.5,
             target_rate = 0.05,
-            cleanup_duration = 0,
+            cleanup_duration = 3,
             cleanup_pulse_duration = 0,
             stage_speed = 0.001,
     ):
