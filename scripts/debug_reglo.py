@@ -42,7 +42,7 @@ class Reglo():
             fill_rate = 1.0,
             fill_counter_ratio=0.75,
             fill_time = None,
-            shrink_ratio = 1.1,
+            shrink_counter_ratio = 1.1,
             shrink_time = None,
             flow_rate = 0.5,
             target_rate = 0.05,
