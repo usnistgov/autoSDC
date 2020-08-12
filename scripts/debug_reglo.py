@@ -161,7 +161,7 @@ class Reglo():
         self.pump.continuousFlow(target_rate, channel=Channel.LOOP.value)
         self.pump.continuousFlow(-2.0, channel=Channel.NEEDLE.value)
 
-        message = f"contact routine with {json.dumps(locals())}"
-        print(message)
-
+        # message = f"contact routine with {json.dumps(locals())}"
+        # print(message)
+        print(locals)
         return
