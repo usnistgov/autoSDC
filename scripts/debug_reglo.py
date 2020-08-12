@@ -1,4 +1,5 @@
 import sys
+import time
 import asyncio
 import numpy as np
 
@@ -29,6 +30,10 @@ class Reglo():
 
         for channel in range(1,5):
             self.pump.setTubingInnerDiameter(self.tubing_inner_diameter, channel=channel)
+
+
+    def stop(self):
+        self.pump.stop()
 
     def droplet(
             self,
