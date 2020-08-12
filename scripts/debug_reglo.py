@@ -61,7 +61,7 @@ class Reglo():
         | `fill_rate`      | float | pumping rate during droplet growth                  | 1 mL/min |
         | `fill_counter_ratio` | float | counterpumping ratio during droplet growth          |    0.75 |
         | `fill_time`      | float | droplet growth duration (s)                         |    None |
-        | `shrink_counter_ratio`    | float | counterpumping ratio during droplet wetting phase   |     1.1 |
+        | `shrink_counter_ratio` | float | counterpumping ratio during droplet wetting phase   |     1.1 |
         | `shrink_time`    | float | droplet wetting duration (s)                        |    None |
         | `flow_rate`      | float | total flow rate during droplet formation (mL/min)   |     0.5 |
         | `target_rate`    | float | final flow rate after droplet formation  (mL/min)   |    0.05 |
@@ -134,8 +134,8 @@ class Reglo():
             self.pump.continuousFlow(-fill_rate, channel=Channel.DUMP.value)
 
         # drop down to contact height
-        instructions['fill_time'] = fill_time
-        instructions['shrink_time'] = shrink_time
+        # instructions['fill_time'] = fill_time
+        # instructions['shrink_time'] = shrink_time
 
         time.sleep(3)
 
@@ -160,7 +160,7 @@ class Reglo():
         self.pump.continuousFlow(target_rate, channel=Channel.LOOP.value)
         self.pump.continuousFlow(-2.0, channel=Channel.NEEDLE.value)
 
-        message = f"contact routine with {json.dumps(instructions)}"
+        message = f"contact routine with {json.dumps(locals())}"
         print(message)
 
         return
