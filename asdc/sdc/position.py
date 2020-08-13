@@ -63,15 +63,15 @@ def sync_z_step(ip=CONTROLLER_ADDRESS, height=None, speed=1e-4):
         baseline_z = pos.z
 
         try:
-            if z_step is not None:
-                if z_step <= 0:
+            if height is not None:
+                if height <= 0:
                     raise ValueError("z_step should be positive")
-                pos.update_z(delta=z_step)
+                pos.update_z(delta=height)
 
             yield pos
 
         finally:
-            if z_step is not None:
+            if height is not None:
                 dz = baseline_z - pos.z
                 pos.update_z(delta=dz)
 
