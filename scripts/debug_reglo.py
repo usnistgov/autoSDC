@@ -24,17 +24,18 @@ class Channel(Enum):
 
 # 12 mL/min
 
-class Reglo():
+class Reglo(regloicclib.Pump):
+    """ thin wrapper around the pump interface from regloicc """
     def __init__(self, address=None, tubing_inner_diameter=1.52):
-        self.pump = regloicclib.Pump(address=address)
+
+        super().__init__()
         self.tubing_inner_diameter = tubing_inner_diameter
 
         for channel in range(1,5):
-            self.pump.setTubingInnerDiameter(self.tubing_inner_diameter, channel=channel)
+            self.setTubingInnerDiameter(self.tubing_inner_diameter, channel=channel)
 
-
-    def stop(self):
-        self.pump.stop()
+    # def stop(self):
+    #     self.pump.stop()
 
     def droplet(
             self,
@@ -82,18 +83,18 @@ class Reglo():
                 # TODO: turn on the needle
                 # make an option to pulse loop and dump simultaneously, same rate opposite directions?
                 print('cleaning up...')
-                self.pump.continuousFlow(-10.0, channel=Channel.NEEDLE.value)
-                self.pump.stop(channel=Channel.SOURCE.value)
-                self.pump.stop(channel=Channel.LOOP.value)
+                self.continuousFlow(-10.0, channel=Channel.NEEDLE.value)
+                self.stop(channel=Channel.SOURCE.value)
+                self.stop(channel=Channel.LOOP.value)
 
                 if cleanup_pulse_duration > 0:
                     pulse_flowrate = -1.0
-                    # self.pump.continuousFlow(pulse_flowrate, channel=Channel.LOOP.value)
-                    self.pump.continuousFlow(pulse_flowrate, channel=Channel.DUMP.value)
+                    # self.continuousFlow(pulse_flowrate, channel=Channel.LOOP.value)
+                    self.continuousFlow(pulse_flowrate, channel=Channel.DUMP.value)
 
                     time.sleep(cleanup_pulse_duration)
 
-                self.pump.stop(channel=Channel.DUMP.value)
+                self.stop(channel=Channel.DUMP.value)
 
                 time.sleep(cleanup_duration)
 
@@ -104,9 +105,9 @@ class Reglo():
                 # counterpump slower to fill the droplet
                 print('filling droplet')
                 counter_flowrate = fill_rate * fill_counter_ratio
-                self.pump.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
-                self.pump.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
-                self.pump.continuousFlow(-counter_flowrate, channel=Channel.DUMP.value)
+                self.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
+                self.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
+                self.continuousFlow(-counter_flowrate, channel=Channel.DUMP.value)
 
                 fill_start = time.time()
                 if fill_time is None:
@@ -119,7 +120,7 @@ class Reglo():
             # counterpump faster to shrink the droplet
             print('shrinking droplet')
             shrink_flowrate = fill_rate * shrink_counter_ratio
-            self.pump.continuousFlow(-shrink_flowrate, channel=Channel.DUMP.value)
+            self.continuousFlow(-shrink_flowrate, channel=Channel.DUMP.value)
 
 
             shrink_start = time.time()
@@ -130,9 +131,9 @@ class Reglo():
             shrink_time = time.time() - shrink_start
 
             print('equalizing differential pumping rate')
-            self.pump.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
-            self.pump.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
-            self.pump.continuousFlow(-fill_rate, channel=Channel.DUMP.value)
+            self.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
+            self.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
+            self.continuousFlow(-fill_rate, channel=Channel.DUMP.value)
 
         # drop down to contact height
         # instructions['fill_time'] = fill_time
@@ -142,24 +143,24 @@ class Reglo():
 
         # purge...
         print('purging solution')
-        self.pump.continuousFlow(6.0, channel=Channel.SOURCE.value)
-        self.pump.continuousFlow(-6.0, channel=Channel.LOOP.value)
-        self.pump.continuousFlow(-6.0, channel=Channel.DUMP.value)
+        self.continuousFlow(6.0, channel=Channel.SOURCE.value)
+        self.continuousFlow(-6.0, channel=Channel.LOOP.value)
+        self.continuousFlow(-6.0, channel=Channel.DUMP.value)
 
         time.sleep(60)
 
         # reverse the loop direction
-        self.pump.continuousFlow(6.0, channel=Channel.LOOP.value)
+        self.continuousFlow(6.0, channel=Channel.LOOP.value)
 
         time.sleep(3)
 
         # disable source and dump
-        self.pump.stop(channel=Channel.SOURCE.value)
-        self.pump.stop(channel=Channel.DUMP.value)
+        self.stop(channel=Channel.SOURCE.value)
+        self.stop(channel=Channel.DUMP.value)
 
         # step to target flow rate
-        self.pump.continuousFlow(target_rate, channel=Channel.LOOP.value)
-        self.pump.continuousFlow(-2.0, channel=Channel.NEEDLE.value)
+        self.continuousFlow(target_rate, channel=Channel.LOOP.value)
+        self.continuousFlow(-2.0, channel=Channel.NEEDLE.value)
 
         # message = f"contact routine with {json.dumps(locals())}"
         # print(message)
