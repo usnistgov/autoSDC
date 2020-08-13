@@ -1246,6 +1246,30 @@ class SDC():
         """ shut off the syringe and counterbalance pumps """
         self.pump_array.stop_all(counterbalance='off')
 
+    def batch_execute_experiments(self, instructions_file):
+
+        with open(instructions_file), 'r') as f:
+            experiments = json.load(f)
+
+        if self.resume:
+            experiment_idx = self.db['experiment'].count()
+            experiments = experiments[experiment_idx:]
+
+        current_pH = None
+        for experiment in experiments:
+
+            pH = experiment[1].get('pH')
+
+            if pH != current_pH:
+                message = f'Reminder: make sure to set the pH to {pH}'
+                web_client.chat_postMessage(channel='#asdc', text=message, icon_emoji=':sciencebear:')
+                print(message)
+                input('press <ENTER> to continue')
+
+            self.run_experiment(json.dumps(experiment))
+
+        return
+
 def sdc_client(config_file, resume, verbose):
     """ set up scanning droplet cell client loading from CONFIG_FILE """
 
