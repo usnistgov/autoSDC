@@ -662,7 +662,7 @@ class SDC():
 
         time.sleep(3)
 
-        print(f'stepping flow rates to {rates}')
+        print(f'stepping flow rates to {target_rate}')
         self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
         self.reglo.stop([Channel.SOURCE, Channel.DUMP])
 
