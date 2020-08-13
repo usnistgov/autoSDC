@@ -188,6 +188,7 @@ class SDC():
             self.reglo = sdc.reglo.Reglo(address=reglo_port)
         except:
             print('could not connect to the Reglo peristaltic pump')
+            raise
 
         try:
             self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
