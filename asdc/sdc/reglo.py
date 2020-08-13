@@ -47,10 +47,16 @@ class Reglo(regloicclib.Pump):
 
         return
 
+
+    def continuousFlow(self, rate, channel=None):
+        if type(channel) is Channel:
+            channel = channel.value
+        super().continuousFlow(rate, channel)
+
     def stop(self, channel=None):
 
-        if channel is None:
-            super().stop()
+        if channel is None or type(channel) is int:
+            super().stop(channel=channel)
 
         elif type(channel) is Channel:
             super().stop(channel=channel.value)
