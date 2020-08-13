@@ -179,8 +179,13 @@ class SDC():
             print('could not connect to pump array')
             self.pump_array = None
 
-        self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
-        self.light = sdc.microcontroller.Light(port=adafruit_port)
+        try:
+            self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
+            self.light = sdc.microcontroller.Light(port=adafruit_port)
+        except:
+            print('could not connect to the adafruit board')
+            self.reflectometer = None
+            self.light = None
 
     def get_last_known_position(self, x_versa, y_versa, resume=False):
         """ set up initial cell reference relative to a previous database entry if possible
