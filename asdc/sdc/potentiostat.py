@@ -528,6 +528,68 @@ indicates E, Power Amp or Thermal Overload has occurred.
         status = self.instrument.Experiment.AddCorrosionOpenCircuit(paramstring)
         return status, parameters
 
+    def tafel(self,
+              initial_potential=-0.1,
+              versus_initial='VS OC',
+              final_potential=0.1,
+              versus_final='VS OC',
+              step_height=0.01,
+              step_time=0.5,
+              limit_1_type=None,
+              limit_1_direction='<',
+              limit_1_value=0,
+              limit_2_type=None,
+              limit_2_direction='<',
+              limit_2_value=0,
+              current_range='AUTO',
+              acquisition_mode='AUTO',
+              electrometer='AUTO',
+              e_filter='AUTO',
+              i_filter='AUTO',
+              leave_cell_on='NO',
+              cell_to_use='INTERNAL',
+              enable_ir_compensation='DISABLED',
+              bandwidth='AUTO',
+              low_current_interface_bandwidth='AUTO'):
+        """ tafel
+
+        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        final_potential [Final Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
+        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
+        step_height (V)
+        step_time (s)
+        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_1_direction [Limit 1 Direction] {< or >}
+        limit_1_value [Limit 1 Value] {User value}
+        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
+        limit_2_direction [Limit 2 Direction] {< or >}
+        limit_2_value [Limit 2 Value] {User value}
+        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
+        acquisition_mode
+        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
+        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
+        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
+        leave_cell_on [Leave Cell On] {YES or NO}
+        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
+        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
+        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
+        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
+        """
+        parameters = locals().copy()
+
+        # concatenate argument values in function signature order
+        args = inspect.getfullargspec(self.tafel).args
+
+        # remove reference to controller object
+        args = args[1:]
+        del parameters['self']
+
+        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddTafel(paramstring)
+        return status, parameters
+
+
     # NOTE: use enum for options?
     def cyclic_voltammetry(self,
             initial_potential=0.0,
