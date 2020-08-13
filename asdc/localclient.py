@@ -101,6 +101,7 @@ class SDC():
         self.initial_combi_position = pd.Series(config['initial_combi_position'])
         self.step_height = config.get('step_height', 0.0)
         self.cleanup_pause = config.get('cleanup_pause', 0)
+        self.cleanup_pulse_duration = config.get('cleanup_pulse_duration', 0)
         self.cell = config.get('cell', 'INTERNAL')
         self.speed = config.get('speed', 1e-3)
         self.data_dir = config.get('data_dir', os.getcwd())
@@ -128,9 +129,10 @@ class SDC():
         # TODO: document me
         self.wetting_height = max(0, config.get('wetting_height', 0.0011))
         self.droplet_height = max(0, config.get('droplet_height', 0.004))
-        self.fill_ratio = config.get('fill_rate', 0.7)
+        self.fill_rate = config.get('fill_rate', 1.0)
+        self.fill_counter_ratio = config.get('fill_counter_ratio', 0.7)
         self.fill_time = config.get('fill_time', 19)
-        self.shrink_ratio = config.get('shrink_rate', 1.3)
+        self.shrink_counter_ratio = config.get('shrink_counter_ratio', 1.3)
         self.shrink_time = config.get('shrink_time', 2)
 
         self.test = config.get('test', False)
@@ -591,7 +593,77 @@ class SDC():
         print(locals)
         return
 
-    def establish_droplet(self, x_wafer: float, y_wafer: float):
+    def establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict = {}):
+
+        target_rate = flow_instructions.get('flow_rate', 1.0)
+
+        # droplet workflow -- start at zero
+        print('starting droplet workflow')
+        with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
+
+            if self.cleanup_pause > 0:
+                print('cleaning up...')
+                self.reglo.continuousFlow(-10.0, channel=Channel.NEEDLE)
+                self.reglo.stop([Channel.SOURCE, Channel.LOOP])
+
+                if self.cleanup_pulse_duration > 0:
+                    pulse_flowrate = -1.0
+                    # self.reglo.continuousFlow(pulse_flowrate, channel=Channel.LOOP)
+                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DUMP)
+                    time.sleep(self.cleanup_pulse_duration)
+
+                self.reglo.stop(channel=Channel.DUMP)
+
+                time.sleep(self.cleanup_pase)
+
+            height_difference = self.droplet_height - self.wetting_height
+            height_difference = max(0, height_difference)
+            with sdc.position.sync_z_step(height=height_difference, speed=self.speed) as stage:
+
+                self.move_stage(x_wafer, y_wafer, self.cell_frame)
+
+                # counterpump slower to fill the droplet
+                print('filling droplet')
+                self.reglo.set_rates(
+                    {
+                        Channel.SOURCE: self.fill_rate,
+                        Channel.LOOP: -self.fill_rate,
+                        Channel.DUMP: -self.fill_counter_ratio * self.fill_rate
+                    }
+                )
+                time.sleep(self.fill_time)
+
+            # drop down to wetting height
+            # counterpump faster to shrink the droplet
+            print('differentially pumping to shrink the droplet')
+            shrink_flowrate = self.fill_rate * self.shrink_counter_ratio
+            self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DUMP)
+            time.sleep(self.shrink_time)
+
+            print('equalizing differential pumping rate')
+            self.reglo.continuousFlow(-self.fill_rate, channel=Channel.DUMP)
+
+        # drop down to contact...
+        time.sleep(3)
+
+        # purge...
+        print('purging solution')
+        purge_rate = 6.0
+        self.reglo.set_rates(
+            {Channel.SOURCE: purge_rate, Channel.LOOP: -purge_rate, Channel.DUMP: -purge_rate}
+        )
+
+        time.sleep(60)
+
+        # reverse the loop direction
+        self.reglo.continuousFlow(6.0, channel=Channel.LOOP)
+
+        time.sleep(3)
+
+        print(f'stepping flow rates to {rates}')
+        self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
+        self.reglo.stop([Channel.SOURCE, Channel.DUMP])
+
         return
 
     def syringe_establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict):
