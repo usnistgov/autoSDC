@@ -183,6 +183,11 @@ class SDC():
         self.light = sdc.microcontroller.Light(port=adafruit_port)
 
     def get_last_known_position(self, x_versa, y_versa, resume=False):
+        """ set up initial cell reference relative to a previous database entry if possible
+
+        If not, or if `resume` is False, set initial cell reference from config file. It is
+        the operator's responsibility to ensure this initial position matches the physical configuration
+        """
 
         # load last known combi position and update internal state accordingly
         refs = pd.DataFrame(self.experiment_table.all())
@@ -278,6 +283,7 @@ class SDC():
         self.stage_frame = stage
 
     def sync_coordinate_systems(self, orientation=None, register_initial=False, resume=False):
+        """ set up stage reference frames relative to the cell coordinate system """
 
         with sdc.position.controller() as pos:
             # map m -> mm
@@ -1026,7 +1032,7 @@ class SDC():
         self.pump_array.stop_all(counterbalance='off')
 
 def sdc_client(config_file, resume, verbose):
-
+    """ set up scanning droplet cell client loading from CONFIG_FILE """
 
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
