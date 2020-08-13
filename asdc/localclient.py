@@ -623,7 +623,7 @@ class SDC():
 
         #     self.pump_array.counterpump.stop()
 
-    async def run_characterization(self, args: str):
+    def run_characterization(self, args: str):
         """ perform cell cleanup and characterization
 
         the header instruction should contain a list of primary keys
@@ -756,7 +756,7 @@ class SDC():
             # move back to the cell frame for the second spot
             self.move_stage(x_combi, y_combi, self.cell_frame)
 
-    async def droplet(self, args: str):
+    def droplet(self, args: str):
         """ slack bot command for prototyping droplet contact routine
 
         #### json arguments
