@@ -29,9 +29,7 @@ class Reglo(regloicclib.Pump):
     TODO: rewrite the serial interface...
     """
     def __init__(self, address=None, tubing_inner_diameter=1.52):
-        super().__init__()
-
-        self.pump = regloicclib.Pump(address=address)
+        super().__init__(address=address)
         self.tubing_inner_diameter = tubing_inner_diameter
 
         for channel in range(1,5):
