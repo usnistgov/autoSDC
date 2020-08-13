@@ -1257,6 +1257,7 @@ class SDC():
 
         current_pH = None
         for experiment in experiments:
+            print(json.dumps(experiment))
 
             pH = experiment[1].get('pH')
 
