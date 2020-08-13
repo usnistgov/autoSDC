@@ -139,6 +139,57 @@ def setup_lpr(pstat, data, cell='INTERNAL'):
 
     return status, params
 
+def setup_tafel(pstat, data, cell='INTERNAL'):
+    """ set up Tafel
+
+    duration (float:second)
+
+    {
+        "op": "tafel",
+        "initial_potential": volts,
+        "final_potential": volts,
+        "step_height": volts,
+        "step_time": Time
+    }
+    """
+    time_per_point = 1
+    duration = data.get('duration', 10)
+
+    # run an open-circuit followed by a CV experiment
+    status, params = pstat.open_circuit(
+        time_per_point=time_per_point,
+        duration=duration,
+        current_range=data.get('current_range', 'AUTO'),
+        e_filter='1HZ',
+        i_filter='1HZ',
+        cell_to_use=cell
+    )
+
+    return status, params
+
+
+def setup_open_circuit(pstat, data, cell='INTERNAL'):
+    """ set up open circuit
+
+    duration (float:second)
+
+    {"op": "open_circuit", "duration": Time}
+    """
+    time_per_point = 1
+    duration = data.get('duration', 10)
+
+    # run an open-circuit followed by a CV experiment
+    status, params = pstat.open_circuit(
+        time_per_point=time_per_point,
+        duration=duration,
+        current_range=data.get('current_range', 'AUTO'),
+        e_filter='1HZ',
+        i_filter='1HZ',
+        cell_to_use=cell
+    )
+
+    return status, params
+
 def setup_corrosion_oc(pstat, data, cell='INTERNAL'):
     """ set up corrosion open circuit
 
@@ -198,11 +249,13 @@ def setup_cv(pstat, data, cell='INTERNAL'):
     return status, params
 
 potentiostat_ops = {
-    'potentiostatic': setup_potentiostatic,
+    'cv': setup_cv,
     'lsv': setup_lsv,
     'lpr': setup_lpr,
-    'cv': setup_cv,
-    'corrosion_oc': setup_corrosion_oc
+    'tafel': setup_tafel,
+    'corrosion_oc': setup_corrosion_oc,
+    'open_circuit': setup_open_circuit,
+    'potentiostatic': setup_potentiostatic
 }
 
 def run(instructions, cell='INTERNAL', verbose=False):
