@@ -391,7 +391,7 @@ class SDC():
         def _execute_update(stage, delta, confirm, verbose):
 
             if confirm:
-                input('press enter to allow lateral cell motion...', loop=loop)
+                input('press enter to allow lateral cell motion...')
 
             # move horizontally
             stage.update(delta=delta)
@@ -1044,7 +1044,7 @@ class SDC():
                 self.pump_array.set_rates(rates, counterpump_ratio=fill_ratio, start=True, fast=True)
                 fill_start = time.time()
                 if fill_time is None:
-                    input('*filling droplet*: press enter to continue...', loop=self.loop)
+                    input('*filling droplet*: press enter to continue...')
                 else:
                     time.sleep(fill_time)
                 fill_time = time.time() - fill_start
@@ -1055,7 +1055,7 @@ class SDC():
             self.pump_array.set_rates(rates, counterpump_ratio=shrink_ratio, fast=True)
             shrink_start = time.time()
             if shrink_time is None:
-                input('*shrinking droplet*: press enter to continue...', loop=self.loop)
+                input('*shrinking droplet*: press enter to continue...')
             else:
                 time.sleep(shrink_time)
             shrink_time = time.time() - shrink_start
