@@ -510,18 +510,16 @@ class SDC():
                 # TODO: turn on the needle
                 # make an option to pulse loop and dump simultaneously, same rate opposite directions?
                 print('cleaning up...')
-                self.reglo.continuousFlow(-10.0, channel=Channel.NEEDLE.value)
-                self.reglo.stop(channel=Channel.SOURCE.value)
-                self.reglo.stop(channel=Channel.LOOP.value)
+                self.reglo.continuousFlow(-10.0, channel=Channel.NEEDLE)
+                self.reglo.stop([Channel.SOURCE, Channel.LOOP])
 
                 if cleanup_pulse_duration > 0:
                     pulse_flowrate = -1.0
-                    # self.reglo.continuousFlow(pulse_flowrate, channel=Channel.LOOP.value)
-                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DUMP.value)
-
+                    # self.reglo.continuousFlow(pulse_flowrate, channel=Channel.LOOP)
+                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DUMP)
                     time.sleep(cleanup_pulse_duration)
 
-                self.reglo.stop(channel=Channel.DUMP.value)
+                self.reglo.stop(channel=Channel.DUMP)
 
                 time.sleep(cleanup_duration)
 
@@ -531,10 +529,13 @@ class SDC():
 
                 # counterpump slower to fill the droplet
                 print('filling droplet')
-                counter_flowrate = fill_rate * fill_counter_ratio
-                self.reglo.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
-                self.reglo.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
-                self.reglo.continuousFlow(-counter_flowrate, channel=Channel.DUMP.value)
+                self.reglo.set_rates(
+                    {
+                        Channel.SOURCE: fill_rate,
+                        Channel.LOOP: -fill_rate,
+                        Channel.DUMP: -fill_counter_ratio * fill_rate
+                    }
+                )
 
                 fill_start = time.time()
                 if fill_time is None:
@@ -547,7 +548,7 @@ class SDC():
             # counterpump faster to shrink the droplet
             print('shrinking droplet')
             shrink_flowrate = fill_rate * shrink_counter_ratio
-            self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DUMP.value)
+            self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DUMP)
 
             shrink_start = time.time()
             if shrink_time is None:
@@ -557,9 +558,7 @@ class SDC():
             shrink_time = time.time() - shrink_start
 
             print('equalizing differential pumping rate')
-            self.reglo.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
-            self.reglo.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
-            self.reglo.continuousFlow(-fill_rate, channel=Channel.DUMP.value)
+            self.reglo.continuousFlow(-fill_rate, channel=Channel.DUMP)
 
         # drop down to contact height
         # instructions['fill_time'] = fill_time
@@ -569,24 +568,23 @@ class SDC():
 
         # purge...
         print('purging solution')
-        self.reglo.continuousFlow(6.0, channel=Channel.SOURCE.value)
-        self.reglo.continuousFlow(-6.0, channel=Channel.LOOP.value)
-        self.reglo.continuousFlow(-6.0, channel=Channel.DUMP.value)
+        purge_rate = 6.0
+        self.reglo.set_rates(
+            {Channel.SOURCE: purge_rate, Channel.LOOP: -purge_rate, Channel.DUMP: -purge_rate}
+        )
 
         time.sleep(60)
 
         # reverse the loop direction
-        self.reglo.continuousFlow(6.0, channel=Channel.LOOP.value)
+        self.reglo.continuousFlow(6.0, channel=Channel.LOOP)
 
         time.sleep(3)
 
         # disable source and dump
-        self.reglo.stop(channel=Channel.SOURCE.value)
-        self.reglo.stop(channel=Channel.DUMP.value)
+        self.reglo.stop([Channel.SOURCE, Channel.DUMP])
 
         # step to target flow rate
-        self.reglo.continuousFlow(target_rate, channel=Channel.LOOP.value)
-        self.reglo.continuousFlow(-2.0, channel=Channel.NEEDLE.value)
+        self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
 
         # message = f"contact routine with {json.dumps(locals())}"
         # print(message)
