@@ -570,12 +570,12 @@ class SDC():
 
         # purge...
         print('purging solution')
-        purge_rate = 6.0
+        purge_rate = 11.0
         self.reglo.set_rates(
             {Channel.SOURCE: purge_rate, Channel.LOOP: -purge_rate, Channel.DUMP: -purge_rate}
         )
 
-        time.sleep(60)
+        time.sleep(30)
 
         # reverse the loop direction
         self.reglo.continuousFlow(6.0, channel=Channel.LOOP)
@@ -596,6 +596,7 @@ class SDC():
     def establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict = {}):
 
         target_rate = flow_instructions.get('flow_rate', 1.0)
+        purge_time = flow_intsructions.get('purge_time', 30)
 
         # droplet workflow -- start at zero
         print('starting droplet workflow')
@@ -648,12 +649,12 @@ class SDC():
 
         # purge...
         print('purging solution')
-        purge_rate = 6.0
+        purge_rate = 11.0
         self.reglo.set_rates(
             {Channel.SOURCE: purge_rate, Channel.LOOP: -purge_rate, Channel.DUMP: -purge_rate}
         )
 
-        time.sleep(60)
+        time.sleep(purge_time)
 
         # reverse the loop direction
         self.reglo.continuousFlow(6.0, channel=Channel.LOOP)
