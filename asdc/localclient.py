@@ -6,7 +6,7 @@ import argparse
 import asyncio
 import dataset
 import functools
-import websockets
+# import websockets
 import numpy as np
 import pandas as pd
 from ruamel import yaml
@@ -390,7 +390,7 @@ class SDC():
         def _execute_update(stage, delta, confirm, verbose):
 
             if confirm:
-                await input('press enter to allow lateral cell motion...', loop=loop)
+                input('press enter to allow lateral cell motion...', loop=loop)
 
             # move horizontally
             stage.update(delta=delta)
@@ -775,7 +775,6 @@ class SDC():
             if self.test_cell:
                 print("we would run the experiment here...")
                 time.sleep(10)
-                await self.loop.run_in_executor(None, time.sleep, 10)
 
             else:
                 results, metadata = sdc.experiment.run(instructions, cell=self.cell, verbose=self.verbose)
@@ -1249,7 +1248,7 @@ class SDC():
 
     def batch_execute_experiments(self, instructions_file):
 
-        with open(instructions_file), 'r') as f:
+        with open(instructions_file, 'r') as f:
             experiments = json.load(f)
 
         if self.resume:
