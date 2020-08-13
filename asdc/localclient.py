@@ -616,7 +616,7 @@ class SDC():
 
                 self.reglo.stop(channel=Channel.DUMP)
 
-                time.sleep(self.cleanup_pase)
+                time.sleep(self.cleanup_pause)
 
             height_difference = self.droplet_height - self.wetting_height
             height_difference = max(0, height_difference)
