@@ -49,28 +49,54 @@ def controller(ip=CONTROLLER_ADDRESS, speed=1e-4):
     finally:
         pos.controller.Disconnect()
 
+
 @contextmanager
-def sync_z_step(height=0.002, ip=CONTROLLER_ADDRESS, speed=1e-4):
-    """ sync controller context manager for z step
-    perform a vertical step with no horizontal movement
+def sync_z_step(ip=CONTROLLER_ADDRESS, height=None, speed=1e-4):
+    """ wrap position controller context manager
+
+    perform vertical steps before lateral cell motion with the ctx manager
+    so that the cell drops back down to baseline z level if the `move` task is completed
     """
 
-    if height <= 0:
-        raise ValueError("z_step should be positive")
+    with controller(ip=ip, speed=speed) as pos:
 
-    try:
+        baseline_z = pos.z
 
-        with controller(ip=ip, speed=speed) as pos:
-            baseline_z = pos.z
-            pos.update_z(delta=height)
+        try:
+            if z_step is not None:
+                if z_step <= 0:
+                    raise ValueError("z_step should be positive")
+                pos.update_z(delta=z_step)
 
-        yield
+            yield pos
 
-    finally:
+        finally:
+            if z_step is not None:
+                dz = baseline_z - pos.z
+                pos.update_z(delta=dz)
 
-        with controller(ip=ip, speed=speed) as pos:
-            dz = baseline_z - pos.z
-            pos.update_z(delta=dz)
+# @contextmanager
+# def sync_z_step(height=0.002, ip=CONTROLLER_ADDRESS, speed=1e-4):
+#     """ sync controller context manager for z step
+#     perform a vertical step with no horizontal movement
+#     """
+
+#     if height <= 0:
+#         raise ValueError("z_step should be positive")
+
+#     try:
+
+#         with controller(ip=ip, speed=speed) as pos:
+#             baseline_z = pos.z
+#             pos.update_z(delta=height)
+
+#         yield
+
+#     finally:
+
+#         with controller(ip=ip, speed=speed) as pos:
+#             dz = baseline_z - pos.z
+#             pos.update_z(delta=dz)
 
 
 @asynccontextmanager
