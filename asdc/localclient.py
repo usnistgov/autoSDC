@@ -1313,4 +1313,4 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', action='store_true', help='include extra debugging output')
     args = parser.parse_args()
 
-    sdc = sdc_client(args.configfile, args.resume, args.verbose)
+    isdc = sdc_client(args.configfile, args.resume, args.verbose)
