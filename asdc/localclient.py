@@ -34,6 +34,8 @@ from asdc import _slack
 from asdc import slackbot
 from asdc import visualization
 
+from asdc.sdc.reglo import Channel
+
 asdc_channel = 'CDW5JFZAR'
 try:
     BOT_TOKEN = open('slacktoken.txt', 'r').read().strip()
@@ -167,6 +169,7 @@ class SDC():
         else:
             self.stage_frame = self.sync_coordinate_systems(orientation=self.frame_orientation, register_initial=False)
 
+        reglo_port = config.get('reglo_port', 'COM16')
         adafruit_port = config.get('adafruit_port', 'COM9')
         pump_array_port = config.get('pump_array_port', 'COM10')
         self.backfill_duration = config.get('backfill_duration', 15)
@@ -178,6 +181,11 @@ class SDC():
         except:
             print('could not connect to pump array')
             self.pump_array = None
+
+        try:
+            self.reglo = sdc.reglo.Reglo(address=reglo_port)
+        except:
+            print('could not connect to the Reglo peristaltic pump')
 
         try:
             self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
@@ -456,7 +464,139 @@ class SDC():
 
         return {key: val * nominal_rate/total_rate for key, val in rates.items()}
 
-    def establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict):
+    def debug_reglo_droplet(
+            self,
+            prep_height=0.004,
+            wetting_height=0.0011,
+            fill_rate = 1.0,
+            fill_counter_ratio=0.75,
+            fill_time = None,
+            shrink_counter_ratio = 1.1,
+            shrink_time = None,
+            flow_rate = 0.5,
+            target_rate = 0.05,
+            cleanup_duration = 3,
+            cleanup_pulse_duration = 0,
+            stage_speed = 0.001,
+    ):
+        """ slack bot command for prototyping droplet contact routine
+
+        #### json arguments
+
+        | Name             | Type  | Description                                         | Default |
+        |------------------|-------|-----------------------------------------------------|---------|
+        | `prep_height`    | float | z setting to grow the droplet                       |     4mm |
+        | `wetting_height` | float | z setting to wet the droplet to the surface         |   1.1mm |
+        | `fill_rate`      | float | pumping rate during droplet growth                  | 1 mL/min |
+        | `fill_counter_ratio` | float | counterpumping ratio during droplet growth          |    0.75 |
+        | `fill_time`      | float | droplet growth duration (s)                         |    None |
+        | `shrink_counter_ratio` | float | counterpumping ratio during droplet wetting phase   |     1.1 |
+        | `shrink_time`    | float | droplet wetting duration (s)                        |    None |
+        | `flow_rate`      | float | total flow rate during droplet formation (mL/min)   |     0.5 |
+        | `target_rate`    | float | final flow rate after droplet formation  (mL/min)   |    0.05 |
+        | `cleanup`        | float | duration of pre-droplet-formation cleanup siphoning |       0 |
+        | `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
+
+        """
+
+        # stage speed is specified in m/s
+        stage_speed = min(stage_speed, 1e-3)
+        stage_speed = max(stage_speed, 1e-5)
+
+        # start at zero
+        with sdc.position.sync_z_step(height=wetting_height, speed=stage_speed):
+
+            if cleanup_duration > 0:
+                # TODO: turn on the needle
+                # make an option to pulse loop and dump simultaneously, same rate opposite directions?
+                print('cleaning up...')
+                self.reglo.continuousFlow(-10.0, channel=Channel.NEEDLE.value)
+                self.reglo.stop(channel=Channel.SOURCE.value)
+                self.reglo.stop(channel=Channel.LOOP.value)
+
+                if cleanup_pulse_duration > 0:
+                    pulse_flowrate = -1.0
+                    # self.reglo.continuousFlow(pulse_flowrate, channel=Channel.LOOP.value)
+                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DUMP.value)
+
+                    time.sleep(cleanup_pulse_duration)
+
+                self.reglo.stop(channel=Channel.DUMP.value)
+
+                time.sleep(cleanup_duration)
+
+            height_difference = prep_height - wetting_height
+            height_difference = max(0, height_difference)
+            with sdc.position.sync_z_step(height=height_difference, speed=stage_speed):
+
+                # counterpump slower to fill the droplet
+                print('filling droplet')
+                counter_flowrate = fill_rate * fill_counter_ratio
+                self.reglo.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
+                self.reglo.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
+                self.reglo.continuousFlow(-counter_flowrate, channel=Channel.DUMP.value)
+
+                fill_start = time.time()
+                if fill_time is None:
+                    input('*filling droplet*: press enter to continue...')
+                else:
+                    time.sleep(fill_time)
+                fill_time = time.time() - fill_start
+
+            # drop down to wetting height
+            # counterpump faster to shrink the droplet
+            print('shrinking droplet')
+            shrink_flowrate = fill_rate * shrink_counter_ratio
+            self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DUMP.value)
+
+            shrink_start = time.time()
+            if shrink_time is None:
+                input('*shrinking droplet*: press enter to continue...')
+            else:
+                time.sleep(shrink_time)
+            shrink_time = time.time() - shrink_start
+
+            print('equalizing differential pumping rate')
+            self.reglo.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
+            self.reglo.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
+            self.reglo.continuousFlow(-fill_rate, channel=Channel.DUMP.value)
+
+        # drop down to contact height
+        # instructions['fill_time'] = fill_time
+        # instructions['shrink_time'] = shrink_time
+
+        time.sleep(3)
+
+        # purge...
+        print('purging solution')
+        self.reglo.continuousFlow(6.0, channel=Channel.SOURCE.value)
+        self.reglo.continuousFlow(-6.0, channel=Channel.LOOP.value)
+        self.reglo.continuousFlow(-6.0, channel=Channel.DUMP.value)
+
+        time.sleep(60)
+
+        # reverse the loop direction
+        self.reglo.continuousFlow(6.0, channel=Channel.LOOP.value)
+
+        time.sleep(3)
+
+        # disable source and dump
+        self.reglo.stop(channel=Channel.SOURCE.value)
+        self.reglo.stop(channel=Channel.DUMP.value)
+
+        # step to target flow rate
+        self.reglo.continuousFlow(target_rate, channel=Channel.LOOP.value)
+        self.reglo.continuousFlow(-2.0, channel=Channel.NEEDLE.value)
+
+        # message = f"contact routine with {json.dumps(locals())}"
+        # print(message)
+        print(locals)
+        return
+
+    def establish_droplet(self, x_wafer: float, y_wafer: float):
+        return
+
+    def syringe_establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict):
         """ align the stage with a sample point, form a droplet, and flush lines if needed """
 
         rates = flow_instructions.get('rates')
