@@ -88,9 +88,9 @@ class SDC():
             verbose: toggle additional debugging output
 
         """
-
         self.verbose = verbose
         self.logfile = logfile
+        self.configvalues = config
 
         with sdc.position.controller(ip='192.168.10.11') as pos:
             initial_versastat_position = pos.current_position()
