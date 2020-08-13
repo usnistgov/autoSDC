@@ -14,9 +14,10 @@ from asdc import sdc
 # loop (+)
 # source (+)
 
-from enum import Enum
+from enum import IntEnum
 
-class Channel(Enum):
+class Channel(IntEnum):
+    ALL = 0
     NEEDLE = 1
     DUMP = 2
     LOOP = 3
