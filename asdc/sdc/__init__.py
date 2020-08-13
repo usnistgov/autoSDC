@@ -12,6 +12,7 @@ import sys
 
 # if clr module (pythonnet) is not available, load the SDC shims
 from . import pump
+from . import reglo
 from . import experiment
 from . import microcontroller
 
