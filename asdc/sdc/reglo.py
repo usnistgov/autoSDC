@@ -25,7 +25,7 @@ class Channel(IntEnum):
 # 12 mL/min
 
 # order SOURCE, LOOP, DRAIN
-CHANNEL_UPDATE_DELAY
+CHANNEL_UPDATE_DELAY = 0.001
 
 class Reglo(regloicclib.Pump):
     """ thin wrapper around the pump interface from regloicc
