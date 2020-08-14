@@ -15,7 +15,7 @@ class Channel(IntEnum):
     loop (+)
     source (+)
     """
-
+    ALL = 0
     NEEDLE = 1
     DUMP = 2
     LOOP = 3
