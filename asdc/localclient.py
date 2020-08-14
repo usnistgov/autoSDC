@@ -185,7 +185,7 @@ class SDC():
             self.pump_array = None
 
         try:
-            self.reglo = sdc.reglo.Reglo(address=reglo_port)
+            self.reglo = sdc.reglo.Reglo(address=reglo_port, debug=True)
         except:
             print('could not connect to the Reglo peristaltic pump')
             raise
@@ -1270,6 +1270,10 @@ class SDC():
                 input('press <ENTER> to continue')
 
             self.run_experiment(json.dumps(experiment))
+
+        return
+
+    def purge_cell(self):
 
         return
 
