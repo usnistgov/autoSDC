@@ -799,14 +799,15 @@ class SDC():
                 # store SDC results in external csv file
                 results.to_csv(os.path.join(self.data_dir, datafile))
 
+                if self.notify:
+                    web_client.chat_postMessage(
+                        channel='#asdc', text=f"finished experiment {meta['id']}: {summary}", icon_emoji=':sciencebear:'
+                    )
+
                 if self.plot_current:
                     figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
                     visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
-
                     if self.notify:
-                        web_client.chat_postMessage(
-                            channel='#asdc', text=f"finished experiment {meta['id']}: {summary}", icon_emoji=':sciencebear:'
-                        )
                         _slack.post_image(web_client, figpath, title=f"current vs time {meta['id']}")
 
                 if self.plot_cv:
