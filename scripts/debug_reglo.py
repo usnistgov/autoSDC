@@ -27,9 +27,9 @@ class Channel(IntEnum):
 
 class Reglo(regloicclib.Pump):
     """ thin wrapper around the pump interface from regloicc """
-    def __init__(self, address=None, tubing_inner_diameter=1.52):
+    def __init__(self, address='COM16', tubing_inner_diameter=1.52):
 
-        super().__init__()
+        super().__init__(address=address)
         self.tubing_inner_diameter = tubing_inner_diameter
 
         for channel in range(1,5):
