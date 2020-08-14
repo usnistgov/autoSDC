@@ -1,5 +1,6 @@
 """ interface for the Reglo peristaltic pump """
 
+import time
 import typing
 from typing import Dict
 from enum import IntEnum
@@ -23,13 +24,16 @@ class Channel(IntEnum):
 
 # 12 mL/min
 
+# order SOURCE, LOOP, DRAIN
+CHANNEL_UPDATE_DELAY
+
 class Reglo(regloicclib.Pump):
     """ thin wrapper around the pump interface from regloicc
 
     TODO: rewrite the serial interface...
     """
-    def __init__(self, address=None, tubing_inner_diameter=1.52):
-        super().__init__(address=address)
+    def __init__(self, address=None, debug=False, tubing_inner_diameter=1.52):
+        super().__init__(address=address, debug=debug)
         self.tubing_inner_diameter = tubing_inner_diameter
 
         for channel in range(1,5):
@@ -42,6 +46,7 @@ class Reglo(regloicclib.Pump):
                 self.stop(channel=channel.value)
             else:
                 self.continuousFlow(rate, channel=channel.value)
+            time.sleep(CHANNEL_UPDATE_DELAY)
 
         return
 
