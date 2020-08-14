@@ -155,10 +155,12 @@ def setup_tafel(pstat, data, cell='INTERNAL'):
     time_per_point = 1
     duration = data.get('duration', 10)
 
-    # run an open-circuit followed by a CV experiment
-    status, params = pstat.open_circuit(
-        time_per_point=time_per_point,
-        duration=duration,
+    # run Tafel analysis
+    status, params = pstat.tafel(
+        initial_potential = data.get('initial_potential', -0.25),
+        final_potential = data.get('final_potential', 0.25),
+        step_height = data.get('step_height', 0.001),
+        step_time = data.get('step_time', 0.5),
         current_range=data.get('current_range', 'AUTO'),
         e_filter='1HZ',
         i_filter='1HZ',
@@ -178,7 +180,7 @@ def setup_open_circuit(pstat, data, cell='INTERNAL'):
     time_per_point = 1
     duration = data.get('duration', 10)
 
-    # run an open-circuit followed by a CV experiment
+    # hold at open circuit potential
     status, params = pstat.open_circuit(
         time_per_point=time_per_point,
         duration=duration,
@@ -200,7 +202,6 @@ def setup_corrosion_oc(pstat, data, cell='INTERNAL'):
     time_per_point = 1
     duration = data.get('duration', 10)
 
-    # run an open-circuit followed by a CV experiment
     status, params = pstat.corrosion_open_circuit(
         time_per_point=time_per_point,
         duration=duration,
