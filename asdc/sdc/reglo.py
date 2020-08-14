@@ -36,8 +36,15 @@ class Reglo(regloicclib.Pump):
         super().__init__(address=address, debug=debug)
         self.tubing_inner_diameter = tubing_inner_diameter
 
+        # TODO: this should maybe be a python property
+        # so that max flow rates can be automatically kept in sync
         for channel in range(1,5):
             self.setTubingInnerDiameter(self.tubing_inner_diameter, channel=channel)
+
+        self.maxrates = {}
+        for channel in self.channels:
+            self.maxrates[channel] = float(self.hw.query('%d?'%channel).split(' ')[0])
+            time.sleep(CHANNEL_UPDATE_DELAY)
 
     def set_rates(self, setpoints: Dict[Channel, float]):
 
@@ -51,9 +58,45 @@ class Reglo(regloicclib.Pump):
         return
 
     def continuousFlow(self, rate, channel=None):
+        """
+        Start continuous flow at rate (ml/min) on specified channel or
+        on all channels.
+        """
+
         if type(channel) is Channel:
             channel = channel.value
-        super().continuousFlow(rate, channel)
+
+        if channel is None or channel == 0:
+            channel = 0
+            # this enables fairly synchronous start
+            maxrate = min(self.maxrates.values())
+        else:
+            maxrate = self.maxrates[channel]
+
+        assert channel in self.channels or channel == 0
+
+        # flow rate mode
+        self.hw.write('%dM'%channel)
+        self.hw.write(f'{channel}M')
+
+        # set flow direction
+        if rate < 0:
+            self.hw.write(f'{channel}K')
+        else:
+            self.hw.write(f'{channel}J')
+
+        # set flow rate
+        if abs(rate) > maxrate:
+            rate = rate / abs(rate) * maxrate
+
+        flowrate = self._volume2(rate)
+        self.hw.query(f'{channel}f{flowrate}')
+
+        # maintain internal running status in python client
+        self.hw.setRunningStatus(True, channel)
+
+        # start pumps command
+        self.hw.write(f'{channel}H')
 
     def stop(self, channel=None):
 
