@@ -1265,6 +1265,7 @@ class SDC():
 
             if pH != current_pH:
                 message = f'Reminder: make sure to set the pH to {pH}'
+                current_pH = pH
                 web_client.chat_postMessage(channel='#asdc', text=message, icon_emoji=':sciencebear:')
                 print(message)
                 input('press <ENTER> to continue')
