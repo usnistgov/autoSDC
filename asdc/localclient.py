@@ -596,8 +596,8 @@ class SDC():
 
     def establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict = {}):
 
-        target_rate = flow_instructions.get('flow_rate', 1.0)
-        purge_time = flow_instructions.get('purge_time', 30)
+        target_rate = float(flow_instructions.get('flow_rate', 1.0))
+        purge_time = float(flow_instructions.get('purge_time', 30))
 
         # droplet workflow -- start at zero
         print('starting droplet workflow')

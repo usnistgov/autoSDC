@@ -45,7 +45,6 @@ class Reglo(regloicclib.Pump):
 
         return
 
-
     def continuousFlow(self, rate, channel=None):
         if type(channel) is Channel:
             channel = channel.value
