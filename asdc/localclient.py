@@ -614,9 +614,10 @@ class SDC():
                     self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DUMP)
                     time.sleep(self.cleanup_pulse_duration)
 
-                self.reglo.stop(channel=Channel.DUMP)
+                    self.reglo.stop(channel=Channel.DUMP)
 
                 time.sleep(self.cleanup_pause)
+                self.reglo.stop(channel=Channel.DUMP)
 
             height_difference = self.droplet_height - self.wetting_height
             height_difference = max(0, height_difference)
