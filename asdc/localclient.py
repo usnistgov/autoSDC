@@ -605,11 +605,11 @@ class SDC():
 
             if self.cleanup_pause > 0:
                 print('cleaning up...')
-                self.reglo.continuousFlow(-10.0, channel=Channel.NEEDLE)
+                self.reglo.set_rates({Channel.NEEDLE: -10.0, Channel.DUMP: -5.0})
                 self.reglo.stop([Channel.SOURCE, Channel.LOOP])
 
                 if self.cleanup_pulse_duration > 0:
-                    pulse_flowrate = -1.0
+                    pulse_flowrate = -10.0
                     # self.reglo.continuousFlow(pulse_flowrate, channel=Channel.LOOP)
                     self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DUMP)
                     time.sleep(self.cleanup_pulse_duration)
