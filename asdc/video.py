@@ -5,7 +5,7 @@ import numpy as np
 import multiprocessing as mp
 from contextlib import contextmanager
 
-ffmpeg_output_flags = {
+FFMPEG_OUTPUT_FLAGS = {
     '-vcodec': 'libx264',
     '-b': '300000000',
     '-crf': '18',
@@ -16,7 +16,7 @@ def videocap(e, filename='testproc.mp4', camera_idx=0):
 
     cap = cv2.VideoCapture(camera_idx)
 
-    videostream = skvideo.io.FFmpegWriter(filename, outputdict=ffmpeg_output_flags)
+    videostream = skvideo.io.FFmpegWriter(filename, outputdict=FFMPEG_OUTPUT_FLAGS)
 
     while(True):
 
