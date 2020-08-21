@@ -185,7 +185,7 @@ class SDC():
             self.pump_array = None
 
         try:
-            self.reglo = sdc.reglo.Reglo(address=reglo_port, debug=True)
+            self.reglo = sdc.reglo.Reglo(address=reglo_port, debug=config.get('reglo_debug', False))
         except:
             print('could not connect to the Reglo peristaltic pump')
             raise
