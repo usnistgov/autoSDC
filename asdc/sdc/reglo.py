@@ -12,15 +12,15 @@ class Channel(IntEnum):
     """ index organization for the pump channels
 
     needle defaults counterclockwise (-)
-    dump (-)
+    drain (-)
     loop (+)
-    source (+)
+    rinse (+)
     """
     ALL = 0
     NEEDLE = 1
-    DUMP = 2
+    DRAIN = 2
     LOOP = 3
-    SOURCE = 4
+    RINSE = 4
 
 # 12 mL/min
 

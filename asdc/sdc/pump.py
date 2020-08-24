@@ -71,9 +71,7 @@ class PumpArray():
             output_buffer=100,
             fast=False,
             flow_rate=0.5,
-            flow_units='ml/min',
-            counterpump_port=None,
-            counterpump_ratio=0.95):
+            flow_units='ml/min'):
         """ pump array.
         What is needed? concentrations and flow rates.
         Low level interface: set individual flow rates
@@ -93,9 +91,6 @@ class PumpArray():
         self.flow_rate = flow_rate
         self.flow_units = flow_units
         self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
-
-        self.counterpump = PeristalticPump(port=counterpump_port, timeout=self.timeout)
-        self.counterpump_ratio = counterpump_ratio
 
     def relative_rates(self):
         total_rate = sum(self.flow_setpoint.values())
@@ -151,22 +146,12 @@ class PumpArray():
     def stop(self, pump_id=0):
         self.eval('stop', pump_id=pump_id)
 
-    def stop_all(self, counterbalance='off', fast=False):
+    def stop_all(self, fast=False):
+
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
             for pump_id in self.solutions.keys():
                 self.eval('stop', pump_id=pump_id, ser=ser, fast=fast)
                 time.sleep(0.25)
-
-        if counterbalance == 'full':
-            # set counterbalance pumping rate
-            self.counterpump.set_flow(1.0)
-            self.counterpump.start()
-
-        elif counterbalance == 'off':
-            self.counterpump.stop()
-
-        else:
-            self.counterpump.stop()
 
     def diameter(self, pump_id=0, setpoint=None):
 
@@ -207,7 +192,7 @@ class PumpArray():
             if q in value:
                 return key
 
-    def set_rates(self, setpoints, units='ml/min', counterpump_ratio=None, start=False, fast=False):
+    def set_rates(self, setpoints, units='ml/min', start=False, fast=False):
         """ directly set absolute flow rates
 
         flow_setpoint is a dict containing absolute flow rates for each syringe
@@ -216,30 +201,6 @@ class PumpArray():
 
         total_setpoint = sum(setpoints.values())
         print(f'total_setpoint: {total_setpoint}')
-
-        if counterpump_ratio is None or counterpump_ratio == 'default':
-
-            # use default counterpump ratio unless total setpoint is zero
-            if total_setpoint == 0:
-                counterpump_ratio = 1.0 # max
-            else:
-                counterpump_ratio = self.counterpump_ratio
-
-            counterpump_ratio = max(0, counterpump_ratio)
-            # counterpump_ratio = min(counterpump_ratio, 1.0)
-            counterbalance_setpoint = counterpump_ratio * total_setpoint
-
-        elif counterpump_ratio == 'max':
-            # set to 1 mL/min
-            counterbalance_setpoint = 1.0
-
-        elif counterpump_ratio == 'off':
-            counterbalance_setpoint = 0.0
-
-        else:
-            counterpump_ratio = max(0, counterpump_ratio)
-            # counterpump_ratio = min(counterpump_ratio, 1.0)
-            counterbalance_setpoint = counterpump_ratio * total_setpoint
 
         # reset rates to 0
         for pump_id in self.flow_setpoint.keys():
@@ -264,12 +225,3 @@ class PumpArray():
             self.run_all()
 
         print(self.flow_setpoint)
-        print(f'counter: {counterbalance_setpoint} mL/min')
-
-        # set counterbalance pumping rate
-        self.counterpump.set_flow(counterbalance_setpoint)
-
-        if start and (counterbalance_setpoint > 0):
-            self.counterpump.start()
-        elif counterbalance_setpoint == 0:
-            self.counterpump.stop()
