@@ -1300,7 +1300,7 @@ class SDC():
             "purge_time": 15
         }
 
-        points = [[0, 5], [5,5], [5, 0], [0,0]]
+        points = [[0, 15], [15,15], [15, 0], [0,0]]
 
         for x, y in points:
             print(f'visiting {x}, {y}')
