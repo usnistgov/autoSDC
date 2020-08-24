@@ -182,6 +182,7 @@ class SDC():
             )
         except:
             print('could not connect to pump array')
+            raise
             self.pump_array = None
 
         try:
