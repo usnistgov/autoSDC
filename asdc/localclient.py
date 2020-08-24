@@ -519,10 +519,10 @@ class SDC():
                 if cleanup_pulse_duration > 0:
                     pulse_flowrate = -1.0
                     # self.reglo.continuousFlow(pulse_flowrate, channel=Channel.LOOP)
-                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DUMP)
+                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
                     time.sleep(cleanup_pulse_duration)
 
-                self.reglo.stop(channel=Channel.DUMP)
+                self.reglo.stop(channel=Channel.DRAIN)
 
                 time.sleep(cleanup_duration)
 
@@ -536,7 +536,7 @@ class SDC():
                     {
                         Channel.SOURCE: fill_rate,
                         Channel.LOOP: -fill_rate,
-                        Channel.DUMP: -fill_counter_ratio * fill_rate
+                        Channel.DRAIN: -fill_counter_ratio * fill_rate
                     }
                 )
 
@@ -551,7 +551,7 @@ class SDC():
             # counterpump faster to shrink the droplet
             print('shrinking droplet')
             shrink_flowrate = fill_rate * shrink_counter_ratio
-            self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DUMP)
+            self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DRAIN)
 
             shrink_start = time.time()
             if shrink_time is None:
@@ -561,7 +561,7 @@ class SDC():
             shrink_time = time.time() - shrink_start
 
             print('equalizing differential pumping rate')
-            self.reglo.continuousFlow(-fill_rate, channel=Channel.DUMP)
+            self.reglo.continuousFlow(-fill_rate, channel=Channel.DRAIN)
 
         # drop down to contact height
         # instructions['fill_time'] = fill_time
@@ -573,7 +573,7 @@ class SDC():
         print('purging solution')
         purge_rate = 11.0
         self.reglo.set_rates(
-            {Channel.SOURCE: purge_rate, Channel.LOOP: -purge_rate, Channel.DUMP: -purge_rate}
+            {Channel.SOURCE: purge_rate, Channel.LOOP: -purge_rate, Channel.DRAIN: -purge_rate}
         )
 
         time.sleep(30)
@@ -584,7 +584,7 @@ class SDC():
         time.sleep(3)
 
         # disable source and dump
-        self.reglo.stop([Channel.SOURCE, Channel.DUMP])
+        self.reglo.stop([Channel.SOURCE, Channel.DRAIN])
 
         # step to target flow rate
         self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
@@ -596,28 +596,35 @@ class SDC():
 
     def establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict = {}):
 
+        relative_rates = flow_instructions.get('relative_rates')
         target_rate = float(flow_instructions.get('flow_rate', 1.0))
         purge_time = float(flow_instructions.get('purge_time', 30))
 
         # droplet workflow -- start at zero
         print('starting droplet workflow')
+
+        self.reglo.set_rates({Channel.RINSE: 5.0, Channel.NEEDLE: -10.0})
+        time.sleep(1)
+
         with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
 
             if self.cleanup_pause > 0:
                 print('cleaning up...')
-                self.reglo.set_rates({Channel.NEEDLE: -10.0, Channel.DUMP: -5.0})
+                self.reglo.set_rates({Channel.DRAIN: -5.0})
                 self.reglo.stop([Channel.SOURCE, Channel.LOOP])
 
                 if self.cleanup_pulse_duration > 0:
                     pulse_flowrate = -10.0
                     # self.reglo.continuousFlow(pulse_flowrate, channel=Channel.LOOP)
-                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DUMP)
+                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
                     time.sleep(self.cleanup_pulse_duration)
 
-                    self.reglo.stop(channel=Channel.DUMP)
+                    self.reglo.stop(channel=Channel.DRAIN)
 
-                time.sleep(self.cleanup_pause)
-                self.reglo.stop(channel=Channel.DUMP)
+                time.sleep(self.cleanup_pause / 2)
+                self.reglo.stop(Channel.RINSE)
+                time.sleep(self.cleanup_pause / 2)
+                self.reglo.stop(Channel.DRAIN)
 
             height_difference = self.droplet_height - self.wetting_height
             height_difference = max(0, height_difference)
@@ -627,11 +634,13 @@ class SDC():
 
                 # counterpump slower to fill the droplet
                 print('filling droplet')
+                cell_fill_rates = self._scale_flow(relative_rates, nominal_rate=self.fill_rate)
+                self.pump_array.set_rates(cell_fill_rates, start=True, fast=True)
                 self.reglo.set_rates(
                     {
-                        Channel.SOURCE: self.fill_rate,
+                        # Channel.SOURCE: self.fill_rate,
                         Channel.LOOP: -self.fill_rate,
-                        Channel.DUMP: -self.fill_counter_ratio * self.fill_rate
+                        Channel.DRAIN: -self.fill_counter_ratio * self.fill_rate
                     }
                 )
                 time.sleep(self.fill_time)
@@ -640,11 +649,11 @@ class SDC():
             # counterpump faster to shrink the droplet
             print('differentially pumping to shrink the droplet')
             shrink_flowrate = self.fill_rate * self.shrink_counter_ratio
-            self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DUMP)
+            self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DRAIN)
             time.sleep(self.shrink_time)
 
             print('equalizing differential pumping rate')
-            self.reglo.continuousFlow(-self.fill_rate, channel=Channel.DUMP)
+            self.reglo.continuousFlow(-self.fill_rate, channel=Channel.DRAIN)
 
         # drop down to contact...
         time.sleep(3)
@@ -652,8 +661,10 @@ class SDC():
         # purge...
         print('purging solution')
         purge_rate = 11.0
+        purge_rates = self._scale_flow(relative_rates, nominal_rate=purge_rate)
+        self.pump_array.set_rates(purge_rates, start=True, fast=True)
         self.reglo.set_rates(
-            {Channel.SOURCE: purge_rate, Channel.LOOP: -purge_rate, Channel.DUMP: -purge_rate}
+            {Channel.LOOP: -purge_rate, Channel.DRAIN: -purge_rate} # Channel.SOURCE: purge_rate
         )
 
         time.sleep(purge_time)
@@ -665,7 +676,8 @@ class SDC():
 
         print(f'stepping flow rates to {target_rate}')
         self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
-        self.reglo.stop([Channel.SOURCE, Channel.DUMP])
+        self.pump_array.stop_all(fast=True)
+        self.reglo.stop(Channel.DRAIN)
 
         return
 
