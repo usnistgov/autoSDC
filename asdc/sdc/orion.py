@@ -27,6 +27,7 @@ class PHMeter():
         )
 
         self.mode = mode
+        self._blocking = False
         self.blocking = False
 
     @property
