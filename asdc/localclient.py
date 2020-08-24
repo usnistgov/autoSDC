@@ -1291,7 +1291,7 @@ class SDC():
     def purge_cell(self):
 
         return
-\
+
     def droplet_video(self):
 
         flowrates = {
