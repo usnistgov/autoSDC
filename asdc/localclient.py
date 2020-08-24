@@ -1291,6 +1291,21 @@ class SDC():
     def purge_cell(self):
 
         return
+\
+    def droplet_video(self):
+
+        flowrates = {
+            "flow_rate": 1.0,
+            "relative_rates": {"H2O": 1.0},
+            "purge_time": 15
+        }
+
+        points = [[0, 5], [5,5], [5, 0], [0,0]]
+
+        for x, y in points:
+            print(f'visiting {x}, {y}')
+            isdc.establish_droplet(x, y, flowrates)
+            time.sleep(10)
 
 def sdc_client(config_file, resume, verbose):
     """ set up scanning droplet cell client loading from CONFIG_FILE """
