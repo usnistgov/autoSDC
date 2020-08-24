@@ -60,7 +60,7 @@ class PHMeter():
 
         self._blocking = blocking
 
-    @contextlib
+    @contextmanager
     def sync(self):
         try:
             self.blocking = True
@@ -116,7 +116,7 @@ class PHMeter():
                 delta = target_ts - time.time()
                 time.sleep(max(0, delta))
 
-    @contextlib
+    @contextmanager
     def monitor(self, interval=30, logfile=None):
         """ use this like
 
