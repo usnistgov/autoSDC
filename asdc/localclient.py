@@ -178,7 +178,7 @@ class SDC():
 
         try:
             self.pump_array = sdc.pump.PumpArray(
-                self.solutions, port=pump_array_port, counterpump_port=adafruit_port, timeout=1
+                self.solutions, port=pump_array_port, timeout=1
             )
         except:
             print('could not connect to pump array')
