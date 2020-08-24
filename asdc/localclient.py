@@ -612,7 +612,7 @@ class SDC():
             if self.cleanup_pause > 0:
                 print('cleaning up...')
                 self.reglo.set_rates({Channel.DRAIN: -5.0})
-                self.reglo.stop([Channel.SOURCE, Channel.LOOP])
+                self.reglo.stop(Channel.LOOP)
 
                 if self.cleanup_pulse_duration > 0:
                     pulse_flowrate = -10.0
