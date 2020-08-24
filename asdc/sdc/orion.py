@@ -126,7 +126,7 @@ class PHMeter():
             time.sleep(60)
         ```
         """
-        io_worker = threading.Thread(target=readloop, args=(interval, logfile))
+        io_worker = threading.Thread(target=self.readloop, args=(interval, logfile))
         try:
             io_worker.start()
         finally:
