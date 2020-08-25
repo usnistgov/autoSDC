@@ -65,6 +65,7 @@ class PHMeter():
     def sync(self):
         try:
             self.blocking = True
+            yield
         finally:
             self.blocking = False
 
@@ -129,6 +130,7 @@ class PHMeter():
         io_worker = threading.Thread(target=self.readloop, args=(interval, logfile))
         try:
             io_worker.start()
+            yield
         finally:
             io_worker.join()
 
