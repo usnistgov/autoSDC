@@ -135,7 +135,6 @@ class PHMeter():
                 # main measurement loop to run at interval
                 while True:
 
-
                     target_ts = time.time() + interval
 
                     reading = self.read()
@@ -149,7 +148,6 @@ class PHMeter():
                     if stop_event.is_set():
                         return
 
-
     @contextmanager
     def monitor(self, interval=30, logfile='pHmeter_test.csv'):
         """ use this like
@@ -161,7 +159,7 @@ class PHMeter():
         """
         stop_event = threading.Event()
 
-        io_worker = threading.Thread(target=self.readloop, args=(interval, logfile, stop_event))
+        io_worker = threading.Thread(target=self.readloop, args=(stop_event, interval, logfile))
         try:
             io_worker.start()
             yield
