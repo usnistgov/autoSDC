@@ -71,6 +71,7 @@ class PHMeter():
 
     def check_response(self):
         response = self.ser.read(size=2).decode()
+        print(f'response: {response}')
         if response == '> ':
             return True
         else:
