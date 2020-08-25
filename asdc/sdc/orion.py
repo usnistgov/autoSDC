@@ -13,7 +13,7 @@ class PHMeter():
 
     supported_modes = {'pH', 'mV'}
 
-    def __init__(self, address, baud=9600, timeout=0.5, mode='pH'):
+    def __init__(self, address, baud=19200, timeout=0.5, mode='pH'):
 
         self.timeout = timeout
 
