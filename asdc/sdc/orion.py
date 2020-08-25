@@ -135,17 +135,20 @@ class PHMeter():
                 # main measurement loop to run at interval
                 while True:
 
+
                     target_ts = time.time() + interval
 
                     reading = self.read()
                     print(reading, file=f)
 
-                    # tight timeout loop to wait for exit condition...
-                    while target_ts - time.time() > 0:
-                        time.sleep(0.1)
+                    # wait out the rest of the interval
+                    # but return immediately if signalled
+                    delta = target_ts - time.time()
+                    stop_event.wait(timeout=max(0, delta))
 
-                        if stop_event.is_set():
-                            return
+                    if stop_event.is_set():
+                        return
+
 
     @contextmanager
     def monitor(self, interval=30, logfile='pHmeter_test.csv'):
@@ -163,7 +166,7 @@ class PHMeter():
             io_worker.start()
             yield
         finally:
-
+            stop_event.set()
             io_worker.join()
 
 
