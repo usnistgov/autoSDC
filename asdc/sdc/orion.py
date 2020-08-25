@@ -1,9 +1,12 @@
+import re
 import time
 import serial
 import typing
 import argparse
 import threading
 from contextlib import contextmanager
+
+MODEL_NUMBER = 'A221'
 
 def encode(message: str):
     message = message + '\r'
@@ -13,8 +16,9 @@ class PHMeter():
 
     supported_modes = {'pH', 'mV'}
 
-    def __init__(self, address, baud=19200, timeout=0.5, mode='pH'):
+    def __init__(self, address, baud=19200, timeout=0.5, mode='pH', model_number=MODEL_NUMBER):
 
+        self.model_number = MODEL_NUMBER
         self.timeout = timeout
 
         self.ser = serial.Serial(
@@ -84,44 +88,67 @@ class PHMeter():
     def write(self, msg):
         self.ser.write(encode(msg))
 
-    def _process_pH(self):
+    def _process_pH(self, response: str):
         """
         Meter Model, Serial Number, Software Revision, User ID, Date & Time, Sample ID, Channel, Mode, pH Value, pH Unit, mV Value, mV Unit, Temperature Value, Temperature Unit, Slope Value, Slope Unit, Method #, Log #
-        A211 pH, X01036, 3.04, ABCDE, 01/03/15 16:05:41, SAMPLE, CH-1, pH, 7.000, pH, 0.0, mV, 25.0, C, 98.1,%, M100, #1 <CR>
+
+        b'GETMEAS         \r\n\r\n\rA221 pH,K10231,3.04,ABCDE,08/26/20 00:20:59,---,CH-1,pH,6.92,pH,-3.8, mV,23.3,C,99.6,%,M100,#162\n\r\r>'
+
+        TODO: get timestamp, sample_id, channel, mode, pH_value, pH_unit, mV_value, mV_unit, temperature_value, temperature_unit, slope_value, slope_unit
         """
 
-        # get timestamp, sample_id, channel, mode, pH_value, pH_unit, mV_value, mV_unit, temperature_value, temperature_unit, slope_value, slope_unit
+        # index into the response by searching for the model number
+        model_match = re.search(self.model_number, response)
+        data_idx = model_match.start()
 
-        pass
+        # remove any >, \r, and \n characters
+        data = re.sub('[\>\\r\\n]', '', response[data_idx:])
+
+        # strip any whitespace adjacent to the comma delimiters
+        # and reconstruct the CSV string
+        values = data.split(',')
+        data = ','.join(map(str.strip, values))
+
+        return data
 
     def read(self, count: int = 1):
 
         if count == 1:
             self.write('GETMEAS')
-            line = self.ser.read_until(b'\r')
-            status = self.check_response()
-            print(line)
-            return line
+            response = self.ser.read_until(b'>')
+            data = self._process_pH(response)
+            return data
 
         elif count > 1:
+            # FIXME: the multi-reading `GETMEAS` command will only return
+            # a single `>` at the end of all the response lines...
             self.write(f'GETMEAS {count}')
-            lines = [self.ser.read_until(b'\r') for line in range(count)]
-            status = self.check_response()
-            print(lines)
+            responses = [self.ser.read_until(b'>') for response in range(count)]
+            data = [self._process_pH(response) for response in responses]
+            return data
 
-    def readloop(self, interval=30, logfile=None):
+    def readloop(self, stop_event=None, interval=30, logfile='pHmeter_test.csv'):
 
         with self.sync():
-            while True:
-                target_ts = time.time() + interval
+            with open(logfile, 'a') as f:
 
-                line = self.read()
+                # main measurement loop to run at interval
+                while True:
 
-                delta = target_ts - time.time()
-                time.sleep(max(0, delta))
+                    target_ts = time.time() + interval
+
+                    reading = self.read()
+                    print(reading, file=f)
+
+                    # tight timeout loop to wait for exit condition...
+                    while target_ts - time.time() > 0:
+                        time.sleep(0.1)
+
+                        if stop_event.is_set():
+                            return
 
     @contextmanager
-    def monitor(self, interval=30, logfile=None):
+    def monitor(self, interval=30, logfile='pHmeter_test.csv'):
         """ use this like
 
         ```
@@ -129,11 +156,14 @@ class PHMeter():
             time.sleep(60)
         ```
         """
-        io_worker = threading.Thread(target=self.readloop, args=(interval, logfile))
+        stop_event = threading.Event()
+
+        io_worker = threading.Thread(target=self.readloop, args=(interval, logfile, stop_event))
         try:
             io_worker.start()
             yield
         finally:
+
             io_worker.join()
 
 
@@ -145,5 +175,5 @@ if __name__ == '__main__':
 
     meter = PHMeter(args.port)
 
-    # with meter.monitor(interval=10):
-    #     time.sleep(60)
+    with meter.monitor(interval=10):
+        time.sleep(60)
