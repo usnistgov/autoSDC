@@ -98,13 +98,14 @@ class PHMeter():
         if count == 1:
             self.write('GETMEAS')
             line = self.ser.read_until(b'\r')
-            status = check_response()
+            status = self.check_response()
             print(line)
+            return line
 
         elif count > 1:
             self.write(f'GETMEAS {count}')
             lines = [self.ser.read_until(b'\r') for line in range(count)]
-            status = check_response()
+            status = self.check_response()
             print(lines)
 
     def readloop(self, interval=30, logfile=None):
@@ -113,7 +114,7 @@ class PHMeter():
             while True:
                 target_ts = time.time() + interval
 
-                line = self.read(ensure_sync=True)
+                line = self.read()
 
                 delta = target_ts - time.time()
                 time.sleep(max(0, delta))
