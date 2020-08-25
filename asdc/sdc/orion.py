@@ -79,7 +79,7 @@ class PHMeter():
 
     def set_csv(self):
         self.write('SETCSV')
-        return check_response()
+        return self.check_response()
 
     def write(self, msg):
         self.ser.write(encode(msg))
