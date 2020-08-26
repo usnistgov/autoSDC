@@ -198,4 +198,4 @@ if __name__ == '__main__':
 
     with meter.monitor(interval=10):
         time.sleep(60)
-        print(self.pH)
+        print(meter.pH)
