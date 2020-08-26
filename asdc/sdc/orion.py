@@ -97,8 +97,7 @@ class PHMeter():
         d = dict(pH=float(values[8]), temperature=float(values[12]))
         return d
 
-    @staticmethod
-    def _process_pH(response: str):
+    def _process_pH(self, response: str):
         """
         Meter Model, Serial Number, Software Revision, User ID, Date & Time, Sample ID, Channel, Mode, pH Value, pH Unit, mV Value, mV Unit, Temperature Value, Temperature Unit, Slope Value, Slope Unit, Method #, Log #
 
