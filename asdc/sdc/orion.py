@@ -17,7 +17,7 @@ class PHMeter():
 
     supported_modes = {'pH', 'mV'}
 
-    def __init__(self, address, baud=19200, timeout=0.5, mode='pH', model_number=MODEL_NUMBER, buffer_size=64):
+    def __init__(self, address, baud=19200, timeout=2, mode='pH', model_number=MODEL_NUMBER, buffer_size=64):
         self.pH = collections.deque(maxlen=buffer_size)
         self.temperature = collections.deque(maxlen=buffer_size)
 
@@ -125,6 +125,7 @@ class PHMeter():
         if count == 1:
             self.write('GETMEAS')
             response = self.ser.read_until(b'>')
+            print(response)
             data = self._process_pH(response.decode())
             return data
 
@@ -138,11 +139,15 @@ class PHMeter():
 
     def readloop(self, stop_event=None, interval=30, logfile='pHmeter_test.csv'):
 
+        # clear the output buffer...
+        buf = self.ser.read(500)
+
         with self.sync():
             with open(logfile, 'a') as f:
                 # TODO: print out a CSV header...
 
                 # main measurement loop to run at interval
+
                 while True:
 
                     target_ts = time.time() + interval
@@ -192,4 +197,5 @@ if __name__ == '__main__':
     meter = PHMeter(args.port)
 
     with meter.monitor(interval=10):
+        print(meter.pH[-1])
         time.sleep(60)
