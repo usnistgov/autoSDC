@@ -4,6 +4,7 @@ import serial
 import typing
 import argparse
 import threading
+import collections
 from contextlib import contextmanager
 
 MODEL_NUMBER = 'A221'
@@ -16,7 +17,9 @@ class PHMeter():
 
     supported_modes = {'pH', 'mV'}
 
-    def __init__(self, address, baud=19200, timeout=0.5, mode='pH', model_number=MODEL_NUMBER):
+    def __init__(self, address, baud=19200, timeout=0.5, mode='pH', model_number=MODEL_NUMBER, buffer_size=64):
+        self.pH = collections.deque(maxlen=buffer_size)
+        self.temperature = collections.deque(maxlen=buffer_size)
 
         self.model_number = MODEL_NUMBER
         self.timeout = timeout
@@ -88,7 +91,14 @@ class PHMeter():
     def write(self, msg):
         self.ser.write(encode(msg))
 
-    def _process_pH(self, response: str):
+    @staticmethod
+    def _to_dict(data: str):
+        values = data.split(',')
+        d = dict(pH=float(values[8]), temperature=float(values[12]))
+        return d
+
+    @staticmethod
+    def _process_pH(response: str):
         """
         Meter Model, Serial Number, Software Revision, User ID, Date & Time, Sample ID, Channel, Mode, pH Value, pH Unit, mV Value, mV Unit, Temperature Value, Temperature Unit, Slope Value, Slope Unit, Method #, Log #
 
@@ -131,6 +141,7 @@ class PHMeter():
 
         with self.sync():
             with open(logfile, 'a') as f:
+                # TODO: print out a CSV header...
 
                 # main measurement loop to run at interval
                 while True:
@@ -139,6 +150,11 @@ class PHMeter():
 
                     reading = self.read()
                     print(reading, file=f)
+
+                    # push values into deques for external monitoring...
+                    values = self._to_dict(reading)
+                    self.pH.append(values['pH'])
+                    self.temperature.append(values['temperature'])
 
                     # wait out the rest of the interval
                     # but return immediately if signalled
