@@ -197,5 +197,5 @@ if __name__ == '__main__':
     meter = PHMeter(args.port)
 
     with meter.monitor(interval=10):
-        time.sleep(60)
+        time.sleep(240)
         print(meter.pH)
