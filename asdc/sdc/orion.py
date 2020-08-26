@@ -126,7 +126,7 @@ class PHMeter():
         if count == 1:
             self.write('GETMEAS')
             response = self.ser.read_until(b'>')
-            data = self._process_pH(response)
+            data = self._process_pH(response.decode())
             return data
 
         elif count > 1:
@@ -134,7 +134,7 @@ class PHMeter():
             # a single `>` at the end of all the response lines...
             self.write(f'GETMEAS {count}')
             responses = [self.ser.read_until(b'>') for response in range(count)]
-            data = [self._process_pH(response) for response in responses]
+            data = [self._process_pH(response.decode()) for response in responses]
             return data
 
     def readloop(self, stop_event=None, interval=30, logfile='pHmeter_test.csv'):
