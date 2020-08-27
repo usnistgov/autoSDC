@@ -791,9 +791,9 @@ class SDC():
             elif self.notify:
                 web_client.chat_postMessage(channel='#asdc', text=_msg, icon_emoji=':sciencebear:')
 
+            # run e-chem experiments and store results in external csv file
+            # TODO: use more granular database entries to enable splitting out e-chem actions into separate rows/files
             results, metadata = sdc.experiment.run(instructions, cell=self.cell, verbose=self.verbose)
-
-            # store SDC results in external csv file
             results.to_csv(os.path.join(self.data_dir, datafile))
 
             metadata['parameters'] = json.dumps(metadata.get('parameters'))
