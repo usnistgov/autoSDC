@@ -668,7 +668,7 @@ class SDC():
         time.sleep(3)
 
         # purge... (and monitor pH)
-        with self.phmeter.monitor(interval=5, logfile=os.path.join(self.data_dir, 'purge.txt')):
+        with self.phmeter.monitor(interval=5, logfile=os.path.join(self.data_dir, 'purge.csv')):
             print('purging solution')
             purge_rate = 11.0
             purge_rates = self._scale_flow(relative_rates, nominal_rate=purge_rate)
@@ -802,7 +802,12 @@ class SDC():
 
             # run e-chem experiments and store results in external csv file
             # TODO: use more granular database entries to enable splitting out e-chem actions into separate rows/files
-            results, metadata = sdc.experiment.run(instructions, cell=self.cell, verbose=self.verbose)
+            print(f'current pH reading is {self.phmeter.pH[-1]}')
+            pH_logfile = os.path.join(self.data_dir, f'pH_log_run{meta["id"]:03d}.csv')
+
+            with self.phmeter.monitor(interval=5, logfile=pH_logfile):
+                results, metadata = sdc.experiment.run(instructions, cell=self.cell, verbose=self.verbose)
+
             results.to_csv(os.path.join(self.data_dir, datafile))
 
             metadata['parameters'] = json.dumps(metadata.get('parameters'))
