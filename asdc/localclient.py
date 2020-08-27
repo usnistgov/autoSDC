@@ -803,26 +803,26 @@ class SDC():
             meta['datafile'] = datafile
             tx['experiment'].update(meta, ['id'])
 
+        if self.notify:
+            web_client.chat_postMessage(
+                channel='#asdc', text=f"finished experiment {meta['id']}: {summary}", icon_emoji=':sciencebear:'
+            )
+
+        if self.plot_current:
+            figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
+            visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
             if self.notify:
-                web_client.chat_postMessage(
-                    channel='#asdc', text=f"finished experiment {meta['id']}: {summary}", icon_emoji=':sciencebear:'
-                )
+                _slack.post_image(web_client, figpath, title=f"current vs time {meta['id']}")
 
-            if self.plot_current:
-                figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
-                visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
-                if self.notify:
-                    _slack.post_image(web_client, figpath, title=f"current vs time {meta['id']}")
+        if self.plot_cv:
+            figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
+            visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
 
-            if self.plot_cv:
-                figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
-                visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
-
-                if self.notify:
-                    try:
-                        _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
-                    except:
-                        pass
+            if self.notify:
+                try:
+                    _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
+                except:
+                    pass
 
         # if the last op is a post_flush, flush the lines with the set rates...
         final_op = instructions[-1]
