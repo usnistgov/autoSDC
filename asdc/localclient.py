@@ -197,6 +197,7 @@ class SDC():
             self.phmeter = sdc.orion.PHMeter(orion_port, zmq_pub=zmq_pub)
         except:
             print('could not connect to the Orion pH meter')
+            raise
 
         try:
             self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
