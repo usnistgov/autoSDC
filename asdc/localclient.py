@@ -74,7 +74,8 @@ class SDC():
             token: str = BOT_TOKEN,
             resume: bool = False,
             logfile: Optional[str] = None,
-            verbose: bool = False
+            verbose: bool = False,
+            zmq_pub: bool = False
     ):
         """ scanning droplet cell client
 
@@ -193,7 +194,7 @@ class SDC():
             raise
 
         try:
-            self.phmeter = sdc.orion.PHMeter(orion_port)
+            self.phmeter = sdc.orion.PHMeter(orion_port, zmq_pub=zmq_pub)
         except:
             print('could not connect to the Orion pH meter')
 
@@ -1283,7 +1284,7 @@ class SDC():
             isdc.establish_droplet(x, y, flowrates)
             time.sleep(10)
 
-def sdc_client(config_file, resume, verbose):
+def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
     """ set up scanning droplet cell client loading from CONFIG_FILE """
 
     with open(config_file, 'r') as f:
@@ -1313,7 +1314,7 @@ def sdc_client(config_file, resume, verbose):
     logfile = config.get('command_logfile', 'commands.log')
     logfile = os.path.join(config['data_dir'], logfile)
 
-    sdc_interface = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume)
+    sdc_interface = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume, zmq_pub=zmq_pub)
     return sdc_interface
 
 if __name__ == '__main__':
@@ -1321,7 +1322,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='SDC client')
     parser.add_argument('configfile', type=str, help='config file')
     parser.add_argument('--resume', action='store_true', help='start from checkpoint')
+    parser.add_argument('--dashboard', action='store_true', help='set up ZMQ publisher for dashboard')
     parser.add_argument('--verbose', action='store_true', help='include extra debugging output')
     args = parser.parse_args()
 
-    isdc = sdc_client(args.configfile, args.resume, args.verbose)
+    isdc = sdc_client(args.configfile, args.resume, args.dashboard, args.verbose)
