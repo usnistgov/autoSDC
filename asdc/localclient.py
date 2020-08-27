@@ -768,6 +768,9 @@ class SDC():
 
         # wrap the whole experiment in a transaction
         # this way, if the experiment is cancelled, it's not committed to the db
+
+        # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
+        # heuristic check for experimental error signals?
         with self.db as tx:
 
             stem = 'asdc'
@@ -787,52 +790,39 @@ class SDC():
             elif self.notify:
                 web_client.chat_postMessage(channel='#asdc', text=_msg, icon_emoji=':sciencebear:')
 
-            if self.test_cell:
-                print("we would run the experiment here...")
-                time.sleep(10)
+            results, metadata = sdc.experiment.run(instructions, cell=self.cell, verbose=self.verbose)
 
-            else:
-                results, metadata = sdc.experiment.run(instructions, cell=self.cell, verbose=self.verbose)
+            # store SDC results in external csv file
+            results.to_csv(os.path.join(self.data_dir, datafile))
 
-                metadata['parameters'] = json.dumps(metadata.get('parameters'))
-                if self.pump_array:
-                    metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
+            metadata['parameters'] = json.dumps(metadata.get('parameters'))
+            if self.pump_array:
+                metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
 
-                # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
-                # heuristic check for experimental error signals?
-                if np.median(np.abs(results['current'])) < self.current_threshold:
-                    print(f'WARNING: median current below {self.current_threshold} threshold')
-                    if self.notify:
-                        msg = f':terriblywrong: *something went wrong:*  median current below {self.current_threshold} threshold'
-                        web_client.chat_postMessage(channel='#asdc', text=msg, icon_emoji=':sciencebear:')
+            meta.update(metadata)
+            meta['datafile'] = datafile
+            tx['experiment'].update(meta, ['id'])
 
-                meta.update(metadata)
-                meta['datafile'] = datafile
-                tx['experiment'].update(meta, ['id'])
+            if self.notify:
+                web_client.chat_postMessage(
+                    channel='#asdc', text=f"finished experiment {meta['id']}: {summary}", icon_emoji=':sciencebear:'
+                )
 
-                # store SDC results in external csv file
-                results.to_csv(os.path.join(self.data_dir, datafile))
+            if self.plot_current:
+                figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
+                visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
+                if self.notify:
+                    _slack.post_image(web_client, figpath, title=f"current vs time {meta['id']}")
+
+            if self.plot_cv:
+                figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
+                visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
 
                 if self.notify:
-                    web_client.chat_postMessage(
-                        channel='#asdc', text=f"finished experiment {meta['id']}: {summary}", icon_emoji=':sciencebear:'
-                    )
-
-                if self.plot_current:
-                    figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
-                    visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
-                    if self.notify:
-                        _slack.post_image(web_client, figpath, title=f"current vs time {meta['id']}")
-
-                if self.plot_cv:
-                    figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
-                    visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
-
-                    if self.notify:
-                        try:
-                            _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
-                        except:
-                            pass
+                    try:
+                        _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
+                    except:
+                        pass
 
         # if the last op is a post_flush, flush the lines with the set rates...
         final_op = instructions[-1]
