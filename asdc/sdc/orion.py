@@ -181,7 +181,7 @@ class PHMeter():
                     df = values.map(
                         lambda x: pd.DataFrame(x, index=[reltime().total_seconds()])
                     )
-                    df.sink(lambda x: self.socket.send_pyobj(df))
+                    df.sink(lambda x: self.socket.send_pyobj(x))
 
                 # main measurement loop to run at interval
 
