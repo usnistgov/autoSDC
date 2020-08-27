@@ -776,6 +776,7 @@ class SDC():
             stem = 'asdc'
             meta['id'] = tx['experiment'].insert(meta)
             datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
+            meta['datafile'] = datafile
 
             summary = '-'.join(step['op'] for step in instructions)
             _msg = f"experiment *{meta['id']}*:  {summary}"
@@ -800,7 +801,6 @@ class SDC():
                 metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
 
             meta.update(metadata)
-            meta['datafile'] = datafile
             tx['experiment'].update(meta, ['id'])
 
         if self.notify:
@@ -823,26 +823,6 @@ class SDC():
                     _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
                 except:
                     pass
-
-        # if the last op is a post_flush, flush the lines with the set rates...
-        final_op = instructions[-1]
-        if final_op.get('op') == 'post_flush':
-            rates = final_op.get('rates')
-            duration = final_op.get('duration')
-            print(f'flushing the lines with {rates} for {duration} s')
-            self.pump_array.set_rates(rates, counterpump_ratio=0.95, start=True, fast=True)
-            time.sleep(duration)
-
-        # # run cleanup
-        # self.pump_array.stop_all(counterbalance='full', fast=True)
-        # time.sleep(0.25)
-
-        # with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
-
-        #     if self.cleanup_pause > 0:
-        #         time.sleep(self.cleanup_pause)
-
-        #     self.pump_array.counterpump.stop()
 
     def run_characterization(self, args: str):
         """ perform cell cleanup and characterization
