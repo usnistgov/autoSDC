@@ -2,12 +2,20 @@ import re
 import time
 import serial
 import typing
+import streamz
 import argparse
 import threading
 import collections
 from contextlib import contextmanager
 
+import zmq
+import zmq.asyncio
+
 MODEL_NUMBER = 'A221'
+
+# set up and bind zmq publisher socket
+DASHBOARD_PORT = 2345
+DASHBOARD_ADDRESS = '127.0.0.1'
 
 def encode(message: str):
     message = message + '\r'
@@ -17,12 +25,11 @@ class PHMeter():
 
     supported_modes = {'pH', 'mV'}
 
-    def __init__(self, address, baud=19200, timeout=2, mode='pH', model_number=MODEL_NUMBER, buffer_size=64):
+    def __init__(self, address, baud=19200, timeout=2, mode='pH', model_number=MODEL_NUMBER, buffer_size=64, zmq_pub=False):
+        self.model_number = MODEL_NUMBER
+
         self.pH = collections.deque(maxlen=buffer_size)
         self.temperature = collections.deque(maxlen=buffer_size)
-
-        self.model_number = MODEL_NUMBER
-        self.timeout = timeout
 
         self.ser = serial.Serial(
             port=address,
@@ -34,8 +41,16 @@ class PHMeter():
         )
 
         self.mode = mode
+        self.timeout = timeout
         self._blocking = False
         self.blocking = False
+
+        if zmq_pub:
+            self.context = zmq.asyncio.Context.instance()
+            self.socket = self.context.socket(zmq.PUB)
+            self.socket.bind(f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}")
+        else:
+            self.socket = None
 
     @property
     def mode(self):
@@ -142,9 +157,28 @@ class PHMeter():
         # clear the output buffer...
         buf = self.ser.read(500)
 
+        start_ts = pd.Timestamp(datetime.now())
+
+        def update_buffers(values):
+            # push values into deques for external monitoring...
+            self.pH.append(values['pH'])
+            self.temperature.append(values['temperature'])
+
         with self.sync():
             with open(logfile, 'a') as f:
                 # TODO: print out a CSV header...
+
+                source = streamz.Source()
+                log = source.sink(lambda x: print(x, file=f))
+                values = source.map(self._to_dict)
+                buf = values.sink(update_buffers)
+
+                if self.socket is not None:
+                    ts = pd.Timestamp(datetime.now()) - pd.Timestamp(start)
+                    df = data.map(
+                        lambda x: pd.DataFrame(x, index=[(pd.Timestamp(datetime.now()) - pd.Timestamp(start)).total_seconds()])
+                    )
+                    df.sink(lambda x: self.socket.send_pyobj(df))
 
                 # main measurement loop to run at interval
 
@@ -153,12 +187,7 @@ class PHMeter():
                     target_ts = time.time() + interval
 
                     reading = self.read()
-                    print(reading, file=f)
-
-                    # push values into deques for external monitoring...
-                    values = self._to_dict(reading)
-                    self.pH.append(values['pH'])
-                    self.temperature.append(values['temperature'])
+                    source.emit(reading)
 
                     # wait out the rest of the interval
                     # but return immediately if signalled
