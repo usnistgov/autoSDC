@@ -172,6 +172,7 @@ class SDC():
             self.stage_frame = self.sync_coordinate_systems(orientation=self.frame_orientation, register_initial=False)
 
         reglo_port = config.get('reglo_port', 'COM16')
+        orion_port = config.get('orion_port', 'COM17')
         adafruit_port = config.get('adafruit_port', 'COM9')
         pump_array_port = config.get('pump_array_port', 'COM10')
         self.backfill_duration = config.get('backfill_duration', 15)
@@ -190,6 +191,11 @@ class SDC():
         except:
             print('could not connect to the Reglo peristaltic pump')
             raise
+
+        try:
+            self.phmeter = sdc.orion.PHMeter(orion_port)
+        except:
+            print('could not connect to the Orion pH meter')
 
         try:
             self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
