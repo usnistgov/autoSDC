@@ -6,6 +6,7 @@ import streamz
 import argparse
 import threading
 import collections
+import pandas as pd
 from contextlib import contextmanager
 
 import zmq
