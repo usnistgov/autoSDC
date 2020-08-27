@@ -174,9 +174,10 @@ class PHMeter():
                 buf = values.sink(update_buffers)
 
                 if self.socket is not None:
-                    ts = pd.Timestamp(datetime.now()) - pd.Timestamp(start)
-                    df = data.map(
-                        lambda x: pd.DataFrame(x, index=[(pd.Timestamp(datetime.now()) - pd.Timestamp(start)).total_seconds()])
+                    start = pd.Timestamp(datetime.now())
+                    reltime = lambda: pd.Timestamp(datetime.now()) - start
+                    df = values.map(
+                        lambda x: pd.DataFrame(x, index=[reltime().total_seconds()])
                     )
                     df.sink(lambda x: self.socket.send_pyobj(df))
 
