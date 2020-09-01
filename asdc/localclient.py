@@ -878,7 +878,7 @@ class SDC():
 
         # run cleanup and optical characterization
         self.pump_array.stop_all(counterbalance='full', fast=True)
-        time.sleep(0.25)
+v        time.sleep(0.25)
 
         characterization_ops = set(i.get('op') for i in instructions if 'op' in i)
 
@@ -1253,6 +1253,7 @@ class SDC():
 
         if self.resume:
             experiment_idx = self.db['experiment'].count()
+            print(f'resuming starting at experiment {experiment_id}')
             experiments = experiments[experiment_idx:]
 
         current_pH = None
@@ -1318,7 +1319,7 @@ def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
     if config['step_height'] is not None:
         config['step_height'] = abs(config['step_height'])
 
-    logfile = config.get('command_logfile', 'commands.log')
+v    logfile = config.get('command_logfile', 'commands.log')
     logfile = os.path.join(config['data_dir'], logfile)
 
     sdc_interface = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume, zmq_pub=zmq_pub)
