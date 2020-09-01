@@ -878,7 +878,7 @@ class SDC():
 
         # run cleanup and optical characterization
         self.pump_array.stop_all(counterbalance='full', fast=True)
-v        time.sleep(0.25)
+        time.sleep(0.25)
 
         characterization_ops = set(i.get('op') for i in instructions if 'op' in i)
 
