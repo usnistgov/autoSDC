@@ -1329,9 +1329,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='SDC client')
     parser.add_argument('configfile', type=str, help='config file')
-    parser.add_argument('--resume', action='store_true', help='start from checkpoint')
+    parser.add_argument('--no-resume', action='store_false', help='ignore starting from checkpoint')
     parser.add_argument('--dashboard', action='store_true', help='set up ZMQ publisher for dashboard')
     parser.add_argument('--verbose', action='store_true', help='include extra debugging output')
     args = parser.parse_args()
 
-    isdc = sdc_client(args.configfile, args.resume, args.dashboard, args.verbose)
+    resume = not args.no_resume
+
+    isdc = sdc_client(args.configfile, resume, args.dashboard, args.verbose)
