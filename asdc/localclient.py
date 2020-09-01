@@ -1319,7 +1319,7 @@ def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
     if config['step_height'] is not None:
         config['step_height'] = abs(config['step_height'])
 
-v    logfile = config.get('command_logfile', 'commands.log')
+    logfile = config.get('command_logfile', 'commands.log')
     logfile = os.path.join(config['data_dir'], logfile)
 
     sdc_interface = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume, zmq_pub=zmq_pub)
