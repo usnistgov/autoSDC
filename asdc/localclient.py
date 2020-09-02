@@ -1338,4 +1338,4 @@ if __name__ == '__main__':
     resume = not args.no_resume
     print(f'resume?: {resume}')
 
-    isdc = sdc_client(args.configfile, resume=resume, verbose=args.verbose, zmq_pub=args.dashboard)
+    isdc = sdc_client(args.configfile, resume, args.dashboard, args.verbose)
