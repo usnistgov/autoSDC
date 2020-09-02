@@ -1253,7 +1253,7 @@ class SDC():
 
         if self.resume:
             experiment_idx = self.db['experiment'].count()
-            print(f'resuming starting at experiment {experiment_id}')
+            print(f'resuming starting at experiment {experiment_idx}')
             experiments = experiments[experiment_idx:]
 
         current_pH = None
