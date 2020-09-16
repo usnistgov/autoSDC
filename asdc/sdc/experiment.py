@@ -18,7 +18,6 @@ from .experiment_defaults import *
 
 MIN_SAMPLING_FREQUENCY = 1.0e-5
 
-
 def from_command(instruction):
     """ {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_size": 0.1, "step_time": 0.5} """
 
@@ -269,3 +268,13 @@ def run(instructions, cell='INTERNAL', verbose=False, remeasure_ocp=False):
     metadata['parameters'] = json.dumps(_params)
 
     return scan_data, metadata
+
+potentiostat_ops = {
+    'cv': CyclicVoltammetry,
+    'lsv': LSV,
+    'lpr': LPR,
+    'tafel': Tafel,
+    'corrosion_oc': CorrosionOpenCircuit,
+    'open_circuit': OpenCircuit,
+    'potentiostatic': Potentiostatic
+}
