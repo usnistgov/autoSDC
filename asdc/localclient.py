@@ -14,7 +14,7 @@ from datetime import datetime
 from aioconsole import ainput, aprint
 from contextlib import contextmanager, asynccontextmanager
 
-from typing import Any, List, Dict, Optional, Tuple
+from typing import Any, List, Dict, Optional, Tuple, Union
 
 import traceback
 
@@ -35,6 +35,8 @@ from asdc import slackbot
 from asdc import visualization
 
 from asdc.sdc.reglo import Channel
+
+potentiostat_id = 17109013
 
 asdc_channel = 'CDW5JFZAR'
 try:
@@ -743,50 +745,90 @@ class SDC():
 
         return
 
-    def quick_expt(self, instructions_json: str, internal=False, plot=True, segment=1, remeasure_ocp=False):
+    def quick_expt(self, instructions: Union[Dict, List[Dict]], internal=False, plot=True, remeasure_ocp=False):
         """ run a one-off e-chem sequence without touching the stages or pumps """
 
-        instructions = json.loads(instructions_json)
         print(f'running experiment {instructions}')
+
+        if type(instuctions) is dict:
+            instructions = [instructions]
 
         if internal:
             cell = 'INTERNAL'
         else:
             cell = 'EXTERNAL'
 
-        meta = {'instructions': instructions_json, 'cell': cell}
+        meta = {
+            'instructions': json.dumps(instructions),
+            'cell': cell,
+            'x_combi': None,
+            'y_combi': None,
+            'x_versa': self.v_position[0],
+            'y_versa': self.v_position[1],
+            'z_versa': self.v_position[2],
+        }
+
         with self.db as tx:
+            location_id = tx['location'].insert(meta)
+            summary = '-'.join(step['op'] for step in instructions)
+            message = f"location *{location_id}*:  {summary}"
+            self.notify(message, block=self.confirm_experiment)
 
-            stem = 'asdc'
-            meta['id'] = tx['experiment'].insert(meta)
-            datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
-            meta['datafile'] = datafile
+        # run e-chem experiments and store results in external csv file
+        basename = f'asdc_data_{location_id:03d}'
 
-            results, metadata = sdc.experiment.run(instructions, cell=cell, verbose=self.verbose, remeasure_ocp=remeasure_ocp)
-            results.to_csv(os.path.join(self.data_dir, datafile))
+        # results, metadata = sdc.experiment.run(instructions, cell=cell, verbose=self.verbose, remeasure_ocp=remeasure_ocp)
 
-            meta.update(metadata)
-            tx['experiment'].update(meta, ['id'])
+        with potentiostat.controller(start_idx=potentiostat_id) as pstat:
+            for sequence_id, instruction in enumerate(instructions):
+
+                experiment = sdc.experiment.from_command(instruction)
+
+                opname = instruction['op']
+                metadata = {
+                    'op': opname,
+                    'datafile': f'{basename}_{sequence_id}_{opname}.csv'
+                    }
+
+                results, m = pstat.run(experiment)
+                results = pd.DataFrame(results)
+                metadata.update(m)
+
+                with self.db as tx:
+                    experiment_id = tx['experiment'].insert(metadata)
+                    results.to_csv(os.path.join(self.data_dir, metadata['datafile']))
 
         print('finished')
         if plot:
-            r = results[results['segment'] == segment]
             figpath = os.path.join(self.figure_dir, 'lpr_plot_{}.png'.format(meta['id']))
-            visualization.plot_lpr(r['current'], r['potential'], figpath=figpath)
+            visualization.plot_lpr(results['current'], results['potential'], figpath=figpath)
             _slack.post_image(web_client, figpath, title=f"LPR {meta['id']}")
 
+    def notify(self, message, block=False):
 
-    def run_experiment(self, instructions_json: str):
-        """ run an SDC experiment """
+        if block:
+            message = f'*confirm*: {message}'
 
-        # args should contain a sequence of SDC experiments -- basically the "instructions"
-        # segment of an autoprotocol protocol
-        # that comply with the SDC experiment schema (TODO: finalize and enforce schema)
-        instructions = json.loads(instructions_json)
+        print(message)
+        if self.notify:
+            web_client.chat_postMessage(channel='#asdc', text=message, icon_emoji=':sciencebear:')
+
+        if block:
+            input('press enter to allow running the experiment...')
+
+    def run_experiment(self, instructions: List[Dict]):
+        """ run an SDC experiment
+
+        args should contain a sequence of SDC experiments -- basically the "instructions"
+        segment of an autoprotocol protocol
+        that comply with the SDC experiment schema (TODO: finalize and enforce schema)
+
+        TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
+        # heuristic check for experimental error signals?
+        """
 
         # check for an instruction group name/intent
         intent = instructions[0].get('intent')
-        experiment_id = instructions[0].get('experiment_id')
 
         if intent is not None:
             header = instructions[0]
@@ -795,10 +837,10 @@ class SDC():
         x_combi, y_combi = header.get('x'), header.get('y')
 
         self.establish_droplet(x_combi, y_combi, instructions[0])
+        print(f'current pH reading is {self.phmeter.pH[-1]}')
 
         meta = {
             'intent': intent,
-            'experiment_id': experiment_id,
             'instructions': json.dumps(instructions),
             'x_combi': float(x_combi),
             'y_combi': float(y_combi),
@@ -808,68 +850,45 @@ class SDC():
             'flag': False,
         }
 
-        # wrap the whole experiment in a transaction
-        # this way, if the experiment is cancelled, it's not committed to the db
-
-        # TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
-        # heuristic check for experimental error signals?
         with self.db as tx:
-
-            stem = 'asdc'
-            meta['id'] = tx['experiment'].insert(meta)
-            datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
-            meta['datafile'] = datafile
-
+            location_id = tx['location'].insert(meta)
             summary = '-'.join(step['op'] for step in instructions)
-            _msg = f"experiment *{meta['id']}*:  {summary}"
+            message = f"location *{location_id}*:  {summary}"
+            self.notify(message, block=self.confirm_experiment)
 
-            if self.confirm_experiment:
-                if self.notify:
-                    web_client.chat_postMessage(channel='#asdc', text=f'*confirm*: {_msg}', icon_emoji=':sciencebear:')
-                else:
-                    print(f'*confirm*: {_msg}')
-                input('press enter to allow running the experiment...')
+        # run e-chem experiments and store results in external csv file
+        basename = f'asdc_data_{location_id:03d}'
+        pH_logfile = os.path.join(self.data_dir, f'pH_log_run{meta["id"]:03d}.csv')
 
-            elif self.notify:
-                web_client.chat_postMessage(channel='#asdc', text=_msg, icon_emoji=':sciencebear:')
+        with self.phmeter.monitor(interval=5, logfile=pH_logfile):
+            with potentiostat.controller(start_idx=potentiostat_id) as pstat:
+                for sequence_id, instruction in enumerate(instructions):
 
-            # run e-chem experiments and store results in external csv file
-            # TODO: use more granular database entries to enable splitting out e-chem actions into separate rows/files
-            print(f'current pH reading is {self.phmeter.pH[-1]}')
-            pH_logfile = os.path.join(self.data_dir, f'pH_log_run{meta["id"]:03d}.csv')
+                    experiment = sdc.experiment.from_command(instruction)
+                    if experiment is None:
+                        continue
 
-            with self.phmeter.monitor(interval=5, logfile=pH_logfile):
-                results, metadata = sdc.experiment.run(instructions, cell=self.cell, verbose=self.verbose)
+                    opname = instruction['op']
+                    metadata = {
+                        'op': opname,
+                        'datafile': f'{basename}_{sequence_id}_{opname}.csv'
+                        }
 
-            results.to_csv(os.path.join(self.data_dir, datafile))
+                    results, m = pstat.run(experiment)
+                    results = pd.DataFrame(results)
+                    metadata.update(m)
 
-            metadata['parameters'] = json.dumps(metadata.get('parameters'))
-            if self.pump_array:
-                metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
+                    if self.pump_array:
+                        metadata['flow_setpoint'] = json.dumps(self.pump_array.flow_setpoint)
 
-            meta.update(metadata)
-            tx['experiment'].update(meta, ['id'])
+                    with self.db as tx:
+                        experiment_id = tx['experiment'].insert(metadata)
+                        results.to_csv(os.path.join(self.data_dir, metadata['datafile']))
 
         if self.notify:
             web_client.chat_postMessage(
                 channel='#asdc', text=f"finished experiment {meta['id']}: {summary}", icon_emoji=':sciencebear:'
             )
-
-        if self.plot_current:
-            figpath = os.path.join(self.figure_dir, 'current_plot_{}.png'.format(meta['id']))
-            visualization.plot_i(results['elapsed_time'], results['current'], figpath=figpath)
-            if self.notify:
-                _slack.post_image(web_client, figpath, title=f"current vs time {meta['id']}")
-
-        if self.plot_cv:
-            figpath = os.path.join(self.figure_dir, 'cv_plot_{}.png'.format(meta['id']))
-            visualization.plot_cv(results['potential'], results['current'], segment=results['segment'], figpath=figpath)
-
-            if self.notify:
-                try:
-                    _slack.post_image(web_client, figpath, title=f"CV {meta['id']}")
-                except:
-                    pass
 
     def run_characterization(self, args: str):
         """ perform cell cleanup and characterization
@@ -1282,18 +1301,18 @@ class SDC():
     def batch_execute_experiments(self, instructions_file):
 
         with open(instructions_file, 'r') as f:
-            experiments = json.load(f)
+            instructions = json.load(f)
 
         if self.resume:
-            experiment_idx = self.db['experiment'].count()
-            print(f'resuming starting at experiment {experiment_idx}')
-            experiments = experiments[experiment_idx:]
+            location_idx = self.db['location'].count()
+            print(f'resuming starting at sample location {location_idx}')
+            instructions = instructions[location_idx:]
 
         current_pH = None
-        for experiment in experiments:
-            print(json.dumps(experiment))
+        for instruction_chain in instructions:
+            print(json.dumps(instruction_chain))
 
-            pH = experiment[1].get('pH')
+            pH = instruction_chain[1].get('pH')
 
             if pH != current_pH:
                 message = f'Reminder: make sure to set the pH to {pH}'
@@ -1302,7 +1321,7 @@ class SDC():
                 print(message)
                 input('press <ENTER> to continue')
 
-            self.run_experiment(json.dumps(experiment))
+            self.run_experiment(instruction_chain)
 
         return
 

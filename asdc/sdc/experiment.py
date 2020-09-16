@@ -3,261 +3,196 @@ import json
 import time
 import numpy as np
 import pandas as pd
+from typing import Optional
 from datetime import datetime
 
 from asdc import _slack
 
-if sys.platform == 'win32':
-    from . import potentiostat
-else:
-    # except ModuleNotFoundError:
-    from .shims import potentiostat
+from .experiment_defaults import *
 
-# the 3F potentiostat
-potentiostat_id = 17109013
-POLL_INTERVAL = 1
+# if sys.platform == 'win32':
+#     from . import potentiostat
+# else:
+#     # except ModuleNotFoundError:
+#     from .shims import potentiostat
+
 MIN_SAMPLING_FREQUENCY = 1.0e-5
 
-def run_experiment_sequence(pstat, poll_interval=POLL_INTERVAL):
-    """ run an SDC experiment sequence -- busy wait until it's finished """
 
-    pstat.start()
+def from_command(instruction):
+    """ {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_size": 0.1, "step_time": 0.5} """
 
-    error_codes = set()
-    metadata = {'timestamp_start': datetime.now()}
+    opname = instruction.get('op')
+    op = potentiostat_ops.get(opname)
 
-    while pstat.sequence_running():
-        time.sleep(poll_interval)
-        pstat.update_status()
-        overload_status = pstat.overload_status()
-        if overload_status != 0:
-            print('OVERLOAD:', overload_status)
-            error_codes.add(overload_status)
+    if op is None:
+        return None
 
-    metadata['timestamp'] = datetime.now()
-    metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
+    Expt = potentiostat_ops[op]
 
-    results = pd.DataFrame(
-        {
-            'current': pstat.current(),
-            'potential': pstat.potential(),
-            'elapsed_time': pstat.elapsed_time(),
-            'applied_potential': pstat.applied_potential(),
-            'current_range': pstat.current_range_history(),
-            'segment': pstat.segment()
-        }
-    )
+    return Expt(**instruction)
 
-    return results, metadata
+@dataclass
+class LPR(LPRArgs):
+    """ linear polarization resistance
 
-def setup_potentiostatic(pstat, data, cell='INTERNAL'):
-    """ run a constant potential
+    initial_potential (float:volt)
+    final_potential (float:volt)
+    step_size: (float: V)
+    step_time: (float:second)
+
+    {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_size": 0.1, "step_time": 0.5}
+
+    """
+    versus: str = 'VS OC'
+    setup_func: str = 'AddLinearPolarizationResistance'
+
+    def getargs(self):
+
+        # override any default arguments...
+        args = self.__dict__
+        args['versus_initial'] = args['versus_final'] = args['versus']
+
+        args = LPRArgs.from_dict(args)
+        return args.format()
+
+
+@dataclass
+class StaircaseLSV(StaircaseLSVArgs):
+    """ staircase linear scan voltammetry
+
+    initial_potential (float:volt)
+    final_potential (float:volt)
+    step_height: (float:volt)
+    step_time: (float:second)
+    scan_rate (float:volt/second)
+
+    {"op": "staircase_lsv", "initial_potential": 0.0, "final_potential": 1.0, "step_height": 0.001, "step_time": 0.8}
+    """
+    versus: str = 'VS REF'
+    setup_func: str = 'AddStaircaseLinearScanVoltammetry'
+    filter: Optional[str] = None
+
+    def getargs(self):
+
+        # override any default arguments...
+        args = self.__dict__
+        args['versus_initial'] = args['versus_final'] = args['versus']
+        if args['filter'] is not None:
+            args['e_filter'] = args['i_filter'] = args['filter']
+
+        args = StaircaseLSVArgs.from_dict(args)
+        return args.format()
+
+@dataclass
+class Potentiostatic(PotentiostaticArgs):
+    """ potentiostatic: hold at constant potential
 
     potential (float:volt)
     duration (float:second)
 
     {"op": "potentiostatic", "potential": Number(volts), "duration": Time(seconds)}
     """
+    n_points: int = 3000
+    duration: int = 10
+    versus: str = 'VS REF'
+    setup_func: str = 'AddPotentiostatic'
 
-    n_points = 3000
-    duration = data.get('duration', 10)
-    time_per_point = np.maximum(duration / n_points, MIN_SAMPLING_FREQUENCY)
-    filter_setting = data.get('filter', '1HZ')
 
-    status, params = pstat.potentiostatic(
-        initial_potential=data.get('potential'),
-        time_per_point=time_per_point,
-        duration=duration,
-        current_range=data.get('current_range', 'AUTO'),
-        e_filter=filter_setting,
-        i_filter=filter_setting,
-        cell_to_use=cell
-    )
+    def getargs(self):
 
-    return status, params
+        time_per_point = np.maximum(self.duration / self.n_points, MIN_SAMPLING_FREQUENCY)
 
-def setup_lsv(pstat, data, cell='INTERNAL'):
+        # override any default arguments...
+        args = self.__dict__
+        args['time_per_point'] = time_per_point
+        args['versus_initial'] = args['versus']
+
+        args = PotentiostaticArgs.from_dict(args)
+        return args.format()
+
+
+@dataclass
+class LSV(LSVArgs):
     """ linear scan voltammetry
 
     initial_potential (float:volt)
     final_potential (float:volt)
     scan_rate (float:volt/second)
 
-    {
-        "op": "lsv",
-        "initial_potential": 0.0,
-        "final_potential": 1.0,
-        "scan_rate": 0.075
-    }
+    {"op": "lsv", "initial_potential": 0.0, "final_potential": 1.0, "scan_rate": 0.075}
     """
+    versus: str = 'VS REF'
+    setup_func: str = 'AddLinearScanVoltammetry'
+    filter: Optional[str] = None
 
-    filter_setting = data.get('filter', '1HZ')
-    vs = data.get('vs', 'VS REF')
+    def getargs(self):
 
-    status, params = pstat.linear_scan_voltammetry(
-        initial_potential=data.get('initial_potential'),
-        versus_initial=vs,
-        final_potential=data.get('final_potential'),
-        versus_final=vs,
-        scan_rate=data.get('scan_rate'),
-        current_range=data.get('current_range', 'AUTO'),
-        e_filter=filter_setting,
-        i_filter=filter_setting,
-        cell_to_use=cell
-    )
+        # override any default arguments...
+        args = self.__dict__
+        args['versus_initial'] = args['versus_final'] = args['versus']
+        if args['filter'] is not None:
+            args['e_filter'] = args['i_filter'] = args['filter']
 
-    return status, params
+        args = LSVArgs.from_dict(args)
+        return args.format()
 
-def setup_staircase_lsv(pstat, data, cell='INTERNAL'):
-    """ staircase linear scan voltammetry
+@dataclass
+class Tafel(TafelArgs):
+    """ Tafel analysis
 
-    initial_potential (float:volt)
-    final_potential (float:volt)
-    scan_rate (float:volt/second)
+    {"op": "tafel", "initial_potential": V, "final_potential": V, "step_height": V, "step_time": s}
 
-    {
-        "op": "lsv",
-        "initial_potential": 0.0,
-        "final_potential": 1.0,
-        "scan_rate": 0.075
-    }
     """
+    versus: str = 'VS OC'
+    setup_func: str = 'AddTafel'
 
-    filter_setting = data.get('filter', '1HZ')
-    vs = data.get('vs', 'VS REF')
+    def getargs(self):
 
-    status, params = pstat.staircase_linear_scan_voltammetry(
-        initial_potential=data.get('initial_potential'),
-        versus_initial=vs,
-        final_potential=data.get('final_potential'),
-        versus_final=vs,
-        step_height=data.get('step_height'),
-        step_time=data.get('step_time'),
-        current_range=data.get('current_range', 'AUTO'),
-        e_filter=filter_setting,
-        i_filter=filter_setting,
-        cell_to_use=cell
-    )
+        # override any default arguments...
+        args = self.__dict__
+        args['versus_initial'] = args['versus_final'] = args['versus']
 
-    return status, params
+        args = TafelArgs.from_dict(args)
+        return args.format()
 
-def setup_lpr(pstat, data, cell='INTERNAL'):
-    """ linear polarization resistance
-
-    initial_potential (float:volt)
-    final_potential (float:volt)
-    step_height: (float: V)
-    step_time: (float:second)
-    vs (str)
-
-    {
-        "op": "lpr",
-        "initial_potential": 0.0,
-        "final_potential": 1.0,
-        "step_height": 0.1,
-        "step_time": 0.1,
-        "vs": "VS OC"
-    }
-    """
-
-    vs = data.get("vs", "VS OC")
-    filter_setting = data.get('filter', '1HZ')
-
-    status, params = pstat.linear_polarization_resistance(
-        initial_potential=data.get('initial_potential'),
-        versus_initial=vs,
-        final_potential=data.get('final_potential'),
-        versus_final=vs,
-        step_height=data.get('step_height'),
-        step_time=data.get('step_time'),
-        current_range=data.get('current_range', 'AUTO'),
-        e_filter=filter_setting,
-        i_filter=filter_setting,
-        cell_to_use=cell
-    )
-
-    return status, params
-
-def setup_tafel(pstat, data, cell='INTERNAL'):
-    """ set up Tafel
+@dataclass
+class OpenCircuit(OpenCircuitArgs):
+    """ Open circuit hold
 
     duration (float:second)
 
-    {
-        "op": "tafel",
-        "initial_potential": volts,
-        "final_potential": volts,
-        "step_height": volts,
-        "step_time": Time
-    }
+    {"op": "open_circuit", "duration": Time, "time_per_point": Time}
     """
-    time_per_point = 1
-    duration = data.get('duration', 10)
-    filter_setting = data.get('filter', '1HZ')
-    vs = data.get('vs', 'VS OC')
+    setup_func: str = 'AddOpenCircuit'
 
-    # run Tafel analysis
-    status, params = pstat.tafel(
-        initial_potential = data.get('initial_potential', -0.25),
-        versus_initial=vs,
-        final_potential = data.get('final_potential', 0.25),
-        versus_final=vs,
-        step_height = data.get('step_height', 0.001),
-        step_time = data.get('step_time', 0.5),
-        current_range=data.get('current_range', 'AUTO'),
-        e_filter=filter_setting,
-        i_filter=filter_setting,
-        cell_to_use=cell
-    )
+    def getargs(self):
 
-    return status, params
+        # override any default arguments...
+        args = self.__dict__
 
+        args = OpenCircuitArgs.from_dict(args)
+        return args.format()
 
-def setup_open_circuit(pstat, data, cell='INTERNAL'):
-    """ set up open circuit
-
-    duration (float:second)
-
-    {"op": "open_circuit", "duration": Time}
-    """
-    time_per_point = 1
-    duration = data.get('duration', 10)
-    filter_setting = data.get('filter', '1HZ')
-
-    # hold at open circuit potential
-    status, params = pstat.open_circuit(
-        time_per_point=time_per_point,
-        duration=duration,
-        current_range=data.get('current_range', 'AUTO'),
-        e_filter=filter_setting,
-        i_filter=filter_setting,
-        cell_to_use=cell
-    )
-
-    return status, params
-
-def setup_corrosion_oc(pstat, data, cell='INTERNAL'):
-    """ set up corrosion open circuit
+@dataclass
+class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):
+    """ Corrosion open circuit hold
 
     duration (float:second)
 
     {"op": "corrosion_oc", "duration": Time}
     """
-    time_per_point = 1
-    duration = data.get('duration', 10)
+    setup_func: str = 'AddCorrosionOpenCircuit'
 
-    status, params = pstat.corrosion_open_circuit(
-        time_per_point=time_per_point,
-        duration=duration,
-        current_range=data.get('current_range', 'AUTO'),
-        e_filter='1HZ',
-        i_filter='1HZ',
-        cell_to_use=cell
-    )
+    def getargs(self):
 
-    return status, params
+        # override any default arguments...
+        args = self.__dict__
+        args = CorrosionOpenCircuitArgs.from_dict(args)
+        return args.format()
 
-def setup_cv(pstat, data, cell='INTERNAL'):
+@dataclass
+class CyclicVoltammetry(CyclicVoltammetryArgs):
     """ set up a CV experiment
 
     initial_potential (float:volt)
@@ -277,32 +212,30 @@ def setup_cv(pstat, data, cell='INTERNAL'):
         "cycles": 2
     }
     """
-    filter_setting = data.get('filter', '1HZ')
 
-    status, params = pstat.multi_cyclic_voltammetry(
-        initial_potential=data.get('initial_potential'),
-        vertex_potential_1=data.get('vertex_potential_1'),
-        vertex_potential_2=data.get('vertex_potential_2'),
-        final_potential=data.get('final_potential'),
-        scan_rate=data.get('scan_rate'),
-        cycles=data.get('cycles'),
-        e_filter=filter_setting,
-        i_filter=filter_setting,
-        cell_to_use=cell,
-        current_range=data.get('current_range', 'AUTO')
-    )
+    versus: str = 'VS REF'
+    setup_func: str = 'AddCyclicVoltammetry'
 
-    return status, params
+    def getargs(self):
+
+        # override any default arguments...
+        args = self.__dict__
+
+        for key in ('initial', 'vertex_1', 'vertex_2', 'final'):
+            args[f'versus_{key}'] = args['versus']
+
+        args = CyclicVoltammetryArgs.from_dict(args)
+        return args.format()
 
 potentiostat_ops = {
-    'cv': setup_cv,
-    'lsv': setup_lsv,
-    'lpr': setup_lpr,
-    'tafel': setup_tafel,
-    'corrosion_oc': setup_corrosion_oc,
-    'open_circuit': setup_open_circuit,
-    'potentiostatic': setup_potentiostatic,
-    'staircase_lsv': setup_staircase_lsv
+    'cv': CyclicVoltammetry,
+    'lsv': LSV,
+    'lpr': LPR,
+    'tafel': Tafel,
+    'corrosion_oc': CorrosionOpenCircuit,
+    'open_circuit': OpenCircuit,
+    'potentiostatic': Potentiostatic,
+    'staircase_lsv': StaircaseLSV
 }
 
 def run(instructions, cell='INTERNAL', verbose=False, remeasure_ocp=False):

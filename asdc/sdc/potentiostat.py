@@ -3,8 +3,10 @@
 import os
 import clr
 import sys
+import json
 import time
 import inspect
+from datetime import datetime
 from contextlib import contextmanager
 
 # pythonnet checks PYTHONPATH for assemblies to load...
@@ -60,6 +62,49 @@ class Potentiostat():
         self.current_range = None
 
         return
+
+    def __call__(self, experiment):
+        return self.run(experiment)
+
+    def check_overload(self):
+        self.update_status()
+        overload_status = self.overload_status()
+        if overload_status != 0:
+            print('OVERLOAD:', overload_status)
+        return overload_status
+
+    def run(self, experiment):
+        """ run an SDC experiment sequence -- busy wait until it's finished """
+
+        argstring = experiment.getargs()
+        f_setup = getattr(self.instrument.Experiment, experiment.setup_func)
+        f_setup(argstring)
+
+        metadata = {
+            'timestamp_start': datetime.now(),
+            'parameters': argstring
+        }
+        self.start()
+
+        error_codes = set()
+
+        while self.sequence_running():
+            time.sleep(self.poll_interval)
+            error_codes.add(self.check_overload())
+
+        metadata['timestamp_end'] = datetime.now()
+        metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
+
+        results = {
+                    'current': self.current(),
+                    'potential': self.potential(),
+                    'elapsed_time': self.elapsed_time(),
+                    'applied_potential': self.applied_potential(),
+                    'current_range': self.current_range_history(),
+                    'segment': self.segment()
+                  }
+
+        return results, metadata
 
     def connect(self):
         self.index = self.instrument.FindNext(self.start_idx)
@@ -361,482 +406,3 @@ indicates E, Power Amp or Thermal Overload has occurred.
     def measure_open_circuit(self):
         status = self.instrument.Experiment.AddMeasureOpenCircuit()
         return status, None
-
-    def linear_scan_voltammetry(self,
-        initial_potential=0.0,
-        versus_initial='VS REF',
-        final_potential=0.65,
-        versus_final='VS REF',
-        scan_rate=1.0,
-        limit_1_type=None,
-        limit_1_direction='<',
-        limit_1_value=0,
-        limit_2_type=None,
-        limit_2_direction='<',
-        limit_2_value=0,
-        current_range='AUTO',
-        electrometer='AUTO',
-        e_filter='AUTO',
-        i_filter='AUTO',
-        leave_cell_on='NO',
-        cell_to_use='INTERNAL',
-        enable_ir_compensation='DISABLED',
-        user_defined_the_amount_of_ir_comp=1,
-        use_previously_determined_ir_comp='YES',
-        bandwidth='AUTO',
-        low_current_interface_bandwidth='AUTO'):
-        """ linear_scan_voltammetry
-        IP Vs FP Vs SR L1T L1D L1V L2T L2D L2V IR EM EF IF LCO CTU iRC UD UP BW LBW
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.linear_scan_voltammetry).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddLinearScanVoltammetry(paramstring)
-        return status, parameters
-
-    def staircase_linear_scan_voltammetry(self,
-        initial_potential=0.0,
-        versus_initial='VS REF',
-        final_potential=0.65,
-        versus_final='VS REF',
-        step_height=0.1,
-        step_time=1.0,
-        limit_1_type=None,
-        limit_1_direction='<',
-        limit_1_value=0,
-        limit_2_type=None,
-        limit_2_direction='<',
-        limit_2_value=0,
-        current_range='AUTO',
-        acquisition_mode='AUTO',
-        electrometer='AUTO',
-        e_filter='AUTO',
-        i_filter='AUTO',
-        leave_cell_on='NO',
-        cell_to_use='INTERNAL',
-        enable_ir_compensation='DISABLED',
-        user_defined_the_amount_of_ir_comp=1,
-        use_previously_determined_ir_comp='YES',
-        bandwidth='AUTO',
-        low_current_interface_bandwidth='AUTO'):
-        """ staircase_linear_scan_voltammetry
-        IP Vs FP Vs SH ST L1T L1D L1V L2T L2D L2V IR AM EM EF IF LCO CTU iRC UD UP BW LBW
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.linear_scan_voltammetry).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddStaircaseLinearScanVoltammetry(paramstring)
-        return status, parameters
-
-    def linear_polarization_resistance(self,
-        initial_potential=0.0,
-        versus_initial='VS REF',
-        final_potential=1.0,
-        versus_final='VS REF',
-        step_height=0.1, # step size in volts
-        step_time=0.1, # step time in seconds
-        limit_1_type=None,
-        limit_1_direction='<',
-        limit_1_value=0,
-        limit_2_type=None,
-        limit_2_direction='<',
-        limit_2_value=0,
-        current_range='AUTO',
-        acquisition_mode='AUTO',
-        electrometer='AUTO',
-        e_filter='AUTO',
-        i_filter='AUTO',
-        leave_cell_on='NO',
-        cell_to_use='INTERNAL',
-        enable_ir_compensation='DISABLED',
-        bandwidth='AUTO',
-        low_current_interface_bandwidth='AUTO'):
-        """ linear_polarization_resistance
-
-        IP Vs FP Vs SH ST L1T L1D L1V L2T L2D L2V IR AM EM EF IF LCO CTU iRC BW LBW
-
-        acquisition_mode: AUTO, NONE, 4/4 or AVERAGE
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.linear_polarization_resistance).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddLinearPolarizationResistance(paramstring)
-        return status, parameters
-
-    def open_circuit(self,
-            time_per_point=1,
-            duration=10,
-            limit_1_type='NONE',
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type=None,
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='2MA',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            cell_to_use='INTERNAL',
-            bandwidth='AUTO',
-            low_current_interface_bandwidth='AUTO',
-            e_resolution='AUTO'):
-        """ open_circuit
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-
-        default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.open_circuit).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddOpenCircuit(paramstring)
-        return status, parameters
-
-    def corrosion_open_circuit(self,
-            time_per_point=1,
-            duration=10,
-            limit_1_type='NONE',
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type=None,
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='2MA',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            cell_to_use='INTERNAL',
-            bandwidth='AUTO',
-            low_current_interface_bandwidth='AUTO',
-            e_resolution='AUTO'):
-        """ corrosion_open_circuit
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.corrosion_open_circuit).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddCorrosionOpenCircuit(paramstring)
-        return status, parameters
-
-    def tafel(self,
-              initial_potential=-0.1,
-              versus_initial='VS OC',
-              final_potential=0.1,
-              versus_final='VS OC',
-              step_height=0.01,
-              step_time=0.5,
-              limit_1_type=None,
-              limit_1_direction='<',
-              limit_1_value=0,
-              limit_2_type=None,
-              limit_2_direction='<',
-              limit_2_value=0,
-              current_range='AUTO',
-              acquisition_mode='AUTO',
-              electrometer='AUTO',
-              e_filter='AUTO',
-              i_filter='AUTO',
-              leave_cell_on='NO',
-              cell_to_use='INTERNAL',
-              enable_ir_compensation='DISABLED',
-              bandwidth='AUTO',
-              low_current_interface_bandwidth='AUTO'):
-        """ tafel
-
-        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        final_potential [Final Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        step_height (V)
-        step_time (s)
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        acquisition_mode
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        leave_cell_on [Leave Cell On] {YES or NO}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
-        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
-        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.tafel).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddTafel(paramstring)
-        return status, parameters
-
-
-    # NOTE: use enum for options?
-    def cyclic_voltammetry(self,
-            initial_potential=0.0,
-            versus_initial='VS REF',
-            vertex_potential=0.65,
-            versus_vertex='VS REF',
-            vertex_hold=0,
-            acquire_data_during_vertex_hold=True,
-            final_potential=0.25,
-            versus_final='VS REF',
-            scan_rate=0.1,
-            limit_1_type=None,
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type=None,
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='AUTO',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            leave_cell_on='NO',
-            cell_to_use='INTERNAL',
-            enable_ir_compensation='DISABLED',
-            user_defined_the_amount_of_ir_comp=1,
-            use_previously_determined_ir_comp='YES',
-            bandwidth='AUTO',
-            low_current_interface_bandwidth='AUTO'):
-        """ cyclic_voltammetry
-
-        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_potential [Vertex Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Vertex Scan)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_hold [Vertex Hold] (s) {User value}
-        acquire_data_during_vertex_hold [Acquire data during Vertex Hold] {YES or NO}
-        final_potential [Final Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        scan_rate [Scan Rate] (V/s) {User value}
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        leave_cell_on [Leave Cell On] {YES or NO}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
-        user_defined_the_amount_of_ir_comp [User defined the amount of iR Comp] (ohms) {User value}
-        use_previously_determined_ir_comp [Use previously determined iR Comp] {YES or NO}
-        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
-        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.cyclic_voltammetry).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddCyclicVoltammetry(paramstring)
-        return status, parameters
-
-    def multi_cyclic_voltammetry(self,
-            initial_potential=0.0,
-            versus_initial='VS REF',
-            vertex_potential_1=1.0,
-            versus_vertex_1='VS REF',
-            vertex_hold_1=0,
-            acquire_data_during_vertex_hold_1='NO',
-            vertex_potential_2=-1.0,
-            versus_vertex_2='VS REF',
-            vertex_hold_2=0,
-            acquire_data_during_vertex_hold_2='NO',
-            scan_rate=0.1,
-            cycles=3,
-            limit_1_type='NONE',
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type='NONE',
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='AUTO',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            leave_cell_on='NO',
-            cell_to_use='INTERNAL',
-            enable_ir_compensation='DISABLED',
-            user_defined_the_amount_of_ir_comp=1,
-            use_previously_determined_ir_comp='YES',
-            bandwidth='AUTO',
-            final_potential=0.0,
-            versus_final='VS REF',
-            low_current_interface_bandwidth='AUTO'):
-        """ multi_cyclic_voltammetry
-
-        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_potential [Vertex Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Vertex Scan)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_hold [Vertex Hold] (s) {User value}
-        acquire_data_during_vertex_hold [Acquire data during Vertex Hold] {YES or NO}
-        vertex_potential [Vertex Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Vertex Scan)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_hold [Vertex Hold] (s) {User value}
-        acquire_data_during_vertex_hold [Acquire data during Vertex Hold] {YES or NO}
-        scan_rate [Scan Rate] (V/s) {User value}
-        cycles [Cycles] (#) {User value}
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        leave_cell_on [Leave Cell On] {YES or NO}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
-        user_defined_the_amount_of_ir_comp [User defined the amount of iR Comp] (ohms) {User value}
-        use_previously_determined_ir_comp [Use previously determined iR Comp] {YES or NO}
-        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
-        final_potential [Final Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.multi_cyclic_voltammetry).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddMultiCyclicVoltammetry(paramstring)
-        return status, parameters
-
-    def potentiostatic(self,
-            initial_potential=0.0,
-            versus_initial='VS REF',
-            time_per_point=0.00001,
-            duration=10,
-            limit_1_type=None,
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type=None,
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='AUTO',
-            acquisition_mode='AUTO',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            leave_cell_on='NO',
-            cell_to_use='INTERNAL',
-            enable_ir_compensation='DISABLED',
-            bandwidth='AUTO',
-            low_current_interface_bandwidth='AUTO'):
-        """ potentiostatic
-
-        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        time_per_point [TPP] (s) {float 0.00001  to ...}
-        duration [Dur] (s) {float 0.00001 to ...}
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        acquisition_mode [AM] {AUTO, NONE, 4/4, AVERAGE}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        leave_cell_on [Leave Cell On] {YES or NO}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
-        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
-        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.potentiostatic).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = self.instrument.Experiment.AddPotentiostatic(paramstring)
-        return status, parameters
