@@ -745,7 +745,7 @@ class SDC():
 
         return
 
-    def notify(self, message, block=self.confirm_experiment):
+    def notify(self, message, block=False):
 
         if block:
             message = f'*confirm*: {message}'
