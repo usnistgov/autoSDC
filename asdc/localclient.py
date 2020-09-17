@@ -772,7 +772,7 @@ class SDC():
             location_id = tx['location'].insert(meta)
             summary = '-'.join(step['op'] for step in instructions)
             message = f"location *{location_id}*:  {summary}"
-            self.notify(message, block=self.confirm_experiment)
+            self.send_notification(message, block=self.confirm_experiment)
 
         # run e-chem experiments and store results in external csv file
         basename = f'asdc_data_{location_id:03d}'
@@ -804,7 +804,8 @@ class SDC():
             visualization.plot_lpr(results['current'], results['potential'], figpath=figpath)
             _slack.post_image(web_client, figpath, title=f"LPR {meta['id']}")
 
-    def notify(self, message, block=False):
+    def send_notification(self, message, block=False):
+
 
         if block:
             message = f'*confirm*: {message}'
@@ -854,7 +855,7 @@ class SDC():
             location_id = tx['location'].insert(meta)
             summary = '-'.join(step['op'] for step in instructions)
             message = f"location *{location_id}*:  {summary}"
-            self.notify(message, block=self.confirm_experiment)
+            self.send_notification(message, block=self.confirm_experiment)
 
         # run e-chem experiments and store results in external csv file
         basename = f'asdc_data_{location_id:03d}'
