@@ -62,14 +62,15 @@ def setup_potentiostatic(pstat, data, cell='INTERNAL'):
     n_points = 3000
     duration = data.get('duration', 10)
     time_per_point = np.maximum(duration / n_points, MIN_SAMPLING_FREQUENCY)
+    filter_setting = data.get('filter', '1HZ')
 
     status, params = pstat.potentiostatic(
         initial_potential=data.get('potential'),
         time_per_point=time_per_point,
         duration=duration,
         current_range=data.get('current_range', 'AUTO'),
-        e_filter='1HZ',
-        i_filter='1HZ',
+        e_filter=filter_setting,
+        i_filter=filter_setting,
         cell_to_use=cell
     )
 
@@ -90,13 +91,15 @@ def setup_lsv(pstat, data, cell='INTERNAL'):
     }
     """
 
+    filter_setting = data.get('filter', '1HZ')
+
     status, params = pstat.linear_scan_voltammetry(
         initial_potential=data.get('initial_potential'),
         final_potential=data.get('final_potential'),
         scan_rate=data.get('scan_rate'),
         current_range=data.get('current_range', 'AUTO'),
-        e_filter='1HZ',
-        i_filter='1HZ',
+        e_filter=filter_setting,
+        i_filter=filter_setting,
         cell_to_use=cell
     )
 
@@ -123,6 +126,7 @@ def setup_lpr(pstat, data, cell='INTERNAL'):
     """
 
     vs = data.get("vs", "VS OC")
+    filter_setting = data.get('filter', '1HZ')
 
     status, params = pstat.linear_polarization_resistance(
         initial_potential=data.get('initial_potential'),
@@ -132,8 +136,8 @@ def setup_lpr(pstat, data, cell='INTERNAL'):
         step_size=data.get('step_size'),
         step_time=data.get('step_time'),
         current_range=data.get('current_range', 'AUTO'),
-        e_filter='1HZ',
-        i_filter='1HZ',
+        e_filter=filter_setting,
+        i_filter=filter_setting,
         cell_to_use=cell
     )
 
@@ -154,6 +158,7 @@ def setup_tafel(pstat, data, cell='INTERNAL'):
     """
     time_per_point = 1
     duration = data.get('duration', 10)
+    filter_setting = data.get('filter', '1HZ')
 
     # run Tafel analysis
     status, params = pstat.tafel(
@@ -162,8 +167,8 @@ def setup_tafel(pstat, data, cell='INTERNAL'):
         step_height = data.get('step_height', 0.001),
         step_time = data.get('step_time', 0.5),
         current_range=data.get('current_range', 'AUTO'),
-        e_filter='1HZ',
-        i_filter='1HZ',
+        e_filter=filter_setting,
+        i_filter=filter_setting,
         cell_to_use=cell
     )
 
@@ -179,14 +184,15 @@ def setup_open_circuit(pstat, data, cell='INTERNAL'):
     """
     time_per_point = 1
     duration = data.get('duration', 10)
+    filter_setting = data.get('filter', '1HZ')
 
     # hold at open circuit potential
     status, params = pstat.open_circuit(
         time_per_point=time_per_point,
         duration=duration,
         current_range=data.get('current_range', 'AUTO'),
-        e_filter='1HZ',
-        i_filter='1HZ',
+        e_filter=filter_setting,
+        i_filter=filter_setting,
         cell_to_use=cell
     )
 
@@ -233,6 +239,7 @@ def setup_cv(pstat, data, cell='INTERNAL'):
         "cycles": 2
     }
     """
+    filter_setting = data.get('filter', '1HZ')
 
     status, params = pstat.multi_cyclic_voltammetry(
         initial_potential=data.get('initial_potential'),
@@ -241,8 +248,8 @@ def setup_cv(pstat, data, cell='INTERNAL'):
         final_potential=data.get('final_potential'),
         scan_rate=data.get('scan_rate'),
         cycles=data.get('cycles'),
-        e_filter='1HZ',
-        i_filter='1HZ',
+        e_filter=filter_setting,
+        i_filter=filter_setting,
         cell_to_use=cell,
         current_range=data.get('current_range', 'AUTO')
     )
