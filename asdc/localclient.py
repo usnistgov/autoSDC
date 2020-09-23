@@ -184,20 +184,20 @@ class SDC():
             )
         except:
             print('could not connect to pump array')
-            raise
+            # raise
             self.pump_array = None
 
         try:
             self.reglo = sdc.reglo.Reglo(address=reglo_port, debug=config.get('reglo_debug', False))
         except:
             print('could not connect to the Reglo peristaltic pump')
-            raise
+            # raise
 
         try:
             self.phmeter = sdc.orion.PHMeter(orion_port, zmq_pub=zmq_pub)
         except:
             print('could not connect to the Orion pH meter')
-            raise
+            # raise
 
         try:
             self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
