@@ -105,21 +105,53 @@ def setup_lsv(pstat, data, cell='INTERNAL'):
 
     return status, params
 
+def setup_staircase_lsv(pstat, data, cell='INTERNAL'):
+    """ staircase linear scan voltammetry
+
+    initial_potential (float:volt)
+    final_potential (float:volt)
+    scan_rate (float:volt/second)
+
+    {
+        "op": "lsv",
+        "initial_potential": 0.0,
+        "final_potential": 1.0,
+        "scan_rate": 0.075
+    }
+    """
+
+    filter_setting = data.get('filter', '1HZ')
+    vs = data.get('vs', 'VS REF')
+
+    status, params = pstat.staircase_linear_scan_voltammetry(
+        initial_potential=data.get('initial_potential'),
+        versus_initial=vs,
+        final_potential=data.get('final_potential'),
+        versus_final=vs,
+        step_height=data.get('step_height'),
+        step_time=data.get('step_time'),
+        current_range=data.get('current_range', 'AUTO'),
+        e_filter=filter_setting,
+        i_filter=filter_setting,
+        cell_to_use=cell
+    )
+
+    return status, params
+
 def setup_lpr(pstat, data, cell='INTERNAL'):
     """ linear polarization resistance
 
     initial_potential (float:volt)
     final_potential (float:volt)
-    step_size: (float: V)
+    step_height: (float: V)
     step_time: (float:second)
-    cycles (int)
     vs (str)
 
     {
         "op": "lpr",
         "initial_potential": 0.0,
         "final_potential": 1.0,
-        "step_size": 0.1,
+        "step_height": 0.1,
         "step_time": 0.1,
         "vs": "VS OC"
     }
@@ -133,7 +165,7 @@ def setup_lpr(pstat, data, cell='INTERNAL'):
         versus_initial=vs,
         final_potential=data.get('final_potential'),
         versus_final=vs,
-        step_size=data.get('step_size'),
+        step_height=data.get('step_height'),
         step_time=data.get('step_time'),
         current_range=data.get('current_range', 'AUTO'),
         e_filter=filter_setting,
@@ -263,7 +295,8 @@ potentiostat_ops = {
     'tafel': setup_tafel,
     'corrosion_oc': setup_corrosion_oc,
     'open_circuit': setup_open_circuit,
-    'potentiostatic': setup_potentiostatic
+    'potentiostatic': setup_potentiostatic,
+    'staircase_lsv': setup_staircase_lsv
 }
 
 def run(instructions, cell='INTERNAL', verbose=False):

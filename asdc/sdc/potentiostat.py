@@ -397,12 +397,53 @@ indicates E, Power Amp or Thermal Overload has occurred.
         status = self.instrument.Experiment.AddLinearScanVoltammetry(paramstring)
         return status, parameters
 
+    def staircase_linear_scan_voltammetry(self,
+        initial_potential=0.0,
+        versus_initial='VS REF',
+        final_potential=0.65,
+        versus_final='VS REF',
+        step_height=0.1,
+        step_time=1.0
+        limit_1_type=None,
+        limit_1_direction='<',
+        limit_1_value=0,
+        limit_2_type=None,
+        limit_2_direction='<',
+        limit_2_value=0,
+        current_range='AUTO',
+        acquisition_mode='AUTO',
+        electrometer='AUTO',
+        e_filter='AUTO',
+        i_filter='AUTO',
+        leave_cell_on='NO',
+        cell_to_use='INTERNAL',
+        enable_ir_compensation='DISABLED',
+        user_defined_the_amount_of_ir_comp=1,
+        use_previously_determined_ir_comp='YES',
+        bandwidth='AUTO',
+        low_current_interface_bandwidth='AUTO'):
+        """ staircase_linear_scan_voltammetry
+        IP Vs FP Vs SH ST L1T L1D L1V L2T L2D L2V IR AM EM EF IF LCO CTU iRC UD UP BW LBW
+        """
+        parameters = locals().copy()
+
+        # concatenate argument values in function signature order
+        args = inspect.getfullargspec(self.linear_scan_voltammetry).args
+
+        # remove reference to controller object
+        args = args[1:]
+        del parameters['self']
+
+        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
+        status = self.instrument.Experiment.AddStaircaseLinearScanVoltammetry(paramstring)
+        return status, parameters
+
     def linear_polarization_resistance(self,
         initial_potential=0.0,
         versus_initial='VS REF',
         final_potential=1.0,
         versus_final='VS REF',
-        step_size=0.1, # step size in volts
+        step_height=0.1, # step size in volts
         step_time=0.1, # step time in seconds
         limit_1_type=None,
         limit_1_direction='<',
