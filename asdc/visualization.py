@@ -32,6 +32,16 @@ def plot_iv(I, V, figpath='iv.png'):
     plt.close()
     return
 
+def plot_lpr(I, V, figpath='lpr.png'):
+    plt.plot(I, V)
+    plt.axvline(0, color='k')
+    plt.xlabel('current')
+    plt.ylabel('potential')
+    plt.savefig(figpath, bbox_inches='tight')
+    plt.clf()
+    plt.close()
+    return
+
 def plot_vi(I, V, figpath='iv.png'):
     plt.plot(V, np.log10(np.abs(I)))
     plt.ylabel('log current')

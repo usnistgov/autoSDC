@@ -743,7 +743,7 @@ class SDC():
 
         return
 
-    def quick_expt(self, instructions_json: str, internal=False):
+    def quick_expt(self, instructions_json: str, internal=False, plot=True):
         """ run a one-off e-chem sequence without touching the stages or pumps """
 
         instructions = json.loads(instructions_json)
@@ -769,6 +769,11 @@ class SDC():
             tx['experiment'].update(meta, ['id'])
 
         print('finished')
+        if plot:
+            figpath = os.path.join(self.figure_dir, 'lpr_plot_{}.png'.format(meta['id']))
+            visualization.plot_lpr(results['current'], results['potential'], figpath=figpath)
+            _slack.post_image(web_client, figpath, title=f"LPR {meta['id']}")
+
 
     def run_experiment(self, instructions_json: str):
         """ run an SDC experiment """
