@@ -92,10 +92,13 @@ def setup_lsv(pstat, data, cell='INTERNAL'):
     """
 
     filter_setting = data.get('filter', '1HZ')
+    vs = data.get('vs', 'VS REF')
 
     status, params = pstat.linear_scan_voltammetry(
         initial_potential=data.get('initial_potential'),
+        versus_initial=vs,
         final_potential=data.get('final_potential'),
+        versuss_final=vs,
         scan_rate=data.get('scan_rate'),
         current_range=data.get('current_range', 'AUTO'),
         e_filter=filter_setting,
@@ -191,11 +194,14 @@ def setup_tafel(pstat, data, cell='INTERNAL'):
     time_per_point = 1
     duration = data.get('duration', 10)
     filter_setting = data.get('filter', '1HZ')
+    vs = data.get('vs', 'VS OC')
 
     # run Tafel analysis
     status, params = pstat.tafel(
         initial_potential = data.get('initial_potential', -0.25),
+        versus_initial=vs,
         final_potential = data.get('final_potential', 0.25),
+        versus_final=vs,
         step_height = data.get('step_height', 0.001),
         step_time = data.get('step_time', 0.5),
         current_range=data.get('current_range', 'AUTO'),
