@@ -743,7 +743,7 @@ class SDC():
 
         return
 
-    def quick_expt(self, instructions_json: str, internal=False, plot=True, segment=1):
+    def quick_expt(self, instructions_json: str, internal=False, plot=True, segment=1, remeasure_ocp=False):
         """ run a one-off e-chem sequence without touching the stages or pumps """
 
         instructions = json.loads(instructions_json)
@@ -762,7 +762,7 @@ class SDC():
             datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
             meta['datafile'] = datafile
 
-            results, metadata = sdc.experiment.run(instructions, cell=cell, verbose=self.verbose)
+            results, metadata = sdc.experiment.run(instructions, cell=cell, verbose=self.verbose, remeasure_ocp=remeasure_ocp)
             results.to_csv(os.path.join(self.data_dir, datafile))
 
             meta.update(metadata)

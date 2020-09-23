@@ -358,6 +358,10 @@ indicates E, Power Amp or Thermal Overload has occurred.
         status = self.instrument.Experiment.AddOpenCircuit(default_params)
         return status, default_params
 
+    def measure_open_circuit(self):
+        status = self.instrument.Experiment.AddMeasureOpenCircuit()
+        return status, None
+
     def linear_scan_voltammetry(self,
         initial_potential=0.0,
         versus_initial='VS REF',

@@ -305,7 +305,7 @@ potentiostat_ops = {
     'staircase_lsv': setup_staircase_lsv
 }
 
-def run(instructions, cell='INTERNAL', verbose=False):
+def run(instructions, cell='INTERNAL', verbose=False, remeasure_ocp=False):
 
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
@@ -325,6 +325,9 @@ def run(instructions, cell='INTERNAL', verbose=False):
 
                 if params:
                     _params.append(params)
+
+                if remeasure_ocp:
+                    pstat.measure_open_circuit()
 
         # _slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
