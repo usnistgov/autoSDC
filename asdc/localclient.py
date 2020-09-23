@@ -743,6 +743,33 @@ class SDC():
 
         return
 
+    def quick_expt(self, instructions_json: str, internal=False):
+        """ run a one-off e-chem sequence without touching the stages or pumps """
+
+        instructions = json.loads(instructions_json)
+        print(f'running experiment {instructions}')
+
+        if internal:
+            cell = 'INTERNAL'
+        else:
+            cell = 'EXTERNAL'
+
+        meta = {'instructions': instructions_json, 'cell': cell}
+        with self.db as tx:
+
+            stem = 'asdc'
+            meta['id'] = tx['experiment'].insert(meta)
+            datafile = '{}_data_{:03d}.csv'.format(stem, meta['id'])
+            meta['datafile'] = datafile
+
+            results, metadata = sdc.experiment.run(instructions, cell=cell, verbose=self.verbose)
+            results.to_csv(os.path.join(self.data_dir, datafile))
+
+            meta.update(metadata)
+            tx['experiment'].update(meta, ['id'])
+
+        print('finished')
+
     def run_experiment(self, instructions_json: str):
         """ run an SDC experiment """
 
