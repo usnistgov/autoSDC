@@ -273,6 +273,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
         if type(instructions) is dict and instructions.get('op'):
             # single experiment -- just run it
             instructions = [instructions]
+            metadata['measurement'] = json.dumps([instructions.get('op')])
 
         _params = []
         for instruction in instructions:
@@ -289,7 +290,7 @@ def run(instructions, cell='INTERNAL', verbose=False):
         # _slack.post_message(f'starting experiment sequence')
         scan_data, metadata = run_experiment_sequence(pstat)
 
-    metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
+        metadata['measurement'] = json.dumps([instruction.get('op') for instruction in instructions])
     metadata['parameters'] = json.dumps(_params)
 
     return scan_data, metadata
