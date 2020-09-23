@@ -407,7 +407,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         final_potential=0.65,
         versus_final='VS REF',
         step_height=0.1,
-        step_time=1.0
+        step_time=1.0,
         limit_1_type=None,
         limit_1_direction='<',
         limit_1_value=0,
