@@ -55,7 +55,6 @@ class LPR(LPRArgs):
         args = LPRArgs.from_dict(args)
         return args.format()
 
-
 @dataclass
 class StaircaseLSV(StaircaseLSVArgs):
     """ staircase linear scan voltammetry

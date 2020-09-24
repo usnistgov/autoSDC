@@ -1,6 +1,8 @@
+import json
 import inspect
 from typing import Optional
 from dataclasses import dataclass
+from collections.abc import Iterable
 
 class SDCArgs:
     """ base class for default experiment arguments
@@ -32,6 +34,42 @@ class SDCArgs:
 
     def as_dict(self):
         return self.__dict__
+
+    def setup(self, pstat_experiments):
+        """ a bit hacky -- needs a reference to the .NET library for potentiostat setup funcs """
+        args = self.getargs()
+        setup_func = getattr(pstat_experiments, self.setup_func)
+        status = setup_func(args)
+        return args
+
+@dataclass
+class MeasureOCP(SDCArgs):
+    """ overload setup method -- this experiment takes no arguments """
+    setup_func: str = 'AddMeasureOpenCircuit'
+
+    def setup(self, pstat_experiments):
+        setup_func = getattr(pstat_experiments, self.setup_func)
+        status = setup_func()
+        return None
+
+class SDCChain:
+    """ wrapper class to set up sequenced experiments """
+    def __init__(self, *experiments, remeasure_ocp=False):
+
+        self.remeasure_ocp = remeasure_ocp
+
+        if len(experiments) == 1 and isinstance(experiments[0], Iterable):
+                self.experiments = experiments[0]
+        else:
+            self.experiments = experiments
+
+    def setup(self, pstat_experiments):
+        args = []
+        for e in self.experiments:
+            _args = e.setup(pstat_experiments)
+            args.append(_args)
+            if self.remeasure_ocp:
+                MeasureOCP().setup(pstat_experiments)
 
 @dataclass
 class LPRArgs(SDCArgs):

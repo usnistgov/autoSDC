@@ -76,9 +76,14 @@ class Potentiostat():
     def run(self, experiment):
         """ run an SDC experiment sequence -- busy wait until it's finished """
 
-        argstring = experiment.getargs()
-        f_setup = getattr(self.instrument.Experiment, experiment.setup_func)
-        f_setup(argstring)
+        # this is a bit magical...
+        # `experiment` has an attribute `setup_func` that holds the name of the .NET function
+        # that should be invoked to add an experiment
+        # `experiment.setup` is responsible for looking it up and invoking it
+        # with e.g. `f = getattr(pstat.instrument.Experiment, experiment.setup_func)`
+        # this way, an `SDCSequence` can call all the individual `setup` methods
+
+        argstring = experiment.setup(self.instrument.Experiment)
 
         metadata = {
             'timestamp_start': datetime.now(),
