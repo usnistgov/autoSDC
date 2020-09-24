@@ -305,7 +305,7 @@ potentiostat_ops = {
     'staircase_lsv': setup_staircase_lsv
 }
 
-def run(instructions, cell='INTERNAL', verbose=False, remeasure_ocp=False):
+def run(instructions, cell='INTERNAL', verbose=False, remeasure_ocp=True):
 
     with potentiostat.controller(start_idx=potentiostat_id) as pstat:
 
