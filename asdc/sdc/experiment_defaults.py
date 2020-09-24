@@ -17,6 +17,11 @@ class SDCArgs:
     and pass that value to `versus_initial` and `versus_final`
 
     """
+
+    @property
+    def name(self):
+        return type(self).__name__
+
     @classmethod
     def from_dict(cls, args):
         """ override default dataclass arguments, but skip any keys that aren't attributes of the dataclass """
