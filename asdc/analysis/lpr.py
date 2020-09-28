@@ -1,5 +1,9 @@
 import numpy as np
+import pandas as pd
 from scipy import stats
+import matplotlib.pyplot as plt
+
+from asdc.analysis.echem_data import EchemData
 
 def current_crosses_zero(df):
     current = df['current']
@@ -15,4 +19,34 @@ def polarization_resistance(df, current_window=2e-5):
     # quick linear regression
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
-    return slope, r_value
+    return slope, intercept, r_value
+
+class LPRData(EchemData):
+
+    @property
+    def _constructor(self):
+        return LPRData
+
+    @property
+    def name(self):
+        return 'LPR'
+
+    def check_quality(self):
+        print('check')
+        return current_crosses_zero(self)
+
+    def plot(self, fit=False):
+        # # super().plot('current', 'potential')
+        plt.plot(self['current'], self['potential'])
+        plt.axvline(0, color='k', alpha=0.5, linewidth=0.5)
+        plt.xlabel('current (A)')
+        plt.ylabel('potential (V)')
+
+        if fit:
+            ylim = plt.ylim()
+            x = np.linspace(self.current.min(), self.current.max(), 100)
+            slope, intercept, r_value = polarization_resistance(self)
+            plt.plot(x, intercept + slope * x, linestyle='--', color='k', alpha=0.5)
+            plt.ylim(ylim)
+
+        plt.tight_layout()

@@ -3,10 +3,11 @@ import json
 import time
 import numpy as np
 import pandas as pd
-from typing import Optional
+from typing import Optional, Dict, List, Sequence
 from datetime import datetime
 
 from asdc import _slack
+from asdc import analysis
 
 from .experiment_defaults import *
 
@@ -47,13 +48,15 @@ class LPR(LPRArgs):
     setup_func: str = 'AddLinearPolarizationResistance'
 
     def getargs(self):
-
         # override any default arguments...
         args = self.__dict__
         args['versus_initial'] = args['versus_final'] = args['versus']
 
         args = LPRArgs.from_dict(args)
         return args.format()
+
+    def marshal(self, echem_data: Dict[str, Sequence[float]]):
+        return analysis.LPRData(echem_data)
 
 @dataclass
 class StaircaseLSV(StaircaseLSVArgs):
@@ -171,6 +174,10 @@ class OpenCircuit(OpenCircuitArgs):
 
         args = OpenCircuitArgs.from_dict(args)
         return args.format()
+
+    def marshal(self, echem_data: Dict[str, Sequence[float]]):
+        return analysis.OCPData(echem_data)
+
 
 @dataclass
 class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):

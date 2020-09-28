@@ -73,6 +73,16 @@ class Potentiostat():
             print('OVERLOAD:', overload_status)
         return overload_status
 
+    def read_buffers(self):
+        return {
+            'current': self.current(),
+            'potential': self.potential(),
+            'elapsed_time': self.elapsed_time(),
+            'applied_potential': self.applied_potential(),
+            'current_range': self.current_range_history(),
+            'segment': self.segment()
+        }
+
     def run(self, experiment):
         """ run an SDC experiment sequence -- busy wait until it's finished """
 
@@ -99,15 +109,11 @@ class Potentiostat():
 
         metadata['timestamp_end'] = datetime.now()
         metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
+        results = self.read_buffers()
 
-        results = {
-                    'current': self.current(),
-                    'potential': self.potential(),
-                    'elapsed_time': self.elapsed_time(),
-                    'applied_potential': self.applied_potential(),
-                    'current_range': self.current_range_history(),
-                    'segment': self.segment()
-                  }
+        # cast results into specific e-chem result type
+        # (which subclass pandas.DataFrame and have a validation and plotting interface)
+        results = experiment.marshal(results)
 
         return results, metadata
 

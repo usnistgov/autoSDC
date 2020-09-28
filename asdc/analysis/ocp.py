@@ -1,5 +1,10 @@
-import csaps
 import numpy as np
+import pandas as pd
+from csaps import csaps
+from pandas import DataFrame
+import matplotlib.pyplot as plt
+
+from asdc.analysis.echem_data import EchemData
 
 def ocp_stop(x, y, time=90, tstart=300, thresh=.00003):
     t = tstart
@@ -10,7 +15,7 @@ def ocp_stop(x, y, time=90, tstart=300, thresh=.00003):
         t = tstop
     return t
 
-def ocp_check(ocp, smooth=0.001, tr=100):
+def ocp_convergence(ocp, smooth=0.001, tr=100):
     """ model an open circuit potential trace to check that it converges to a constant value
 
     computes the average slope at the end of the potential trace
@@ -44,3 +49,24 @@ def ocp_check(ocp, smooth=0.001, tr=100):
     }
 
     return results
+
+
+class OCPData(EchemData):
+
+    @property
+    def _constructor(self):
+        return OCPData
+
+    @property
+    def name(self):
+        return 'OCP'
+
+    def check_quality(self):
+        return ocp_convergence(self)
+
+    def plot(self):
+        # super().plot('elapsed_time', 'potential')
+        plt.plot(self.elapsed_time, self.potential)
+        plt.xlabel('elapsed time (s)')
+        plt.ylabel('potential (V)')
+        plt.tight_layout()

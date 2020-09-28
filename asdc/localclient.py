@@ -33,6 +33,7 @@ from asdc import epics
 from asdc import _slack
 from asdc import slackbot
 from asdc import visualization
+from asdc.analysis import EchemData
 
 from asdc.sdc.reglo import Channel
 
@@ -51,6 +52,14 @@ except FileNotFoundError:
 
 # reference to web client...
 web_client = _slack.sc
+
+def save_plot(results: EchemData, figpath: str, post_slack: bool = True, title=None):
+    results.plot()
+    plt.savefig(figpath, bbox_inches='tight')
+    plt.clf()
+    plt.close()
+    if post_slack:
+        _slack.post_image(web_client, figpath, title=title)
 
 def relative_flow(rates):
     """ convert a dictionary of flow rates to ratios of each component """
@@ -787,25 +796,24 @@ class SDC():
                 opname = instruction['op']
                 metadata = {
                     'op': opname,
+                    'location_id': meta['id'],
                     'datafile': f'{basename}_{sequence_id}_{opname}.csv'
                     }
 
                 results, m = pstat.run(experiment)
-                results = pd.DataFrame(results)
                 metadata.update(m)
 
                 with self.db as tx:
                     experiment_id = tx['experiment'].insert(metadata)
                     results.to_csv(os.path.join(self.data_dir, metadata['datafile']))
 
+                if plot:
+                    figpath = os.path.join(self.figure_dir, f"{opname}_plot_{meta['id']}.png")
+                    save_plot(results, figpath, post_slack=True, title=f"{opname} {meta['id']}")
+
         print('finished')
-        if plot:
-            figpath = os.path.join(self.figure_dir, 'lpr_plot_{}.png'.format(meta['id']))
-            visualization.plot_lpr(results['current'], results['potential'], figpath=figpath)
-            _slack.post_image(web_client, figpath, title=f"LPR {meta['id']}")
 
     def send_notification(self, message, block=False):
-
 
         if block:
             message = f'*confirm*: {message}'
@@ -872,11 +880,11 @@ class SDC():
                     opname = instruction['op']
                     metadata = {
                         'op': opname,
+                        'location_id': meta['id'],
                         'datafile': f'{basename}_{sequence_id}_{opname}.csv'
                         }
 
                     results, m = pstat.run(experiment)
-                    results = pd.DataFrame(results)
                     metadata.update(m)
 
                     if self.pump_array:
