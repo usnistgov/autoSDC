@@ -830,7 +830,7 @@ class SDC():
         if block:
             input('press enter to allow running the experiment...')
 
-    def run_experiment(self, instructions: List[Dict]):
+    def run_experiment(self, instructions: List[Dict], plot=True):
         """ run an SDC experiment
 
         args should contain a sequence of SDC experiments -- basically the "instructions"
@@ -899,6 +899,10 @@ class SDC():
                     with self.db as tx:
                         experiment_id = tx['experiment'].insert(metadata)
                         results.to_csv(os.path.join(self.data_dir, metadata['datafile']))
+
+                    if plot:
+                        figpath = os.path.join(self.figure_dir, f"{opname}_plot_{meta['id']}.png")
+                        save_plot(results, figpath, post_slack=True, title=f"{opname} {meta['id']}")
 
         if self.notify:
             web_client.chat_postMessage(
