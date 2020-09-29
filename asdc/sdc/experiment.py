@@ -22,15 +22,18 @@ MIN_SAMPLING_FREQUENCY = 1.0e-5
 def from_command(instruction):
     """ {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_size": 0.1, "step_time": 0.5} """
 
-    opname = instruction.get('op')
+    # don't mangle the original dictionary at all
+    instruction_data = instruction.copy()
+
+    opname = instruction_data.get('op')
     Expt = potentiostat_ops.get(opname)
 
     if Expt is None:
         return None
 
-    del instruction['op']
+    del instruction_data['op']
 
-    return Expt(**instruction)
+    return Expt(**instruction_data)
 
 @dataclass
 class LPR(LPRArgs):
