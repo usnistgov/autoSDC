@@ -805,6 +805,7 @@ class SDC():
                     }
 
                 results, m = pstat.run(experiment)
+                status = results.check_quality()
                 metadata.update(m)
 
                 with self.db as tx:
@@ -889,6 +890,7 @@ class SDC():
                         }
 
                     results, m = pstat.run(experiment)
+                    status = results.check_quality()
                     metadata.update(m)
 
                     if self.pump_array:
