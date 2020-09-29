@@ -54,11 +54,8 @@ except FileNotFoundError:
 # reference to web client...
 web_client = _slack.sc
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
-sh = _slack.SlackHandler(client=web_client)
-sh.setLevel(logging.CRITICAL) # only log CRITICAL eventns to slack until setup is finished
-logger.addHandler(sh)
+# logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 def save_plot(results: EchemData, figpath: str, post_slack: bool = True, title=None):
     results.plot()
@@ -1366,10 +1363,20 @@ class SDC():
 def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
     """ set up scanning droplet cell client loading from CONFIG_FILE """
 
+    experiment_root, _ = os.path.split(config_file)
+
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
-    experiment_root, _ = os.path.split(config_file)
+    logging.basicConfig(level=logging.DEBUG)
+
+    sh = _slack.SlackHandler(client=web_client)
+    sh.setLevel(logging.CRITICAL) # only log CRITICAL events to slack until setup is finished
+    logger.addHandler(sh)
+
+    fh = logging.FileHandler(os.path.join(experiment_root, 'isdc.log'))
+    fh.setLevel(logging.DEBUG)
+    logger.addHandler(fh)
 
     # specify target file relative to config file
     target_file = config.get('target_file')

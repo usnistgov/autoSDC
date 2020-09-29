@@ -8,10 +8,6 @@ from asdc.analysis.echem_data import EchemData
 from asdc._slack import SlackHandler
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
-sh = SlackHandler()
-sh.setLevel(logging.INFO)
-logger.addHandler(sh)
 
 def current_crosses_zero(df):
     current = df['current']
