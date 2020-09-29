@@ -800,7 +800,7 @@ class SDC():
                 opname = instruction['op']
                 metadata = {
                     'op': opname,
-                    'location_id': meta['id'],
+                    'location_id': location_id,
                     'datafile': f'{basename}_{sequence_id}_{opname}.csv'
                     }
 
@@ -813,8 +813,8 @@ class SDC():
                     results.to_csv(os.path.join(self.data_dir, metadata['datafile']))
 
                 if plot:
-                    figpath = os.path.join(self.figure_dir, f"{opname}_plot_{meta['id']}.png")
-                    save_plot(results, figpath, post_slack=True, title=f"{opname} {meta['id']}")
+                    figpath = os.path.join(self.figure_dir, f"{opname}_plot_{location_id}.png")
+                    save_plot(results, figpath, post_slack=True, title=f"{opname} {location_id}")
 
         logger.info('finished experiment')
 
