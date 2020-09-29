@@ -113,6 +113,7 @@ class Potentiostat():
         while self.sequence_running():
             time.sleep(self.poll_interval)
             error_codes.add(self.check_overload())
+            print(f'points: {self.points_available()}')
 
         metadata['timestamp_end'] = datetime.now()
         metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
