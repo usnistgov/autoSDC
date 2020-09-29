@@ -876,11 +876,17 @@ class SDC():
             with sdc.potentiostat.controller(start_idx=potentiostat_id) as pstat:
                 for sequence_id, instruction in enumerate(instructions):
 
+                    logger.info(f'running {instruction}')
+
+                    opname = instruction.get('op')
+                    if opname is None:
+                        continue
+
                     experiment = sdc.experiment.from_command(instruction)
+
                     if experiment is None:
                         continue
 
-                    opname = instruction['op']
                     metadata = {
                         'op': opname,
                         'location_id': location_id,
