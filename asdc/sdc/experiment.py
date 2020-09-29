@@ -23,12 +23,10 @@ def from_command(instruction):
     """ {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_size": 0.1, "step_time": 0.5} """
 
     opname = instruction.get('op')
-    op = potentiostat_ops.get(opname)
+    Expt = potentiostat_ops.get(opname)
 
-    if op is None:
+    if Expt is None:
         return None
-
-    Expt = potentiostat_ops[op]
 
     return Expt(**instruction)
 
