@@ -425,7 +425,7 @@ class SDC():
         delta = self.compute_position_update(x, y, frame)
 
         if np.abs(delta).sum() > threshold:
-            logger.debug(f'position update: {delta} (mm)'))
+            logger.debug(f'position update: {delta} (mm)')
 
             # if self.notify:
             #     slack.post_message(f'*confirm update*: (delta={delta})')
@@ -847,7 +847,7 @@ class SDC():
         x_combi, y_combi = header.get('x'), header.get('y')
 
         self.establish_droplet(x_combi, y_combi, instructions[0])
-        logger.infof'current pH reading is {self.phmeter.pH[-1]}')
+        logger.info(f'current pH reading is {self.phmeter.pH[-1]}')
 
         meta = {
             'intent': intent,
