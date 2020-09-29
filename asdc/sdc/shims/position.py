@@ -41,6 +41,22 @@ class Position():
         global ax
         self.axis = ax
 
+        self._x = 0
+        self._y = 0
+        self._z = 0
+
+    @property
+    def x(self):
+        return self._x
+
+    @property
+    def y(self):
+        return self._y
+
+    @property
+    def z(self):
+        return self._z
+
     @property
     def speed(self):
         return self._speed
