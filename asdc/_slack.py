@@ -2,12 +2,22 @@ import os
 import json
 import time
 import slack
+import logging
 import requests
 
 with open('slacktoken.txt', 'r') as f:
     SLACK_TOKEN = f.read()
 
 sc = slack.WebClient(SLACK_TOKEN)
+
+class SlackHandler(logging.Handler):
+    def __init__(self, client=sc, channel="UC4U7SBV2"):
+        logging.Handler.__init__(self)
+        self.client = client
+        self.channel = channel
+
+    def emit(self, record):
+        self.client.chat_postMessage(channel=self.channel, text=self.format(record), icon_emoji=':sciencebear:')
 
 def post_message(message, sleep=1):
     """ post text to #asdc

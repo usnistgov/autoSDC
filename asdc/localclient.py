@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import time
+import logging
 import argparse
 import asyncio
 import dataset
@@ -52,6 +53,9 @@ except FileNotFoundError:
 
 # reference to web client...
 web_client = _slack.sc
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 def save_plot(results: EchemData, figpath: str, post_slack: bool = True, title=None):
     results.plot()
@@ -106,8 +110,7 @@ class SDC():
 
         with sdc.position.controller(ip='192.168.10.11') as pos:
             initial_versastat_position = pos.current_position()
-            if self.verbose:
-                print(f'initial vs position: {initial_versastat_position}')
+            logger.info(f'initial vs position: {initial_versastat_position}')
 
         self.initial_versastat_position = initial_versastat_position
         self.initial_combi_position = pd.Series(config['initial_combi_position'])
@@ -194,27 +197,27 @@ class SDC():
                 self.solutions, port=pump_array_port, timeout=1
             )
         except:
-            print('could not connect to pump array')
+            logger.exception('could not connect to pump array')
             # raise
             self.pump_array = None
 
         try:
             self.reglo = sdc.reglo.Reglo(address=reglo_port, debug=config.get('reglo_debug', False))
         except:
-            print('could not connect to the Reglo peristaltic pump')
+            logger.exception('could not connect to the Reglo peristaltic pump')
             # raise
 
         try:
             self.phmeter = sdc.orion.PHMeter(orion_port, zmq_pub=zmq_pub)
         except:
-            print('could not connect to the Orion pH meter')
+            logger.exception('could not connect to the Orion pH meter')
             # raise
 
         try:
             self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
             self.light = sdc.microcontroller.Light(port=adafruit_port)
         except:
-            print('could not connect to the adafruit board')
+            logger.exception('could not connect to the adafruit board')
             self.reflectometer = None
             self.light = None
 
@@ -231,7 +234,7 @@ class SDC():
         if (resume == False) or (refs.size == 0):
 
             init = self.initial_combi_position
-            print(f'starting from {init}')
+            logger.info(f'starting from {init}')
 
             ref = pd.Series({
                 'x_versa': x_versa, 'y_versa': y_versa,
@@ -244,7 +247,7 @@ class SDC():
             ref['x_versa'] *= 1e3
             ref['y_versa'] *= 1e3
             ref = pd.Series(ref)
-            print(f'resuming from {ref}')
+            logger.info(f'resuming from {ref}')
 
         return ref
 
@@ -263,7 +266,7 @@ class SDC():
         identify a circumcircle corresponding three points on the wafer edge
         """
         wafer_edge_coords = []
-        print('identify coordinates of three points on the wafer edge. (start with the flat corners)')
+        logger.info('identify coordinates of three points on the wafer edge. (start with the flat corners)')
 
         for idx in range(3):
             input('press enter to register coordinates...')
@@ -275,8 +278,8 @@ class SDC():
         # center is the versascan coordinate such that the camera frame is on the wafer origin
         center = np.array(tri.circumcenter, dtype=float)
 
-        print(wafer_edge_coords)
-        print(center)
+        logger.debug(f'wafer edge coordinates: {wafer_edge_coords}')
+        logger.debug(f'center coordinate: {center}')
 
         # move the stage to focus the camera on the center of the wafer...
         current = np.array(self.current_versa_xy())
@@ -284,7 +287,7 @@ class SDC():
 
         # convert to meters!
         delta = delta * 1e-3
-        print(delta)
+        logger.debug(f'moving cell to center: {delta}')
 
         # specify updates in the stage frame...
         with sdc.position.controller(speed=self.speed) as stage:
@@ -348,7 +351,7 @@ class SDC():
         xv_init = np.array([ref['x_versa'], ref['y_versa']])
         if resume:
             offset = np.array([x_versa, y_versa]) - xv_init
-            print(offset)
+            logger.debug(f'wafer offset: {offset}')
             # xv_init += offset
 
         l = xv_init - combi_origin
@@ -376,7 +379,7 @@ class SDC():
         P = to_coords([x, y], frame)
         target_coords = np.array(P.express_coordinates(self.stage_frame), dtype=np.float)
 
-        print(target_coords)
+        logger.debug(f'target coordinites: {target_coords}')
 
         with sdc.position.controller() as pos:
             # map m -> mm
@@ -416,15 +419,13 @@ class SDC():
             # move horizontally
             stage.update(delta=delta)
 
-            if verbose:
-                print(stage.current_position())
+            logger.debug(f'stage position: {stage.current_position()}')
 
         # map position update to position controller frame
         delta = self.compute_position_update(x, y, frame)
 
         if np.abs(delta).sum() > threshold:
-            if self.verbose:
-                print(f'position update: {delta} (mm)')
+            logger.debug(f'position update: {delta} (mm)'))
 
             # if self.notify:
             #     slack.post_message(f'*confirm update*: (delta={delta})')
@@ -463,7 +464,7 @@ class SDC():
         """
 
         if self.verbose:
-            print(locals())
+            logger.debug(f'local vars (move): {locals()}')
 
         frame = {
             'cell': self.cell_frame,
@@ -532,7 +533,7 @@ class SDC():
             if cleanup_duration > 0:
                 # TODO: turn on the needle
                 # make an option to pulse loop and dump simultaneously, same rate opposite directions?
-                print('cleaning up...')
+                logger.debug('cleaning up...')
                 self.reglo.continuousFlow(-10.0, channel=Channel.NEEDLE)
                 self.reglo.stop([Channel.SOURCE, Channel.LOOP])
 
@@ -551,7 +552,7 @@ class SDC():
             with sdc.position.sync_z_step(height=height_difference, speed=stage_speed):
 
                 # counterpump slower to fill the droplet
-                print('filling droplet')
+                logger.debug('filling droplet')
                 self.reglo.set_rates(
                     {
                         Channel.SOURCE: fill_rate,
@@ -569,7 +570,7 @@ class SDC():
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
-            print('shrinking droplet')
+            logger.debug('shrinking droplet')
             shrink_flowrate = fill_rate * shrink_counter_ratio
             self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DRAIN)
 
@@ -580,7 +581,7 @@ class SDC():
                 time.sleep(shrink_time)
             shrink_time = time.time() - shrink_start
 
-            print('equalizing differential pumping rate')
+            logger.debug('equalizing differential pumping rate')
             self.reglo.continuousFlow(-fill_rate, channel=Channel.DRAIN)
 
         # drop down to contact height
@@ -590,7 +591,7 @@ class SDC():
         time.sleep(3)
 
         # purge...
-        print('purging solution')
+        logger.debug('purging solution')
         purge_rate = 11.0
         self.reglo.set_rates(
             {Channel.SOURCE: purge_rate, Channel.LOOP: -purge_rate, Channel.DRAIN: -purge_rate}
@@ -610,8 +611,8 @@ class SDC():
         self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
 
         # message = f"contact routine with {json.dumps(locals())}"
-        # print(message)
-        print(locals)
+        # logger.debug(message)
+        logger.debug(f'local vars: {locals}')
         return
 
     def establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict = {}):
@@ -621,7 +622,7 @@ class SDC():
         purge_time = float(flow_instructions.get('purge_time', 30))
 
         # droplet workflow -- start at zero
-        print('starting droplet workflow')
+        logger.debug('starting droplet workflow')
 
         self.reglo.set_rates({Channel.RINSE: 5.0, Channel.NEEDLE: -10.0})
         time.sleep(1)
@@ -629,7 +630,7 @@ class SDC():
         with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
 
             if self.cleanup_pause > 0:
-                print('cleaning up...')
+                logger.debug('cleaning up...')
                 self.reglo.set_rates({Channel.DRAIN: -5.0})
                 self.reglo.stop(Channel.LOOP)
 
@@ -653,7 +654,7 @@ class SDC():
                 self.move_stage(x_wafer, y_wafer, self.cell_frame)
 
                 # counterpump slower to fill the droplet
-                print('filling droplet')
+                logger.debug('filling droplet')
                 cell_fill_rates = self._scale_flow(relative_rates, nominal_rate=self.fill_rate)
                 self.pump_array.set_rates(cell_fill_rates, start=True, fast=True)
                 self.reglo.set_rates(
@@ -667,12 +668,12 @@ class SDC():
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
-            print('differentially pumping to shrink the droplet')
+            logger.debug('differentially pumping to shrink the droplet')
             shrink_flowrate = self.fill_rate * self.shrink_counter_ratio
             self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DRAIN)
             time.sleep(self.shrink_time)
 
-            print('equalizing differential pumping rate')
+            logger.debug('equalizing differential pumping rate')
             self.reglo.continuousFlow(-self.fill_rate, channel=Channel.DRAIN)
 
         # drop down to contact...
@@ -680,7 +681,7 @@ class SDC():
 
         # purge... (and monitor pH)
         with self.phmeter.monitor(interval=5, logfile=os.path.join(self.data_dir, 'purge.csv')):
-            print('purging solution')
+            logger.debug('purging solution')
             purge_rate = 11.0
             purge_rates = self._scale_flow(relative_rates, nominal_rate=purge_rate)
             self.pump_array.set_rates(purge_rates, start=True, fast=True)
@@ -695,7 +696,7 @@ class SDC():
 
             time.sleep(3)
 
-            print(f'stepping flow rates to {target_rate}')
+            logger.debug(f'stepping flow rates to {target_rate}')
             self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
             self.pump_array.stop_all(fast=True)
             self.reglo.stop(Channel.DRAIN)
@@ -714,11 +715,11 @@ class SDC():
         line_flush_needed = relative_flow(rates) != relative_flow(self.pump_array.flow_setpoint)
 
         # droplet workflow -- start at zero
-        print('starting droplet workflow')
+        logger.debug('starting droplet workflow')
         with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed) as stage:
 
             if self.cleanup_pause > 0:
-                print('cleaning up...')
+                logger.debug('cleaning up...')
                 self.pump_array.stop_all(counterbalance='full', fast=True)
                 time.sleep(self.cleanup_pause)
 
@@ -729,27 +730,27 @@ class SDC():
             with sdc.position.sync_z_step(height=height_difference, speed=self.speed):
 
                 # counterpump slower to fill the droplet
-                print('differentially pumping to grow the droplet')
+                logger.debug('differentially pumping to grow the droplet')
                 self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.fill_ratio, start=True, fast=True)
                 time.sleep(self.fill_time)
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
-            print('differentially pumping to shrink the droplet')
+            logger.debug('differentially pumping to shrink the droplet')
             self.pump_array.set_rates(cell_fill_rates, counterpump_ratio=self.shrink_ratio, start=True, fast=True)
             time.sleep(self.shrink_time)
 
-            print('equalizing differential pumping rate')
+            logger.debug('equalizing differential pumping rate')
             self.pump_array.set_rates(line_flush_rates, counterpump_ratio=0.95, start=True, fast=True)
 
         # flush lines with cell in contact
         if line_flush_needed:
-            print('performing line flush')
+            logger.debug('performing line flush')
             time.sleep(line_flush_duration)
 
         time.sleep(3)
 
-        print(f'stepping flow rates to {rates}')
+        logger.debug(f'stepping flow rates to {rates}')
         self.pump_array.set_rates(rates, counterpump_ratio=0.95, start=True, fast=True)
 
         return
@@ -757,7 +758,7 @@ class SDC():
     def quick_expt(self, instructions: Union[Dict, List[Dict]], internal=False, plot=True, remeasure_ocp=False):
         """ run a one-off e-chem sequence without touching the stages or pumps """
 
-        print(f'running experiment {instructions}')
+        logger.info(f'running experiment {instructions}')
 
         if type(instuctions) is dict:
             instructions = [instructions]
@@ -811,14 +812,14 @@ class SDC():
                     figpath = os.path.join(self.figure_dir, f"{opname}_plot_{meta['id']}.png")
                     save_plot(results, figpath, post_slack=True, title=f"{opname} {meta['id']}")
 
-        print('finished')
+        logger.info('finished experiment')
 
     def send_notification(self, message, block=False):
 
         if block:
             message = f'*confirm*: {message}'
 
-        print(message)
+        logger.info(message)
         if self.notify:
             web_client.chat_postMessage(channel='#asdc', text=message, icon_emoji=':sciencebear:')
 
@@ -846,7 +847,7 @@ class SDC():
         x_combi, y_combi = header.get('x'), header.get('y')
 
         self.establish_droplet(x_combi, y_combi, instructions[0])
-        print(f'current pH reading is {self.phmeter.pH[-1]}')
+        logger.infof'current pH reading is {self.phmeter.pH[-1]}')
 
         meta = {
             'intent': intent,
@@ -992,7 +993,7 @@ class SDC():
                             time.sleep(1)
 
                             prefix = f'sdc-26-{primary_key:04d}'
-                            print(f'starting x-rays for {prefix}')
+                            logger.info(f'starting x-rays for {prefix}')
                             epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
 
                 self.move_stage(x_combi, y_combi, self.cell_frame)
@@ -1017,7 +1018,7 @@ class SDC():
 
         with sdc.position.sync_z_step(height=self.xrays_height, speed=self.speed):
             for sample in samples:
-                print('xrd')
+                logger.debug('xrd')
                 web_client.chat_postMessage(channel='#asdc', text=f"x-ray ops go here...", icon_emoji=':sciencebear:')
                 x_combi = sample.get('x_combi')
                 y_combi = sample.get('y_combi')
@@ -1026,7 +1027,7 @@ class SDC():
                 time.sleep(1)
 
                 prefix = f'sdc-26-{primary_key:04d}'
-                print(f'starting x-rays for {prefix}')
+                logger.debug(f'starting x-rays for {prefix}')
                 epics.dispatch_xrays(prefix, os.path.join(self.data_dir, 'xray'))
 
             # move back to the cell frame for the second spot
@@ -1084,14 +1085,14 @@ class SDC():
         rates = self._scale_flow(_rates, nominal_rate=flow_rate)
         target_rates = self._scale_flow(_rates, nominal_rate=target_rate)
 
-        print(f'rates: {rates}')
-        print(f'target_rates: {target_rates}')
+        logger.info(f'rates: {rates}')
+        logger.info(f'target_rates: {target_rates}')
 
         # start at zero
         with sdc.position.z_step(height=wetting_height, speed=stage_speed):
 
             if cleanup_duration > 0:
-                print('cleaning up...')
+                logger.info('cleaning up...')
                 self.pump_array.stop_all(counterbalance='full', fast=True)
                 time.sleep(cleanup_duration)
 
@@ -1100,7 +1101,7 @@ class SDC():
             with sdc.position.z_step(height=height_difference, speed=stage_speed):
 
                 # counterpump slower to fill the droplet
-                print('filling droplet')
+                logger.info('filling droplet')
                 self.pump_array.set_rates(rates, counterpump_ratio=fill_ratio, start=True, fast=True)
                 fill_start = time.time()
                 if fill_time is None:
@@ -1111,7 +1112,7 @@ class SDC():
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
-            print('shrinking droplet')
+            logger.info('shrinking droplet')
             self.pump_array.set_rates(rates, counterpump_ratio=shrink_ratio, fast=True)
             shrink_start = time.time()
             if shrink_time is None:
@@ -1120,7 +1121,7 @@ class SDC():
                 time.sleep(shrink_time)
             shrink_time = time.time() - shrink_start
 
-            print('equalizing differential pumping rate')
+            logger.info('equalizing differential pumping rate')
             self.pump_array.set_rates(rates, fast=True, start=True)
 
         # drop down to contact height
@@ -1129,7 +1130,7 @@ class SDC():
 
         time.sleep(3)
 
-        print(f'stepping flow rates to {rates}')
+        logger.info(f'stepping flow rates to {rates}')
         self.pump_array.set_rates(target_rates, counterpump_ratio=0.95, fast=True, start=True)
 
         message = f"contact routine with {json.dumps(instructions)}"
@@ -1232,7 +1233,7 @@ class SDC():
                 data = {'reflectance': mean, 'variance': var}
                 json.dump(data, f)
 
-        print(f'reflectance: {mean}')
+        logger.info(f'reflectance: {mean}')
 
         return mean
 
@@ -1314,12 +1315,12 @@ class SDC():
 
         if self.resume:
             location_idx = self.db['location'].count()
-            print(f'resuming starting at sample location {location_idx}')
+            logger.info(f'resuming starting at sample location {location_idx}')
             instructions = instructions[location_idx:]
 
         current_pH = None
         for instruction_chain in instructions:
-            print(json.dumps(instruction_chain))
+            logger.debug(json.dumps(instruction_chain))
 
             pH = instruction_chain[1].get('pH')
 
@@ -1327,7 +1328,7 @@ class SDC():
                 message = f'Reminder: make sure to set the pH to {pH}'
                 current_pH = pH
                 web_client.chat_postMessage(channel='#asdc', text=message, icon_emoji=':sciencebear:')
-                print(message)
+                logger.info(message)
                 input('press <ENTER> to continue')
 
             self.run_experiment(instruction_chain)
@@ -1349,7 +1350,7 @@ class SDC():
         points = [[0, 15], [15,15], [15, 0], [0,0]]
 
         for x, y in points:
-            print(f'visiting {x}, {y}')
+            logger.info(f'visiting {x}, {y}')
             isdc.establish_droplet(x, y, flowrates)
             time.sleep(10)
 
@@ -1383,6 +1384,7 @@ def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
     logfile = config.get('command_logfile', 'commands.log')
     logfile = os.path.join(config['data_dir'], logfile)
 
+    logger.info('connecting to the SDC...')
     sdc_interface = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume, zmq_pub=zmq_pub)
     return sdc_interface
 
@@ -1394,9 +1396,9 @@ if __name__ == '__main__':
     parser.add_argument('--dashboard', action='store_true', help='set up ZMQ publisher for dashboard')
     parser.add_argument('--verbose', action='store_true', help='include extra debugging output')
     args = parser.parse_args()
-    print(args)
+    logger.debug(f'{args}')
 
     resume = not args.no_resume
-    print(f'resume?: {resume}')
+    logger.debug(f'resume?: {resume}')
 
     isdc = sdc_client(args.configfile, resume, args.dashboard, args.verbose)
