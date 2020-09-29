@@ -82,7 +82,7 @@ class LPRArgs(SDCArgs):
     versus_initial: str = 'VS REF'
     final_potential: float = 1.0
     versus_final: str = 'VS REF'
-    step_size: float = 0.1
+    step_height: float = 0.1
     step_time: float = 0.1
     limit_1_type: Optional[str] = None
     limit_1_direction: str = '<'
