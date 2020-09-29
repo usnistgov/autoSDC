@@ -6,8 +6,12 @@ import sys
 import json
 import time
 import inspect
+import logging
 from datetime import datetime
 from contextlib import contextmanager
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # pythonnet checks PYTHONPATH for assemblies to load...
 # so add the VersaSCAN libraries to sys.path

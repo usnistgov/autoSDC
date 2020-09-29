@@ -1,13 +1,28 @@
+import logging
 import numpy as np
 import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 
 from asdc.analysis.echem_data import EchemData
+from asdc._slack import SlackHandler
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
+sh = SlackHandler()
+sh.setLevel(logging.INFO)
+logger.addHandler(sh)
 
 def current_crosses_zero(df):
     current = df['current']
-    return current.min() < 0 and current.max() > 0
+    success = current.min() < 0 and current.max() > 0
+
+    if not success:
+        logger.warning('LPR current does not cross zero!')
+
+    logger.debug('LPR check')
+
+    return success
 
 def polarization_resistance(df, current_window=2e-5):
     current, potential = df['current'].values, df['potential'].values
@@ -32,7 +47,6 @@ class LPRData(EchemData):
         return 'LPR'
 
     def check_quality(self):
-        print('check')
         return current_crosses_zero(self)
 
     def plot(self, fit=False):

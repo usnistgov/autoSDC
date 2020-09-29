@@ -55,7 +55,10 @@ except FileNotFoundError:
 web_client = _slack.sc
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
+sh = _slack.SlackHandler(client=web_client)
+sh.setLevel(logging.CRITICAL) # only log CRITICAL eventns to slack until setup is finished
+logger.addHandler(sh)
 
 def save_plot(results: EchemData, figpath: str, post_slack: bool = True, title=None):
     results.plot()
@@ -110,7 +113,7 @@ class SDC():
 
         with sdc.position.controller(ip='192.168.10.11') as pos:
             initial_versastat_position = pos.current_position()
-            logger.info(f'initial vs position: {initial_versastat_position}')
+            logger.debug(f'initial vs position: {initial_versastat_position}')
 
         self.initial_versastat_position = initial_versastat_position
         self.initial_combi_position = pd.Series(config['initial_combi_position'])
@@ -1386,6 +1389,8 @@ def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
 
     logger.info('connecting to the SDC...')
     sdc_interface = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume, zmq_pub=zmq_pub)
+    sh.setLevel(logging.INFO)
+    logger.info('connected!')
     return sdc_interface
 
 if __name__ == '__main__':

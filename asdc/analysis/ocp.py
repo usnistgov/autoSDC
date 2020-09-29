@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import pandas as pd
 from csaps import csaps
@@ -5,6 +6,13 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 
 from asdc.analysis.echem_data import EchemData
+from asdc._slack import SlackHandler
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
+sh = SlackHandler()
+sh.setLevel(logging.INFO)
+logger.addHandler(sh)
 
 def ocp_stop(x, y, time=90, tstart=300, thresh=.00003):
     t = tstart
@@ -62,7 +70,14 @@ class OCPData(EchemData):
         return 'OCP'
 
     def check_quality(self):
-        return ocp_convergence(self)
+        convergence_stats = ocp_convergence(self)
+
+        if convergence_stats['spike'] > 0.1:
+            logger.warning('OCP potential trace failed smoothness heuristic.')
+
+        logger.info(f'OCP check: {convergence_stats}')
+
+        return convergence_stats
 
     def plot(self):
         # super().plot('elapsed_time', 'potential')
