@@ -761,7 +761,7 @@ class SDC():
 
         logger.info(f'running experiment {instructions}')
 
-        if type(instuctions) is dict:
+        if type(instructions) is dict:
             instructions = [instructions]
 
         if internal:
