@@ -160,6 +160,10 @@ class Tafel(TafelArgs):
         args = TafelArgs.from_dict(args)
         return args.format()
 
+    def marshal(self, echem_data: Dict[str, Sequence[float]]):
+        return analysis.TafelData(echem_data)
+
+
 @dataclass
 class OpenCircuit(OpenCircuitArgs):
     """ Open circuit hold
