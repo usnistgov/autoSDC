@@ -21,6 +21,7 @@ import traceback
 
 import cv2
 import imageio
+import matplotlib.pyplot as plt
 
 import sympy
 from sympy import geometry
