@@ -872,7 +872,7 @@ class SDC():
 
         # run e-chem experiments and store results in external csv file
         basename = f'asdc_data_{location_id:03d}'
-        pH_logfile = os.path.join(self.data_dir, f'pH_log_run{meta["id"]:03d}.csv')
+        pH_logfile = os.path.join(self.data_dir, f'pH_log_run{location_id:03d}.csv')
 
         with self.phmeter.monitor(interval=5, logfile=pH_logfile):
             with potentiostat.controller(start_idx=potentiostat_id) as pstat:
@@ -885,7 +885,7 @@ class SDC():
                     opname = instruction['op']
                     metadata = {
                         'op': opname,
-                        'location_id': meta['id'],
+                        'location_id': location_id,
                         'datafile': f'{basename}_{sequence_id}_{opname}.csv'
                         }
 
@@ -901,12 +901,12 @@ class SDC():
                         results.to_csv(os.path.join(self.data_dir, metadata['datafile']))
 
                     if plot:
-                        figpath = os.path.join(self.figure_dir, f"{opname}_plot_{meta['id']}.png")
-                        save_plot(results, figpath, post_slack=True, title=f"{opname} {meta['id']}")
+                        figpath = os.path.join(self.figure_dir, f"{opname}_plot_{location_id}_{sequence_id}.png")
+                        save_plot(results, figpath, post_slack=True, title=f"{opname} {location_id}")
 
         if self.notify:
             web_client.chat_postMessage(
-                channel='#asdc', text=f"finished experiment {meta['id']}: {summary}", icon_emoji=':sciencebear:'
+                channel='#asdc', text=f"finished experiment {location_id}: {summary}", icon_emoji=':sciencebear:'
             )
 
     def run_characterization(self, args: str):
