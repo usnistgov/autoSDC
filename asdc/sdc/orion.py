@@ -2,6 +2,7 @@ import re
 import time
 import serial
 import typing
+import asyncio
 import streamz
 import argparse
 import threading
@@ -18,6 +19,7 @@ MODEL_NUMBER = 'A221'
 # set up and bind zmq publisher socket
 DASHBOARD_PORT = 2345
 DASHBOARD_ADDRESS = '127.0.0.1'
+DASHBOARD_URI = f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}"
 
 def encode(message: str):
     message = message + '\r'
@@ -50,7 +52,7 @@ class PHMeter():
         if zmq_pub:
             self.context = zmq.asyncio.Context.instance()
             self.socket = self.context.socket(zmq.PUB)
-            self.socket.bind(f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}")
+            self.socket.bind(DASHBOARD_URI)
         else:
             self.socket = None
 
@@ -155,6 +157,10 @@ class PHMeter():
             return data
 
     def readloop(self, stop_event=None, interval=30, logfile='pHmeter_test.csv'):
+
+        # start an asyncio event loop in the worker thread...
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
         # clear the output buffer...
         buf = self.ser.read(500)
