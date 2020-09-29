@@ -11,7 +11,8 @@ with open('slacktoken.txt', 'r') as f:
 sc = slack.WebClient(SLACK_TOKEN)
 
 class SlackHandler(logging.Handler):
-    def __init__(self, client=sc, channel="UC4U7SBV2"):
+    # channel = "UC4U7SBV2" # brian
+    def __init__(self, client=sc, channel="#asdc"):
         logging.Handler.__init__(self)
         self.client = client
         self.channel = channel
