@@ -28,6 +28,8 @@ def from_command(instruction):
     if Expt is None:
         return None
 
+    del instruction['op']
+
     return Expt(**instruction)
 
 @dataclass
