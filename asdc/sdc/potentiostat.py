@@ -37,7 +37,9 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
         print(exc)
         print('Exception: unwind potentiostat controller...')
         ctl.stop()
+        time.sleep(1)
         ctl.clear()
+        time.sleep(1)
         ctl.disconnect()
         raise
     finally:
@@ -51,7 +53,7 @@ class Potentiostat():
 
     methods are broken out into `Immediate` (direct instrument control) and `Experiment`.
     """
-    def __init__(self, start_idx=0, initial_mode='potentiostat'):
+    def __init__(self, start_idx=0, initial_mode='potentiostat', poll_interval=1):
 
         self.instrument = Instrument()
         self.start_idx = start_idx
@@ -63,6 +65,7 @@ class Potentiostat():
         self.low_current_interface = self.instrument.GetIsLowCurrentInterfacePresent()
 
         self.mode = initial_mode
+        self.poll_interval = poll_interval
         self.current_range = None
 
         return
