@@ -792,7 +792,7 @@ class SDC():
 
         # results, metadata = sdc.experiment.run(instructions, cell=cell, verbose=self.verbose, remeasure_ocp=remeasure_ocp)
 
-        with potentiostat.controller(start_idx=potentiostat_id) as pstat:
+        with sdc.potentiostat.controller(start_idx=potentiostat_id) as pstat:
             for sequence_id, instruction in enumerate(instructions):
 
                 experiment = sdc.experiment.from_command(instruction)
@@ -875,7 +875,7 @@ class SDC():
         pH_logfile = os.path.join(self.data_dir, f'pH_log_run{location_id:03d}.csv')
 
         with self.phmeter.monitor(interval=5, logfile=pH_logfile):
-            with potentiostat.controller(start_idx=potentiostat_id) as pstat:
+            with sdc.potentiostat.controller(start_idx=potentiostat_id) as pstat:
                 for sequence_id, instruction in enumerate(instructions):
 
                     experiment = sdc.experiment.from_command(instruction)
