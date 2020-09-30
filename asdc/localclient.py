@@ -823,8 +823,6 @@ class SDC():
             message = f'*confirm*: {message}'
 
         logger.info(message)
-        if self.notify:
-            web_client.chat_postMessage(channel='#asdc', text=message, icon_emoji=':sciencebear:')
 
         if block:
             input('press enter to allow running the experiment...')
