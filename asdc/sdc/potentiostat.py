@@ -90,7 +90,7 @@ class Potentiostat():
             'segment': self.segment()
         }
 
-    def run(self, experiment):
+    def run(self, experiment, clear=True):
         """ run an SDC experiment sequence -- busy wait until it's finished """
 
         # this is a bit magical...
@@ -122,6 +122,8 @@ class Potentiostat():
         # cast results into specific e-chem result type
         # (which subclass pandas.DataFrame and have a validation and plotting interface)
         results = experiment.marshal(results)
+
+        self.clear()
 
         return results, metadata
 
