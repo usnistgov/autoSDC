@@ -909,10 +909,7 @@ class SDC():
                         figpath = os.path.join(self.figure_dir, f"{opname}_plot_{location_id}_{sequence_id}.png")
                         save_plot(results, figpath, post_slack=True, title=f"{opname} {location_id}")
 
-        if self.notify:
-            web_client.chat_postMessage(
-                channel='#asdc', text=f"finished experiment {location_id}: {summary}", icon_emoji=':sciencebear:'
-            )
+        logger.info(f"finished experiment {location_id}: {summary}")
 
     def run_characterization(self, args: str):
         """ perform cell cleanup and characterization
@@ -1332,19 +1329,8 @@ class SDC():
             logger.info(f'resuming starting at sample location {location_idx}')
             instructions = instructions[location_idx:]
 
-        current_pH = None
         for instruction_chain in instructions:
             logger.debug(json.dumps(instruction_chain))
-
-            pH = instruction_chain[1].get('pH')
-
-            if pH != current_pH:
-                message = f'Reminder: make sure to set the pH to {pH}'
-                current_pH = pH
-                web_client.chat_postMessage(channel='#asdc', text=message, icon_emoji=':sciencebear:')
-                logger.info(message)
-                input('press <ENTER> to continue')
-
             self.run_experiment(instruction_chain)
 
         return
