@@ -26,6 +26,7 @@ def from_command(instruction):
     instruction_data = instruction.copy()
 
     opname = instruction_data.get('op')
+
     Expt = potentiostat_ops.get(opname)
 
     if Expt is None:

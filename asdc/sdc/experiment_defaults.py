@@ -241,6 +241,7 @@ class CorrosionOpenCircuitArgs(SDCArgs):
     low_current_interface_bandwidth: str = 'AUTO'
     e_resolution: str = 'AUTO'
 
+@dataclass
 class CyclicVoltammetryArgs(SDCArgs):
     initial_potential: float = 0.0
     versus_initial: str = 'VS REF'
