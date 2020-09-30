@@ -19,7 +19,7 @@ class CVData(EchemData):
         return 'CV'
 
     def check_quality(self):
-        return current_crosses_zero(self)
+        return True
 
     def plot(self, fit=False):
         # # super().plot('current', 'potential')
