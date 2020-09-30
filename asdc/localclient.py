@@ -1378,9 +1378,10 @@ def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
 
     logging.basicConfig(level=logging.INFO)
 
-    sh = _slack.SlackHandler(client=web_client)
-    sh.setLevel(logging.CRITICAL) # only log CRITICAL events to slack until setup is finished
-    logger.addHandler(sh)
+    if config.get('notify_slack', False):
+        sh = _slack.SlackHandler(client=web_client)
+        sh.setLevel(logging.CRITICAL) # only log CRITICAL events to slack until setup is finished
+        logger.addHandler(sh)
 
     fh = logging.FileHandler(os.path.join(experiment_root, 'isdc.log'))
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
