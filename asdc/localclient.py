@@ -165,6 +165,7 @@ class SDC():
 
         self.db_file = os.path.join(self.data_dir, config.get('db_file', 'testb.db'))
         self.db = dataset.connect(f'sqlite:///{self.db_file}')
+        self.location_table = self.db['location']
         self.experiment_table = self.db['experiment']
 
         self.current_threshold = 1e-5
@@ -230,7 +231,7 @@ class SDC():
         """
 
         # load last known combi position and update internal state accordingly
-        refs = pd.DataFrame(self.experiment_table.all())
+        refs = pd.DataFrame(self.location_table.all())
 
         if (resume == False) or (refs.size == 0):
 
