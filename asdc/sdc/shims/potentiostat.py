@@ -2,10 +2,31 @@
 
 import os
 import sys
+import json
 import time
+import asyncio
 import inspect
+import logging
+import streamz
 import numpy as np
+import pandas as pd
+from datetime import datetime
 from contextlib import contextmanager
+
+import zmq
+import zmq.asyncio
+
+# set up and bind zmq publisher socket
+DASHBOARD_PORT = 2345
+DASHBOARD_ADDRESS = '127.0.0.1'
+DASHBOARD_URI = f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}"
+
+context = zmq.asyncio.Context.instance()
+socket = context.socket(zmq.PUB)
+socket.bind(DASHBOARD_URI)
+
+shim_data = os.path.join(os.path.split(__file__)[0], 'data')
+df = pd.read_csv(os.path.join(shim_data, 'test_data.csv'), index_col=0)
 
 class VersaStatError(Exception):
     pass
@@ -36,7 +57,7 @@ class Potentiostat():
 
     methods are broken out into `Immediate` (direct instrument control) and `Experiment`.
     """
-    def __init__(self, start_idx=0, initial_mode='potentiostat'):
+    def __init__(self, start_idx=0, initial_mode='potentiostat', poll_interval=1):
 
         self.instrument = None
         self.start_idx = start_idx
@@ -48,10 +69,123 @@ class Potentiostat():
         self.low_current_interface = None
 
         self.mode = initial_mode
+        self.poll_interval = poll_interval
         self.current_range = None
 
         # action buffer for shim
         self.action_queue = []
+
+        self._points_available = 0
+
+        # load data from a file...
+        self._data = df
+
+    def __call__(self, experiment):
+        return self.run(experiment)
+
+    def check_overload(self):
+        self.update_status()
+        overload_status = self.overload_status()
+        if overload_status != 0:
+            print('OVERLOAD:', overload_status)
+        return overload_status
+
+    def read_buffers(self):
+        return {
+            'current': self.current(),
+            'potential': self.potential(),
+            'elapsed_time': self.elapsed_time(),
+            'applied_potential': self.applied_potential(),
+            'current_range': self.current_range_history(),
+            'segment': self.segment()
+        }
+
+    def run(self, experiment):
+        """ run an SDC experiment sequence -- busy wait until it's finished """
+
+        # this is a bit magical...
+        # `experiment` has an attribute `setup_func` that holds the name of the .NET function
+        # that should be invoked to add an experiment
+        # `experiment.setup` is responsible for looking it up and invoking it
+        # with e.g. `f = getattr(pstat.instrument.Experiment, experiment.setup_func)`
+        # this way, an `SDCSequence` can call all the individual `setup` methods
+
+        # no need to run any setup...
+        # argstring = experiment.setup(self.instrument.Experiment)
+        argstring = str(experiment)
+
+        metadata = {
+            'timestamp_start': datetime.now(),
+            'parameters': argstring
+        }
+        self.start()
+
+        error_codes = set()
+
+        # while self.sequence_running():
+        n = self._data.shape[0]
+        n_iters = 40
+        chunk_size = n // 40
+
+        for idx in range(n_iters):
+            self.points_available = idx * chunk_size
+            time.sleep(self.poll_interval)
+            error_codes.add(self.check_overload())
+            print(f'points: {self.points_available}')
+
+        metadata['timestamp_end'] = datetime.now()
+        metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
+        results = self.read_buffers()
+
+        # cast results into specific e-chem result type
+        # (which subclass pandas.DataFrame and have a validation and plotting interface)
+        results = experiment.marshal(results)
+
+        return results, metadata
+
+    def read_chunk(self, start):
+        return pd.DataFrame({
+            'current': self.current(start=start),
+            'potential': self.potential(start=start),
+            'elapsed_time': self.elapsed_time(start=start),
+        })
+
+    def stream(self, experiment):
+        """ stream the data from the potentiostat... """
+        source = streamz.Stream()
+
+        metadata = {
+            'timestamp_start': datetime.now(),
+            'parameters': str(experiment)
+        }
+        self.start()
+
+        cursor = 0
+        chunks = []
+
+        gather_chunks = source.sink(chunks.append)
+        send_data = source.sink(lambda x: socket.send_pyobj(x))
+
+        n = self._data.shape[0]
+        n_iters = 40
+        chunk_size = n // 40
+
+        # while self.sequence_running():
+        for idx in range(1, n_iters+1):
+            self.points_available += chunk_size
+            # chunks.append(self.read_chunk(cursor))
+            source.emit(self.read_chunk(cursor))
+            cursor += chunk_size
+            time.sleep(self.poll_interval)
+
+        metadata['timestamp_end'] = datetime.now()
+        results = self.read_buffers()
+
+        # cast results into specific e-chem result type
+        # (which subclass pandas.DataFrame and have a validation and plotting interface)
+        results = experiment.marshal(results)
+
+        return results, metadata, chunks
 
     def connect(self):
         self.index = self.start_idx
@@ -143,13 +277,14 @@ indicates E, Power Amp or Thermal Overload has occurred.
             2: 'E, Power Amp, or Thermal overload'
         }
 
-        overload_code = self.instrument.Immediate.GetOverload()
+        # overload_code = self.instrument.Immediate.GetOverload()
+        overload_code = 0
 
         if overload_code and raise_exception:
             msg = 'A ' + overload_cause[overload_code] + ' has occurred.'
             raise VersaStatError(msg)
 
-        return None
+        return overload_code
 
     def booster_enabled(self):
         """ check status of the booster switch. """
@@ -198,11 +333,16 @@ indicates E, Power Amp or Thermal Overload has occurred.
         """ Returns true if a sequence is currently running on the connected instrument, false if not. """
         pass
 
+    @property
     def points_available(self):
         """  Returns the number of points that have been stored by the instrument after a sequence of actions has begun.
         Returns -1 when all data has been retrieved from the instrument.
         """
-        return None
+        return self._points_available
+
+    @points_available.setter
+    def points_available(self, value):
+        self._points_available = value
 
     def last_open_circuit(self):
         """ Returns the last measured Open Circuit value.
@@ -222,421 +362,47 @@ indicates E, Power Amp or Thermal Overload has occurred.
     def potential(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
-            num_points = self.points_available()
+            num_points = self.points_available
 
-        values = np.random.random(100)
-
-        if as_list:
-            return [value for value in values]
-
-        return values
+        return self._data['potential'].values[start:num_points]
 
     def current(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
-            num_points = self.points_available()
+            num_points = self.points_available
 
-        values = np.random.random(100)
-
-        if as_list:
-            return [value for value in values]
-
-        return values
+        return self._data['current'].values[start:num_points]
 
     def elapsed_time(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
-            num_points = self.points_available()
+            num_points = self.points_available
 
-        values = np.random.random(100)
+        return self._data['elapsed_time'].values[start:num_points]
 
-        if as_list:
-            return [value for value in values]
-
-        return values
 
     def applied_potential(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
-            num_points = self.points_available()
+            num_points = self.points_available
 
-        values = np.random.random(100)
-
-        if as_list:
-            return [value for value in values]
-
-        return values
+        return self._data['applied_potential'].values[start:num_points]
 
     def segment(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
-            num_points = self.points_available()
+            num_points = self.points_available
 
-        values = np.random.random(100)
-
-        if as_list:
-            return [value for value in values]
-
-        return values
+        return self._data['segment'].values[start:num_points]
 
     def current_range_history(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
-            num_points = self.points_available()
+            num_points = self.points_available
 
-        values = np.random.random(100)
-
-        if as_list:
-            return [value for value in values]
-
-        return values
+        return self._data['current_range'].values[start:num_points]
 
     def hardcoded_open_circuit(self, params):
         default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
         print(default_params)
         return status, default_params
-
-    def linear_scan_voltammetry(self,
-        initial_potential=0.0,
-        versus_initial='VS REF',
-        final_potential=0.65,
-        versus_final='VS REF',
-        scan_rate=1.0,
-        limit_1_type=None,
-        limit_1_direction='<',
-        limit_1_value=0,
-        limit_2_type=None,
-        limit_2_direction='<',
-        limit_2_value=0,
-        current_range='AUTO',
-        electrometer='AUTO',
-        e_filter='AUTO',
-        i_filter='AUTO',
-        leave_cell_on='NO',
-        cell_to_use='INTERNAL',
-        enable_ir_compensation='DISABLED',
-        user_defined_the_amount_of_ir_comp=1,
-        use_previously_determined_ir_comp='YES',
-        bandwidth='AUTO',
-        low_current_interface_bandwidth='AUTO'):
-        """ linear_scan_voltammetry
-        IP Vs FP Vs SR L1T L1D L1V L2T L2D L2V IR EM EF IF LCO CTU iRC UD UP BW LBW
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.linear_scan_voltammetry).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = 'ok'
-        self.action_queue.append(parameters)
-        return status, parameters
-
-    def open_circuit(self,
-            time_per_point=1,
-            duration=10,
-            limit_1_type='NONE',
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type=None,
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='2MA',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            cell_to_use='INTERNAL',
-            bandwidth='AUTO',
-            low_current_interface_bandwidth='AUTO',
-            e_resolution='AUTO'):
-        """ open_circuit
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-
-        default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.open_circuit).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = 'ok'
-        self.action_queue.append(parameters)
-
-        return status, parameters
-
-    def corrosion_open_circuit(self,
-            time_per_point=1,
-            duration=10,
-            limit_1_type='NONE',
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type=None,
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='2MA',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            cell_to_use='INTERNAL',
-            bandwidth='AUTO',
-            low_current_interface_bandwidth='AUTO',
-            e_resolution='AUTO'):
-        """ corrosion_open_circuit
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.corrosion_open_circuit).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = 'ok'
-        self.action_queue.append(parameters)
-
-        return status, parameters
-
-    # NOTE: use enum for options?
-    def cyclic_voltammetry(self,
-            initial_potential=0.0,
-            versus_initial='VS REF',
-            vertex_potential=0.65,
-            versus_vertex='VS REF',
-            vertex_hold=0,
-            acquire_data_during_vertex_hold=True,
-            final_potential=0.25,
-            versus_final='VS REF',
-            scan_rate=0.1,
-            limit_1_type=None,
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type=None,
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='AUTO',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            leave_cell_on='NO',
-            cell_to_use='INTERNAL',
-            enable_ir_compensation='DISABLED',
-            user_defined_the_amount_of_ir_comp=1,
-            use_previously_determined_ir_comp='YES',
-            bandwidth='AUTO',
-            low_current_interface_bandwidth='AUTO'):
-        """ cyclic_voltammetry
-
-        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_potential [Vertex Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Vertex Scan)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_hold [Vertex Hold] (s) {User value}
-        acquire_data_during_vertex_hold [Acquire data during Vertex Hold] {YES or NO}
-        final_potential [Final Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        scan_rate [Scan Rate] (V/s) {User value}
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        leave_cell_on [Leave Cell On] {YES or NO}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
-        user_defined_the_amount_of_ir_comp [User defined the amount of iR Comp] (ohms) {User value}
-        use_previously_determined_ir_comp [Use previously determined iR Comp] {YES or NO}
-        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
-        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.cyclic_voltammetry).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = 'ok'
-        self.action_queue.append(parameters)
-
-        return status, parameters
-
-    def multi_cyclic_voltammetry(self,
-            initial_potential=0.0,
-            versus_initial='VS REF',
-            vertex_potential_1=1.0,
-            versus_vertex_1='VS REF',
-            vertex_hold_1=0,
-            acquire_data_during_vertex_hold_1='NO',
-            vertex_potential_2=-1.0,
-            versus_vertex_2='VS REF',
-            vertex_hold_2=0,
-            acquire_data_during_vertex_hold_2='NO',
-            scan_rate=0.1,
-            cycles=3,
-            limit_1_type='NONE',
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type='NONE',
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='AUTO',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            leave_cell_on='NO',
-            cell_to_use='INTERNAL',
-            enable_ir_compensation='DISABLED',
-            user_defined_the_amount_of_ir_comp=1,
-            use_previously_determined_ir_comp='YES',
-            bandwidth='AUTO',
-            final_potential=0.0,
-            versus_final='VS REF',
-            low_current_interface_bandwidth='AUTO'):
-        """ multi_cyclic_voltammetry
-
-        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_potential [Vertex Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Vertex Scan)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_hold [Vertex Hold] (s) {User value}
-        acquire_data_during_vertex_hold [Acquire data during Vertex Hold] {YES or NO}
-        vertex_potential [Vertex Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Vertex Scan)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        vertex_hold [Vertex Hold] (s) {User value}
-        acquire_data_during_vertex_hold [Acquire data during Vertex Hold] {YES or NO}
-        scan_rate [Scan Rate] (V/s) {User value}
-        cycles [Cycles] (#) {User value}
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        leave_cell_on [Leave Cell On] {YES or NO}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
-        user_defined_the_amount_of_ir_comp [User defined the amount of iR Comp] (ohms) {User value}
-        use_previously_determined_ir_comp [Use previously determined iR Comp] {YES or NO}
-        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
-        final_potential [Final Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.multi_cyclic_voltammetry).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = 'ok'
-        self.action_queue.append(parameters)
-
-        return status, parameters
-
-    def potentiostatic(self,
-            initial_potential=0.0,
-            versus_initial='VS REF',
-            time_per_point=0.00001,
-            duration=10,
-            limit_1_type=None,
-            limit_1_direction='<',
-            limit_1_value=0,
-            limit_2_type=None,
-            limit_2_direction='<',
-            limit_2_value=0,
-            current_range='AUTO',
-            acquisition_mode='AUTO',
-            electrometer='AUTO',
-            e_filter='AUTO',
-            i_filter='AUTO',
-            leave_cell_on='NO',
-            cell_to_use='INTERNAL',
-            enable_ir_compensation='DISABLED',
-            bandwidth='AUTO',
-            low_current_interface_bandwidth='AUTO'):
-        """ potentiostatic
-
-        initial_potential [Initial Potential] (V) {User value -10 to 10 (could be “NOT USED” for Multi-Cycle CV)}
-        versus [Versus] {VS OC, VS REF or VS PREVIOUS}
-        time_per_point [TPP] (s) {float 0.00001  to ...}
-        duration [Dur] (s) {float 0.00001 to ...}
-        limit_1_type [Limit 1 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_1_direction [Limit 1 Direction] {< or >}
-        limit_1_value [Limit 1 Value] {User value}
-        limit_2_type [Limit 2 Type] {NONE, CURRENT, POTENTIAL or CHARGE}
-        limit_2_direction [Limit 2 Direction] {< or >}
-        limit_2_value [Limit 2 Value] {User value}
-        current_range [Current Range] (*) {AUTO, 2A, 200MA, 20MA, 2MA,200UA,20UA,2UA,200NA, 20NA or 4N}
-        acquisition_mode [AM] {AUTO, NONE, 4/4, AVERAGE}
-        electrometer [Electrometer] {AUTO, SINGLE ENDED or DIFFERENTIAL}
-        e_filter [E Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ 10HZ, 1HZ}
-        i_filter [I Filter] (**) {AUTO, NONE, 200KHZ, 1KHZ, 1KHZ, 100HZ, 10HZ, 1HZ}
-        leave_cell_on [Leave Cell On] {YES or NO}
-        cell_to_use [Cell To Use] {INTERNAL or EXTERNAL}
-        enable_ir_compensation [enable iR Compensation] {ENABLED or DISABLED}
-        bandwidth [Bandwidth] (***) {AUTO, HIGH STABILITY, 1MHZ, 100KHZ, 1KHZ}
-        low_current_interface_bandwidth [Low Current Interface Bandwidth] (****) {AUTO, NORMAL, SLOW, VERY SLOW}
-        """
-        parameters = locals().copy()
-
-        # concatenate argument values in function signature order
-        args = inspect.getfullargspec(self.potentiostatic).args
-
-        # remove reference to controller object
-        args = args[1:]
-        del parameters['self']
-
-        paramstring = ','.join([str(parameters[arg]).upper() for arg in args])
-        status = 'ok'
-        self.action_queue.append(parameters)
-
-        return status, parameters
