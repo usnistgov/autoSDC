@@ -185,7 +185,6 @@ class OpenCircuit(OpenCircuitArgs):
     def marshal(self, echem_data: Dict[str, Sequence[float]]):
         return analysis.OCPData(echem_data)
 
-
 @dataclass
 class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):
     """ Corrosion open circuit hold
@@ -238,6 +237,10 @@ class CyclicVoltammetry(CyclicVoltammetryArgs):
 
         args = CyclicVoltammetryArgs.from_dict(args)
         return args.format()
+
+    def marshal(self, echem_data: Dict[str, Sequence[float]]):
+        return analysis.CVData(echem_data)
+
 
 potentiostat_ops = {
     'cv': CyclicVoltammetry,
