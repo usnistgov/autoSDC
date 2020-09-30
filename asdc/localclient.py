@@ -1413,7 +1413,10 @@ def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
 
     logger.info('connecting to the SDC...')
     sdc_interface = SDC(verbose=verbose, config=config, logfile=logfile, token=BOT_TOKEN, resume=resume, zmq_pub=zmq_pub)
-    sh.setLevel(logging.INFO)
+
+    if config.get('notify_slack', False):
+        sh.setLevel(logging.INFO)
+
     logger.info('connected!')
     return sdc_interface
 
