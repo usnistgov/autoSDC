@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import dataset
 import functools
+import subprocess
 # import websockets
 import numpy as np
 import pandas as pd
@@ -1424,5 +1425,9 @@ if __name__ == '__main__':
 
     resume = not args.no_resume
     logger.debug(f'resume?: {resume}')
+
+    if args.dashboard:
+        dashboard_log = open(os.path.join(os.path.split(args.configfile)[0], 'dashboard.log'), 'wb')
+        dashboard_proc = subprocess.Popen(['panel', 'serve', 'asdc/dashboard.py'], stdout=dashboard_log, stderr=dashboard_log)
 
     isdc = sdc_client(args.configfile, resume, args.dashboard, args.verbose)

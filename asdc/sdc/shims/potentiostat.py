@@ -13,6 +13,8 @@ import pandas as pd
 from datetime import datetime
 from contextlib import contextmanager
 
+from streamz.dataframe import DataFrame
+
 import zmq
 import zmq.asyncio
 
@@ -26,7 +28,8 @@ socket = context.socket(zmq.PUB)
 socket.bind(DASHBOARD_URI)
 
 shim_data = os.path.join(os.path.split(__file__)[0], 'data')
-df = pd.read_csv(os.path.join(shim_data, 'test_data.csv'), index_col=0)
+# df = pd.read_csv(os.path.join(shim_data, 'test_data.csv'), index_col=0)
+df = pd.read_csv(os.path.join(shim_data, 'test_open_circuit.csv'), index_col=0)
 
 class VersaStatError(Exception):
     pass
@@ -150,6 +153,10 @@ class Potentiostat():
             'elapsed_time': self.elapsed_time(start=start),
         })
 
+    def flipflag(self, value):
+        if value < 0.01:
+            self.stop_execution = True
+
     def stream(self, experiment):
         """ stream the data from the potentiostat... """
         source = streamz.Stream()
@@ -160,22 +167,54 @@ class Potentiostat():
         }
         self.start()
 
-        cursor = 0
-        chunks = []
+        # build a list of pd.DataFrames
+        # to concat into the full measurement data
+        chunks = source.sink_to_list()
 
-        gather_chunks = source.sink(chunks.append)
+        # publish the pd.DataFrame chunk over zmq
         send_data = source.sink(lambda x: socket.send_pyobj(x))
+
+        # monitor convergence
+        # hacky -- rely on measurement interval being ~1s
+        example = pd.DataFrame({'current': [], 'potential': [], 'elapsed_time': []})
+        sdf = DataFrame(source, example=example)
+
+        self.stop_execution = False
+
+        # set up streams to compute windowed potential range and trigger early stopping.
+        # is there a more composable way to do this?
+        # maybe the experiment object can have a function that accepts a streaming results dataframe
+        # and builds and returns additional streams?
+        # this might also be a decent way to register online error checkers
+        if experiment.name == 'OpenCircuit':
+            def _min(old, new):
+                chunk_min = min(new.values)
+                return min(old, chunk_min)
+
+            # compute rolling window range on potential
+            potential_max = sdf.rolling(300).potential.max()
+            potential_min = sdf.rolling(300).potential.min()
+
+            # compute minimum rolling window range in each chunk
+            potential_range = (potential_max - potential_min).stream.accumulate(_min, start=np.inf)
+            potential_range.sink(self.flipflag)
 
         n = self._data.shape[0]
         n_iters = 40
         chunk_size = n // 40
 
+        cursor = 0
+
         # while self.sequence_running():
         for idx in range(1, n_iters+1):
             self.points_available += chunk_size
-            # chunks.append(self.read_chunk(cursor))
             source.emit(self.read_chunk(cursor))
             cursor += chunk_size
+
+            if self.stop_execution:
+                print('stopping early')
+                break
+
             time.sleep(self.poll_interval)
 
         metadata['timestamp_end'] = datetime.now()

@@ -54,10 +54,10 @@ pn.Column(
     # pn.panel(hv.DynamicMap(hv.Curve, streams=[Buffer(df.pH)]).opts(title='pH', **options)),
     # pn.panel(hv.DynamicMap(hv.Curve, streams=[Buffer(df.temperature)]).opts(title='temperature', **options))
     pn.panel(hv.DynamicMap(
-        partial(hv.Curve, kdims=['elapsed_time'], vdims=['potential']), streams=[Buffer(df, index=False)]
+        partial(hv.Curve, kdims=['elapsed_time'], vdims=['potential']), streams=[Buffer(df, index=False, length=4000)]
     ).opts(title='pH', **options)),
     pn.panel(hv.DynamicMap(
-        partial(hv.Curve, kdims=['potential'], vdims=['current']), streams=[Buffer(df, index=False)]
+        partial(hv.Curve, kdims=['potential'], vdims=['current']), streams=[Buffer(df, index=False, length=4000)]
     ).opts(title='temperature', **options))
     # pn.panel(df.hvplot(x='potential', y='current', backlog=1000).opts(title='echem', **options)),
     # pn.panel(hv.DynamicMap(hv.Curve, streams=[pipe]).opts(title='temperature', **options))
