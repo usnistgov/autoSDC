@@ -80,14 +80,16 @@ class Potentiostat():
             print('OVERLOAD:', overload_status)
         return overload_status
 
-    def read_buffers(self):
+    def read_buffers(self, start=0):
+        num_points = self.points_available() - start
+
         return {
-            'current': self.current(),
-            'potential': self.potential(),
-            'elapsed_time': self.elapsed_time(),
-            'applied_potential': self.applied_potential(),
-            'current_range': self.current_range_history(),
-            'segment': self.segment()
+            'current': self.current(start, num_points),
+            'potential': self.potential(start, num_points),
+            'elapsed_time': self.elapsed_time(start, num_points),
+            'applied_potential': self.applied_potential(start, num_points),
+            'current_range': self.current_range_history(start, num_points),
+            'segment': self.segment(start, num_points)
         }
 
     def run(self, experiment, clear=True):
@@ -110,10 +112,15 @@ class Potentiostat():
 
         error_codes = set()
 
+        data_cursor = 0
         while self.sequence_running():
             time.sleep(self.poll_interval)
             error_codes.add(self.check_overload())
-            # print(f'points: {self.points_available()}')
+            data_chunk = self.read_buffers(start=data_cursor)
+            chunksize = len(data_chunk['potential'])
+            data_cursor += chunksize
+            potential_val = data_chunk['potential'][-1]
+            print(f'points: {data_cursor}, potential: {potential_val} V')
 
         metadata['timestamp_end'] = datetime.now()
         metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
@@ -351,6 +358,8 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         if num_points is None:
             num_points = self.points_available()
+            num_points = num_points - start
+
 
         values = self.instrument.Experiment.GetDataPotential(start, num_points)
 
@@ -363,6 +372,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         if num_points is None:
             num_points = self.points_available()
+            num_points = num_points - start
 
         values = self.instrument.Experiment.GetDataCurrent(start, num_points)
 
@@ -375,6 +385,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         if num_points is None:
             num_points = self.points_available()
+            num_points = num_points - start
 
         values = self.instrument.Experiment.GetDataElapsedTime(start, num_points)
 
@@ -387,6 +398,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         if num_points is None:
             num_points = self.points_available()
+            num_points = num_points - start
 
         values = self.instrument.Experiment.GetDataAppliedPotential(start, num_points)
 
@@ -399,6 +411,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         if num_points is None:
             num_points = self.points_available()
+            num_points = num_points - start
 
         values = self.instrument.Experiment.GetDataSegment(start, num_points)
 
@@ -411,6 +424,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
         if num_points is None:
             num_points = self.points_available()
+            num_points = num_points - start
 
         values = self.instrument.Experiment.GetDataCurrentRange(start, num_points)
 
