@@ -81,7 +81,7 @@ class Potentiostat():
         return overload_status
 
     def read_buffers(self, start=0):
-        num_points = self.points_available()
+        num_points = self.points_available() - start
 
         return {
             'current': self.current(start, num_points),
