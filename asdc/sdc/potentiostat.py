@@ -81,7 +81,7 @@ class Potentiostat():
         return overload_status
 
     def read_buffers(self, start=0):
-        num_points = self.points_available() - start
+        num_points = self.points_available()
 
         return {
             'current': self.current(start, num_points),
@@ -123,7 +123,7 @@ class Potentiostat():
                 potential_val = data_chunk['potential'][-1]
             else:
                 potential_val = None
-            print(f'points: {data_cursor}, potential: {potential_val} V')
+            print(f'points: {self.points_available()}, cursor: {data_cursor}, potential: {potential_val} V')
 
         metadata['timestamp_end'] = datetime.now()
         metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
