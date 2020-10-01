@@ -226,7 +226,7 @@ class CyclicVoltammetry(CyclicVoltammetryArgs):
     """
 
     versus: str = 'VS REF'
-    setup_func: str = 'AddCyclicVoltammetry'
+    setup_func: str = 'AddMultiCyclicVoltammetry'
 
     def getargs(self):
 
