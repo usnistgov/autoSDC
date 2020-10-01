@@ -1,8 +1,11 @@
 import json
 import inspect
+import logging
 from typing import Optional
 from dataclasses import dataclass
 from collections.abc import Iterable
+
+logger = logging.getLogger(__name__)
 
 class SDCArgs:
     """ base class for default experiment arguments
@@ -35,6 +38,7 @@ class SDCArgs:
         paramstring = ','.join(
             [str(arg).upper() for name, arg in self.__dict__.items()]
         )
+        logger.info(f'running {self.name}: {paramstring}')
         return paramstring
 
     def as_dict(self):
