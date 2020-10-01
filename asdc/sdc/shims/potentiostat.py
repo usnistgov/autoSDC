@@ -153,10 +153,6 @@ class Potentiostat():
             'elapsed_time': self.elapsed_time(start=start),
         })
 
-    def flipflag(self, value):
-        if value < 0.01:
-            self.stop_execution = True
-
     def stream(self, experiment):
         """ stream the data from the potentiostat... """
         source = streamz.Stream()
@@ -178,26 +174,7 @@ class Potentiostat():
         # hacky -- rely on measurement interval being ~1s
         example = pd.DataFrame({'current': [], 'potential': [], 'elapsed_time': []})
         sdf = DataFrame(source, example=example)
-
-        self.stop_execution = False
-
-        # set up streams to compute windowed potential range and trigger early stopping.
-        # is there a more composable way to do this?
-        # maybe the experiment object can have a function that accepts a streaming results dataframe
-        # and builds and returns additional streams?
-        # this might also be a decent way to register online error checkers
-        if experiment.name == 'OpenCircuit':
-            def _min(old, new):
-                chunk_min = min(new.values)
-                return min(old, chunk_min)
-
-            # compute rolling window range on potential
-            potential_max = sdf.rolling(300).potential.max()
-            potential_min = sdf.rolling(300).potential.min()
-
-            # compute minimum rolling window range in each chunk
-            potential_range = (potential_max - potential_min).stream.accumulate(_min, start=np.inf)
-            potential_range.sink(self.flipflag)
+        early_stop = experiment.register_early_stopping(sdf)
 
         n = self._data.shape[0]
         n_iters = 40
@@ -211,7 +188,7 @@ class Potentiostat():
             source.emit(self.read_chunk(cursor))
             cursor += chunk_size
 
-            if self.stop_execution:
+            if experiment.stop_execution:
                 print('stopping early')
                 break
 

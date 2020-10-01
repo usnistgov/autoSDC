@@ -6,6 +6,9 @@ import pandas as pd
 from typing import Optional, Dict, List, Sequence
 from datetime import datetime
 
+import streamz
+import streamz.dataframe
+
 from asdc import _slack
 from asdc import analysis
 
@@ -53,7 +56,11 @@ class LPR(LPRArgs):
 
     """
     versus: str = 'VS OC'
+    stop_execution: bool = False
     setup_func: str = 'AddLinearPolarizationResistance'
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
 
     def getargs(self):
         # override any default arguments...
@@ -83,8 +90,12 @@ class StaircaseLSV(StaircaseLSVArgs):
         ```
     """
     versus: str = 'VS REF'
+    stop_execution: bool = False
     setup_func: str = 'AddStaircaseLinearScanVoltammetry'
     filter: Optional[str] = None
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
 
     def getargs(self):
 
@@ -113,8 +124,11 @@ class Potentiostatic(PotentiostaticArgs):
     n_points: int = 3000
     duration: int = 10
     versus: str = 'VS REF'
+    stop_execution: bool = False
     setup_func: str = 'AddPotentiostatic'
 
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
 
     def getargs(self):
 
@@ -146,8 +160,12 @@ class LSV(LSVArgs):
 
     """
     versus: str = 'VS REF'
+    stop_execution: bool = False
     setup_func: str = 'AddLinearScanVoltammetry'
     filter: Optional[str] = None
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
 
     def getargs(self):
 
@@ -177,7 +195,11 @@ class Tafel(TafelArgs):
 
     """
     versus: str = 'VS OC'
+    stop_execution: bool = False
     setup_func: str = 'AddTafel'
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
 
     def getargs(self):
 
@@ -210,6 +232,7 @@ class OpenCircuit(OpenCircuitArgs):
         expt = OpenCircuit(duration=60, time_per_point=0.5)
         ```
     """
+    stop_execution: bool = False
     setup_func: str = 'AddOpenCircuit'
 
     def getargs(self):
@@ -223,6 +246,33 @@ class OpenCircuit(OpenCircuitArgs):
     def marshal(self, echem_data: Dict[str, Sequence[float]]):
         return analysis.OCPData(echem_data)
 
+    def signal_stop(self, value):
+        if value < 0.01:
+            self.stop_execution = True
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        """ streaming dataframe -> early stopping criterion
+
+        the potentiostat interface will check `experiment.stop_execution`
+        """
+        # set up streams to compute windowed potential range and trigger early stopping.
+        # is there a more composable way to do this?
+        # maybe the experiment object can have a function that accepts a streaming results dataframe
+        # and builds and returns additional streams?
+        # this might also be a decent way to register online error checkers
+
+        def _min(old, new):
+            chunk_min = min(new.values)
+            return min(old, chunk_min)
+
+        # compute rolling window range on potential
+        potential_max = sdf.rolling(300).potential.max()
+        potential_min = sdf.rolling(300).potential.min()
+
+        # compute minimum rolling window range in each chunk
+        potential_range = (potential_max - potential_min).stream.accumulate(_min, start=np.inf)
+        return potential_range.sink(self.signal_stop)
+
 @dataclass
 class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):
     """ Corrosion open circuit hold
@@ -235,7 +285,11 @@ class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):
         {"op": "corrosion_oc", "duration": Time, "time_per_point": Time}
         ```
     """
+    stop_execution: bool = False
     setup_func: str = 'AddCorrosionOpenCircuit'
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
 
     def getargs(self):
 
@@ -271,7 +325,11 @@ class CyclicVoltammetry(CyclicVoltammetryArgs):
     """
 
     versus: str = 'VS REF'
+    stop_execution: bool = False
     setup_func: str = 'AddMultiCyclicVoltammetry'
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
 
     def getargs(self):
 
