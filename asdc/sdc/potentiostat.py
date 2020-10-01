@@ -119,7 +119,10 @@ class Potentiostat():
             data_chunk = self.read_buffers(start=data_cursor)
             chunksize = len(data_chunk['potential'])
             data_cursor += chunksize
-            potential_val = data_chunk['potential'][-1]
+            if data_cursor > 0:
+                potential_val = data_chunk['potential'][-1]
+            else:
+                potential_val = None
             print(f'points: {data_cursor}, potential: {potential_val} V')
 
         metadata['timestamp_end'] = datetime.now()
