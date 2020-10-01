@@ -232,6 +232,8 @@ class OpenCircuit(OpenCircuitArgs):
         expt = OpenCircuit(duration=60, time_per_point=0.5)
         ```
     """
+    stabilization_range: float = 0.01
+    stabilization_window: float = 0
     stop_execution: bool = False
     setup_func: str = 'AddOpenCircuit'
 
@@ -247,7 +249,7 @@ class OpenCircuit(OpenCircuitArgs):
         return analysis.OCPData(echem_data)
 
     def signal_stop(self, value):
-        if value < 0.01:
+        if value < self.stabilization_range:
             self.stop_execution = True
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
@@ -255,6 +257,11 @@ class OpenCircuit(OpenCircuitArgs):
 
         the potentiostat interface will check `experiment.stop_execution`
         """
+        if self.stabilization_window <= 0:
+            # by default, do not register early stopping at all
+            # if the stabilization window is set to some positive time interval, proceed
+            return None
+
         # set up streams to compute windowed potential range and trigger early stopping.
         # is there a more composable way to do this?
         # maybe the experiment object can have a function that accepts a streaming results dataframe
@@ -266,8 +273,8 @@ class OpenCircuit(OpenCircuitArgs):
             return min(old, chunk_min)
 
         # compute rolling window range on potential
-        potential_max = sdf.rolling(300).potential.max()
-        potential_min = sdf.rolling(300).potential.min()
+        potential_max = sdf.rolling(self.stabilization_window).potential.max()
+        potential_min = sdf.rolling(self.stabilization_window).potential.min()
 
         # compute minimum rolling window range in each chunk
         potential_range = (potential_max - potential_min).stream.accumulate(_min, start=np.inf)
