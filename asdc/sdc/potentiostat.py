@@ -119,7 +119,7 @@ class Potentiostat():
             data_chunk = self.read_buffers(start=data_cursor)
             chunksize = len(data_chunk['potential'])
             data_cursor += chunksize
-            if data_cursor > 0:
+            if data_cursor > 0 and chunksize > 0:
                 potential_val = data_chunk['potential'][-1]
             else:
                 potential_val = None
