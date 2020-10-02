@@ -83,14 +83,14 @@ class Potentiostat():
     def read_buffers(self, start=0):
         num_points = self.points_available() - start
 
-        return {
+        return pd.DataFrame({
             'current': self.current(start, num_points),
             'potential': self.potential(start, num_points),
             'elapsed_time': self.elapsed_time(start, num_points),
             'applied_potential': self.applied_potential(start, num_points),
             'current_range': self.current_range_history(start, num_points),
             'segment': self.segment(start, num_points)
-        }
+        })
 
     def run(self, experiment, clear=True):
         """ run an SDC experiment sequence -- busy wait until it's finished """
@@ -112,18 +112,38 @@ class Potentiostat():
 
         error_codes = set()
 
+        source = streamz.Stream()
+
+        # build a list of pd.DataFrames
+        # to concat into the full measurement data
+        chunks = source.sink_to_list()
+
+        # # publish the pd.DataFrame chunk over zmq
+        # send_data = source.sink(lambda x: socket.send_pyobj(x))
+
+        # streaming dataframe for early stopping (and potential error checking) callbacks
+        example = pd.DataFrame(
+            {'current': [], 'potential': [], 'elapsed_time': [], 'applied_potential': [], 'current_range': [], 'segment': []}
+        )
+        sdf = DataFrame(source, example=example)
+        early_stop = experiment.register_early_stopping(sdf)
+
         data_cursor = 0
+        stop_flagged = False
         while self.sequence_running():
             time.sleep(self.poll_interval)
             error_codes.add(self.check_overload())
             data_chunk = self.read_buffers(start=data_cursor)
-            chunksize = len(data_chunk['potential'])
+            chunksize, _ = data_chunk.shape
             data_cursor += chunksize
-            if data_cursor > 0 and chunksize > 0:
-                potential_val = data_chunk['potential'][-1]
-            else:
-                potential_val = None
-            print(f'points: {self.points_available()}, cursor: {data_cursor}, potential: {potential_val} V')
+
+            if chunksize > 0:
+                source.emit(data_chunk)
+
+            if experiment.stop_execution and not stop_flagged:
+                logger.debug('stopping experiment early')
+                self.skip()
+                stop_flagged = True
 
         metadata['timestamp_end'] = datetime.now()
         metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
