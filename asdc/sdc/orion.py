@@ -11,6 +11,8 @@ import pandas as pd
 from datetime import datetime
 from contextlib import contextmanager
 
+from typing import Dict, List
+
 import zmq
 import zmq.asyncio
 
@@ -30,7 +32,7 @@ DASHBOARD_PORT = 2345
 DASHBOARD_ADDRESS = '127.0.0.1'
 DASHBOARD_URI = f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}"
 
-def encode(message: str):
+def encode(message: str) -> bytes:
     message = message + '\r'
     return message.encode()
 
@@ -66,11 +68,11 @@ class PHMeter():
             self.socket = None
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         return self._mode
 
     @mode.setter
-    def mode(self, mode):
+    def mode(self, mode: str) -> bool:
         if mode in self.supported_modes:
             self._mode = mode
         else:
@@ -80,7 +82,7 @@ class PHMeter():
         return self.check_response()
 
     @property
-    def blocking(self):
+    def blocking(self) -> bool:
         return self._blocking
 
     @blocking.setter
@@ -104,7 +106,7 @@ class PHMeter():
         finally:
             self.blocking = False
 
-    def check_response(self):
+    def check_response(self) -> bool:
         response = self.ser.read(size=2).decode()
         print(f'response: {response}')
         if response == '> ':
@@ -116,16 +118,16 @@ class PHMeter():
         self.write('SETCSV')
         return self.check_response()
 
-    def write(self, msg):
+    def write(self, msg: str) -> None:
         self.ser.write(encode(msg))
 
     @staticmethod
-    def _to_dict(data: str):
+    def _to_dict(data: str) -> Dict[str, float]:
         values = data.split(',')
         d = dict(pH=float(values[8]), temperature=float(values[12]))
         return d
 
-    def _process_pH(self, response: str):
+    def _process_pH(self, response: str, timestamp: datetime) -> str:
         """
         Meter Model, Serial Number, Software Revision, User ID, Date & Time, Sample ID, Channel, Mode, pH Value, pH Unit, mV Value, mV Unit, Temperature Value, Temperature Unit, Slope Value, Slope Unit, Method #, Log #
 
@@ -147,7 +149,8 @@ class PHMeter():
         # coerce into pandas dataframe to select columns
         row = pd.DataFrame([values], columns=RESPONSE_COLUMNS)
         v = row.loc[:,LOGFILE_COLUMNS]
-        data = v.to_csv(header=False).strip()
+        v['timestamp'] = timestamp
+        data = v.to_csv(header=False, index=False).strip()
 
         return data
 
@@ -156,8 +159,10 @@ class PHMeter():
         if count == 1:
             self.write('GETMEAS')
             response = self.ser.read_until(b'>')
+            timestamp = datetime.now()
             print(response)
-            data = self._process_pH(response.decode())
+
+            data = self._process_pH(response.decode(), timestamp)
             return data
 
         elif count > 1:
