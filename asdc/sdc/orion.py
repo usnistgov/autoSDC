@@ -16,6 +16,15 @@ import zmq.asyncio
 
 MODEL_NUMBER = 'A221'
 
+# the A221 meter responds to GETMEAS with a comma-delimited string
+# RESPONSE_COLUMNS contains field names for this string
+# LOGFILE_COLUMNS specifies the columns that we explicitly want to save
+RESPONSE_COLUMNS = (
+    'model', 'serialnum', 'software_ver', 'userid', 'timestamp', 'sample_id', 'channel','mode',
+    'pH', 'pH_unit', 'mV', 'mV_unit', 'temperature', 'temperature_unit', 'slope', 'slope_unit', 'methodnum', 'lognum'
+)
+LOGFILE_COLUMNS = ('timestamp', 'pH', 'pH_unit', 'mV', 'mV_unit', 'temperature', 'temperature_unit', 'slope', 'slope_unit')
+
 # set up and bind zmq publisher socket
 DASHBOARD_PORT = 2345
 DASHBOARD_ADDRESS = '127.0.0.1'
@@ -124,7 +133,6 @@ class PHMeter():
 
         TODO: get timestamp, sample_id, channel, mode, pH_value, pH_unit, mV_value, mV_unit, temperature_value, temperature_unit, slope_value, slope_unit
         """
-
         # index into the response by searching for the model number
         model_match = re.search(self.model_number, response)
         data_idx = model_match.start()
@@ -134,8 +142,12 @@ class PHMeter():
 
         # strip any whitespace adjacent to the comma delimiters
         # and reconstruct the CSV string
-        values = data.split(',')
-        data = ','.join(map(str.strip, values))
+        values = list(map(str.split, data.split(',')))
+
+        # coerce into pandas dataframe to select columns
+        row = pd.DataFrame([values], columns=RESPONSE_COLUMNS)
+        v = row.loc[:,LOGFILE_COLUMNS]
+        data = v.to_csv(header=False).strip()
 
         return data
 
@@ -172,9 +184,17 @@ class PHMeter():
             self.pH.append(values['pH'])
             self.temperature.append(values['temperature'])
 
+        # skip writing header line if appending to existing logfile
+        write_header = True
+        if os.path.isfile(logfile):
+            write_header = False
+
         with self.sync():
             with open(logfile, 'a') as f:
-                # TODO: print out a CSV header...
+
+                if write_header:
+                    # write a CSV header if the file is new
+                    print(','.join(LOGFILE_COLUMNS), file=f)
 
                 source = streamz.Source()
                 log = source.sink(lambda x: print(x, file=f))
