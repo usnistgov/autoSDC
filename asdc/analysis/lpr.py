@@ -32,6 +32,33 @@ def polarization_resistance(df, current_window=2e-5):
 
     return slope, intercept, r_value
 
+def lpr_analysis(df, lim=.005, r2thresh=.97):
+    x, y = df['current'].values, df['potential'].values
+
+    # find rough open circuit potential
+    zcross = np.argmin(np.abs(x))
+    ocp = y[zcross]
+
+    # make sure there is at least on point in the scan on either side of OCP
+    flag1a = np.sum(y>ocp+lim) > 1
+    flag1b = np.sum(y<ocp-lim) > 1
+    flag1 = flag1a and flag1b
+
+    # select `lim` mV window around OCP to fit
+    fit_p = (y>ocp-lim)&(y<ocp+lim)
+
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x[fit_p], y[fit_p])
+    flag2 = r_value**2 > r2thresh
+
+    flag = flag1 and flag2
+
+    print(r_value**2)
+    print(slope)
+
+    output={'slope': slope,'intercept': intercept,'r2': r_value**2,'good_scan': flag,'ocp': ocp}
+
+    return output
+
 class LPRData(EchemData):
 
     @property
