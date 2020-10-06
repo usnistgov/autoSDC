@@ -149,7 +149,7 @@ class PHMeter():
         values = list(map(str.split, data.split(',')))
 
         # coerce into pandas dataframe to select columns
-        row = pd.DataFrame([values], columns=RESPONSE_COLUMNS)
+        row = pd.DataFrame(values, columns=RESPONSE_COLUMNS)
         v = row.loc[:,LOGFILE_COLUMNS]
         v['timestamp'] = timestamp
         data = v.to_csv(header=False, index=False).strip()
