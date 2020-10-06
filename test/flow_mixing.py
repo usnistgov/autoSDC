@@ -99,4 +99,4 @@ if __name__ == '__main__':
     if args.dry_run:
         dryrun(args.datadir, relative_rates, total_rate=args.total_rate, duration=args.duration)
     else:
-        test_flow_mixing(args.datadir, relative_rates, args.total_rate, duration=duration, dashboard=dashboard)
+        test_flow_mixing(args.datadir, relative_rates, args.total_rate, duration=args.duration, dashboard=args.dashboard)
