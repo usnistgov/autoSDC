@@ -48,12 +48,12 @@ S1 = {
     ]
 }
 
-def test_flow_mixing(data_dir, relative_rates, total_rate=11):
+def test_flow_mixing(data_dir, relative_rates, total_rate=11, dashboard=False):
 
     data_dir = Path(data_dir)
     os.makedirs(data_dir, exist_ok=True)
 
-    phmeter = sdc.orion.PHMeter(ORION_PORT)
+    phmeter = sdc.orion.PHMeter(ORION_PORT, zmq_pub=dashboard)
     pump_array = sdc.pump.PumpArray(solutions, port=PUMP_PORT, timeout=1)
 
     meta = []
@@ -89,7 +89,6 @@ if __name__ == '__main__':
     parser.add_argument('datadir', type=str, help='data and log directory')
     parser.add_argument('--dashboard', action='store_true', help='set up ZMQ publisher for dashboard')
     parser.add_argument('--dry-run', action='store_true', help='generate test output')
-    parser.add_argument('--verbose', action='store_true', help='include extra debugging output')
     args = parser.parse_args()
 
     total_rate = 11
@@ -98,4 +97,4 @@ if __name__ == '__main__':
     if args.dry_run:
         dryrun(args.datadir, relative_rates, total_rate=total_rate)
     else:
-        test_flow_mixing(args.datadir, relative_rates, total_rate)
+        test_flow_mixing(args.datadir, relative_rates, total_rate, dashboard=dashboard)
