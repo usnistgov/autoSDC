@@ -1,34 +1,44 @@
+from __future__ import annotations
+
 import logging
 import numpy as np
 import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 
-from asdc.analysis.echem_data import EchemData
+from asdc.analysis.echem_data import EchemData, Status
 from asdc._slack import SlackHandler
 
 logger = logging.getLogger(__name__)
 
-def current_crosses_zero(current):
-    success = current.min() < 0 and current.max() > 0
-
-    if not success:
-        logger.warning('LPR current does not cross zero!')
-
+def current_crosses_zero(df: pd.DataFrame) -> bool:
+    current= df['current']
     logger.debug('LPR check')
+    return  current.min() < 0 and current.max() > 0
 
-    return success
-
-def polarization_resistance(current, potential, potential_window=0.005):
+def _scan_range(df, potential_window=0.005) -> tuple[float, float]:
+    current, potential = df['current'], df['potential']
 
     # find rough open circuit potential -- find zero crossing of current trace
     # if the LPR fit is any good, then the intercept should give
     # a more precise estimate of the open circuit potential
     zcross = np.argmin(np.abs(current))
-    ocp = potential[zcross]
+    ocp = potential.iloc[zcross]
 
     # select a window around OCP to fit
     lb, ub = ocp - potential_window, ocp + potential_window
+    return lb, ub
+
+def valid_scan_range(df: EchemData, potential_window: float = 0.005) -> bool:
+    current, potential = df['current'], df['potential']
+    lb, ub = _scan_range(df, potential_window=potential_window)
+
+    return potential.min() <= lb and potential.max() >= ub
+
+def polarization_resistance(df: EchemData, potential_window: float = 0.005) -> tuple[float, float, float]:
+    current, potential = df['current'].values, df['potential'].values
+
+    lb, ub = _scan_range(df, potential_window=potential_window)
     fit_p = (potential >= lb) & (potential <= ub)
 
     # quick linear regression
@@ -37,35 +47,6 @@ def polarization_resistance(current, potential, potential_window=0.005):
     r2 = r_value**2
 
     return slope, intercept, r2
-
-def lpr_analysis(df, potential_window=.005, r2thresh=.97):
-    current, potential = df['current'].values, df['potential'].values
-
-    # find rough open circuit potential -- find zero crossing of current trace
-    # if the LPR fit is any good, then the intercept should give
-    # a more precise estimate of the open circuit potential
-    zcross = np.argmin(np.abs(current))
-    ocp = potential[zcross]
-
-    # make sure there is at least on point in the scan on either side of OCP
-    flag1a = np.sum(potential > ocp + potential_window) > 1
-    flag1b = np.sum(potential < ocp - potential_window) > 1
-    flag1 = flag1a and flag1b
-
-    # select `lim` mV window around OCP to fit
-    fit_p = (potential > ocp-potential_window) & (potential < ocp+potential_window)
-
-    slope, intercept, r_value, p_value, std_err = stats.linregress(current[fit_p], potential[fit_p])
-    flag2 = r_value**2 > r2thresh
-
-    flag = flag1 and flag2
-
-    print(r_value**2)
-    print(slope)
-
-    output={'slope': slope,'intercept': intercept,'r2': r_value**2,'good_scan': flag,'ocp': ocp}
-
-    return output
 
 class LPRData(EchemData):
 
@@ -77,10 +58,27 @@ class LPRData(EchemData):
     def name(self):
         return 'LPR'
 
-    def check_quality(self):
-        slope, intercept, r2 = polarization_resistance(self.current, self.potential)
-        print(f'OCP: {intercept}')
-        return current_crosses_zero(self.current)
+    def check_quality(df, r2_thresh=0.9999, w=5):
+        """ log results of quality checks and return a status code for control flow in the caller """
+
+        status = Status.OK
+
+        if not current_crosses_zero(df):
+            logger.warning('LPR current does not cross zero!')
+            status = max(status, Status.WARN)
+
+        if not valid_scan_range(df, potential_window=w * 1e-3):
+            logger.warning('scan range does not span +/- {w} mV')
+            status = max(status, Status.WARN)
+
+        slope, intercept, r2 = polarization_resistance(df)
+
+        if r2 < r2_thresh:
+            logger.warning('R^2 threshold not met')
+            status = max(status, Status.WARN)
+
+        logger.info(f'LPR slope: {slope} (R2={r2}), OCP: {intercept}')
+        return status
 
     def plot(self, fit=False):
         # # super().plot('current', 'potential')
