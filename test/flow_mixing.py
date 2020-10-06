@@ -16,9 +16,8 @@ PUMP_PORT = 'COM12'
 ORION_PORT = 'COM17'
 
 solutions = {
-    0: {'acid': 1.0},
-    1: {'base': 1.0},
-    2: {'neutral': 1.0}
+    0: {'base': 1.0},
+    1: {'water': 1.0},
 }
 
 # what interface would be nice?
