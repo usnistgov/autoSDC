@@ -57,7 +57,7 @@ def test_flow_mixing(data_dir, relative_rates, total_rate=11, duration=60, dashb
 
     meta = []
     for idx, x in enumerate(relative_rates):
-        setpoint = {'base': (1-x) * total_rate, 'water': x * total_rate}
+        setpoint = {'base': x * total_rate, 'water': (1-x) * total_rate}
 
         logfile = f'pH-log-{idx}-x{x}.csv'
         with phmeter.monitor(interval=1, logfile=data_dir/logfile):
@@ -94,7 +94,11 @@ if __name__ == '__main__':
     parser.add_argument('--dry-run', action='store_true', help='generate test output')
     args = parser.parse_args()
 
-    relative_rates = [0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1]
+
+    # relative_rates = [0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1]
+
+    # base first
+    relative rates = [1, .3, .1,  .03, .01, .003, .001, 0]
 
     if args.dry_run:
         dryrun(args.datadir, relative_rates, total_rate=args.total_rate, duration=args.duration)
