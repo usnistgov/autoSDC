@@ -67,7 +67,7 @@ def test_flow_mixing(data_dir, relative_rates, total_rate=11, duration=60, dashb
 
     pump_array.stop_all(fast=True)
 
-    with open(data_dir/'metadata.json') as f:
+    with open(data_dir/'metadata.json', 'w') as f:
         json.dump(meta, f)
 
 def dryrun(data_dir, relative_rates, total_rate=11, duration=30):
