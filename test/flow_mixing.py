@@ -39,7 +39,7 @@ S1 = {
             "units": "mol/L"
         },
         {
-q            "name": "water",
+            "name": "water",
             "molfile": "\n\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\nM  END",
             "inchi": "InChI=1S/H2O/h1H2",
             "inchiKey": "InChIKey=XLYOFNOQVPJJNP-UHFFFAOYSA-N"
