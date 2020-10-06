@@ -57,7 +57,7 @@ def test_flow_mixing(data_dir, relative_rates, total_rate=11, duration=60, dashb
 
     meta = []
     for idx, x in enumerate(relative_rates):
-        setpoint = {'acid': x * total_rate, 'base': (1-x) * total_rate}
+        setpoint = {'base': x * total_rate, 'water': (1-x) * total_rate}
 
         logfile = f'pH-log-{idx}-x{x}.csv'
         with phmeter.monitor(interval=1, logfile=data_dir/logfile):
