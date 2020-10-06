@@ -26,6 +26,7 @@ RESPONSE_COLUMNS = (
     'model', 'serialnum', 'software_ver', 'userid', 'timestamp', 'sample_id', 'channel','mode',
     'pH', 'pH_unit', 'mV', 'mV_unit', 'temperature', 'temperature_unit', 'slope', 'slope_unit', 'methodnum', 'lognum'
 )
+
 LOGFILE_COLUMNS = ('timestamp', 'pH', 'pH_unit', 'mV', 'mV_unit', 'temperature', 'temperature_unit', 'slope', 'slope_unit')
 
 # set up and bind zmq publisher socket
@@ -125,7 +126,7 @@ class PHMeter():
     @staticmethod
     def _to_dict(data: str) -> Dict[str, float]:
         values = data.split(',')
-        d = dict(pH=float(values[8]), temperature=float(values[12]))
+        d = dict(pH=float(values[1]), temperature=float(values[5]))
         return d
 
     def _process_pH(self, response: str, timestamp: datetime) -> str:
