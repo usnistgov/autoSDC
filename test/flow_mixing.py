@@ -48,7 +48,7 @@ S1 = {
     ]
 }
 
-def test_flow_mixing(data_dir, relative_rates, total_rate=11, dashboard=False):
+def test_flow_mixing(data_dir, relative_rates, total_rate=11, duration=60, dashboard=False):
 
     data_dir = Path(data_dir)
     os.makedirs(data_dir, exist_ok=True)
@@ -64,12 +64,14 @@ def test_flow_mixing(data_dir, relative_rates, total_rate=11, dashboard=False):
         with phmeter.monitor(interval=1, logfile=data_dir/logfile):
             pump_array.set_rates(setpoint, start=True, fast=True)
             meta.append({'logfile': logfile, 'setpoint': setpoint, 'ts': datetime.now().isoformat()})
-            time.sleep(5*60)
+            time.sleep(duration)
+
+    pump_array.stop_all(fast=True)
 
     with open(data_dir/'metadata.json') as f:
         json.dump(meta, f)
 
-def dryrun(data_dir, relative_rates, total_rate=11):
+def dryrun(data_dir, relative_rates, total_rate=11, duration=30):
     data_dir = Path(data_dir)
 
     meta = []
@@ -87,14 +89,15 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='flow mixing test harness')
     parser.add_argument('datadir', type=str, help='data and log directory')
+    parser.add_argument('--total-rate', type=float, default=5, help='total flow rate in mL/min')
+    parser.add_argument('--duration', type=float, default=60, help='hold time in s')
     parser.add_argument('--dashboard', action='store_true', help='set up ZMQ publisher for dashboard')
     parser.add_argument('--dry-run', action='store_true', help='generate test output')
     args = parser.parse_args()
 
-    total_rate = 11
-    relative_rates = [0, 0.001, 0.003, 0.1, 0.3, 1]
+    relative_rates = [0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1]
 
     if args.dry_run:
-        dryrun(args.datadir, relative_rates, total_rate=total_rate)
+        dryrun(args.datadir, relative_rates, total_rate=args.total_rate, duration=args.duration)
     else:
-        test_flow_mixing(args.datadir, relative_rates, total_rate, dashboard=dashboard)
+        test_flow_mixing(args.datadir, relative_rates, args.total_rate, duration=duration, dashboard=dashboard)
