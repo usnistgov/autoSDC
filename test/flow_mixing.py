@@ -39,7 +39,7 @@ S1 = {
             "units": "mol/L"
         },
         {
-            "name": "water",
+q            "name": "water",
             "molfile": "\n\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\nM  END",
             "inchi": "InChI=1S/H2O/h1H2",
             "inchiKey": "InChIKey=XLYOFNOQVPJJNP-UHFFFAOYSA-N"
@@ -57,7 +57,7 @@ def test_flow_mixing(data_dir, relative_rates, total_rate=11, duration=60, dashb
 
     meta = []
     for idx, x in enumerate(relative_rates):
-        setpoint = {'base': x * total_rate, 'water': (1-x) * total_rate}
+        setpoint = {'base': (1-x) * total_rate, 'water': x * total_rate}
 
         logfile = f'pH-log-{idx}-x{x}.csv'
         with phmeter.monitor(interval=1, logfile=data_dir/logfile):
