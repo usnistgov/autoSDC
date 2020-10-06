@@ -98,7 +98,7 @@ if __name__ == '__main__':
     # relative_rates = [0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1]
 
     # base first
-    relative rates = [1, .3, .1,  .03, .01, .003, .001, 0]
+    relative_rates = [1, .3, .1,  .03, .01, .003, .001, 0]
 
     if args.dry_run:
         dryrun(args.datadir, relative_rates, total_rate=args.total_rate, duration=args.duration)
