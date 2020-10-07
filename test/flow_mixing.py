@@ -65,7 +65,7 @@ def test_flow_mixing(data_dir, relative_rates, total_rate=11, duration=60, dashb
         setpoint = {'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate}
 
         logfile = f'pH-log-{idx}-x{x}.csv'
-        with phmeter.monitor(interval=0.5, logfile=data_dir/logfile):
+        with phmeter.monitor(interval=1, logfile=data_dir/logfile):
             pump_array.set_rates(setpoint, start=True, fast=True)
             meta.append({'logfile': logfile, 'setpoint': setpoint, 'ts': datetime.now().isoformat()})
             time.sleep(duration)
