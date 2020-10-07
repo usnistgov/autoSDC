@@ -23,6 +23,7 @@ ORION_PORT = 'COM17'
 solutions = {
     0: {'KOH': 1.0},
     1: {'K2SO4': 1.0},
+    2: {'H2SO4': 1.0}
 }
 
 # what interface would be nice?
@@ -61,10 +62,9 @@ def test_flow_mixing(data_dir, relative_rates, total_rate=11, duration=60, dashb
     pump_array = sdc.pump.PumpArray(solutions, port=PUMP_PORT, timeout=1)
 
     meta = []
-    for idx, x in enumerate(relative_rates):
-        setpoint = {'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate}
+    for idx, setpoint in enumerate(relative_rates):
 
-        logfile = f'pH-log-{idx}-x{x}.csv'
+        logfile = f'pH-log-{idx}.csv'
         with phmeter.monitor(interval=1, logfile=data_dir/logfile):
             pump_array.set_rates(setpoint, start=True, fast=True)
             meta.append({'logfile': logfile, 'setpoint': setpoint, 'ts': datetime.now().isoformat()})
@@ -79,9 +79,10 @@ def dryrun(data_dir, relative_rates, total_rate=11, duration=30):
     data_dir = Path(data_dir)
 
     meta = []
-    for idx, x in enumerate(relative_rates):
-        setpoint = {'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate}
-        logfile = f'pH-log-{idx}-x{x}.csv'
+    for idx, setpoint in enumerate(relative_rates):
+        # setpoint = {'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate}
+        # logfile = f'pH-log-{idx}-x{x}.csv'
+        logfile = f'pH-log-{idx}.csv'
         print(data_dir / logfile, setpoint)
         meta.append({'logfile': logfile, 'setpoint': setpoint, 'ts': datetime.now().isoformat()})
 
@@ -103,7 +104,20 @@ if __name__ == '__main__':
 
     # base first
     # relative_rates = [1, .3, .1,  .03, .01, .003, .001, 0]
-    relative_rates = [1, 0.1, 0.01, 0.001, 0.0001, 0]
+    # relative_rates = [1, 0.1, 0.01, 0.001, 0.0001, 0]
+    # relative_rates = [{'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate} for x in relative_rates]
+
+    # basic to neutral
+    total_rate = args.total_rate
+    relative_rates = [1, 0.1, 0.01, 0.001]
+    basic_rates = [{'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate} for x in relative_rates]
+
+
+    # switch the acid ordering to go from neutral to acidic
+    acidic_rates = [{'H2SO4': x * total_rate, 'K2SO4': (1-x) * total_rate} for x in relative_rates[::-1]]
+
+    relative_rates = basic_rates + [{'K2SO4': total_rate}] + acidic_rates
+
 
     if args.dry_run:
         dryrun(args.datadir, relative_rates, total_rate=args.total_rate, duration=args.duration)
