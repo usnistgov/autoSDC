@@ -15,9 +15,14 @@ from asdc import sdc
 PUMP_PORT = 'COM12'
 ORION_PORT = 'COM17'
 
+# solutions = {
+#     0: {'base': 1.0},
+#     1: {'water': 1.0},
+# }
+
 solutions = {
-    0: {'base': 1.0},
-    1: {'water': 1.0},
+    0: {'KOH': 1.0},
+    1: {'K2SO4': 1.0},
 }
 
 # what interface would be nice?
@@ -57,10 +62,10 @@ def test_flow_mixing(data_dir, relative_rates, total_rate=11, duration=60, dashb
 
     meta = []
     for idx, x in enumerate(relative_rates):
-        setpoint = {'base': x * total_rate, 'water': (1-x) * total_rate}
+        setpoint = {'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate}
 
         logfile = f'pH-log-{idx}-x{x}.csv'
-        with phmeter.monitor(interval=1, logfile=data_dir/logfile):
+        with phmeter.monitor(interval=0.5, logfile=data_dir/logfile):
             pump_array.set_rates(setpoint, start=True, fast=True)
             meta.append({'logfile': logfile, 'setpoint': setpoint, 'ts': datetime.now().isoformat()})
             time.sleep(duration)
@@ -75,7 +80,7 @@ def dryrun(data_dir, relative_rates, total_rate=11, duration=30):
 
     meta = []
     for idx, x in enumerate(relative_rates):
-        setpoint = {'acid': x * total_rate, 'base': (1-x) * total_rate}
+        setpoint = {'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate}
         logfile = f'pH-log-{idx}-x{x}.csv'
         print(data_dir / logfile, setpoint)
         meta.append({'logfile': logfile, 'setpoint': setpoint, 'ts': datetime.now().isoformat()})
@@ -89,16 +94,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='flow mixing test harness')
     parser.add_argument('datadir', type=str, help='data and log directory')
     parser.add_argument('--total-rate', type=float, default=5, help='total flow rate in mL/min')
-    parser.add_argument('--duration', type=float, default=60, help='hold time in s')
+    parser.add_argument('--duration', type=float, default=75, help='hold time in s')
     parser.add_argument('--dashboard', action='store_true', help='set up ZMQ publisher for dashboard')
     parser.add_argument('--dry-run', action='store_true', help='generate test output')
     args = parser.parse_args()
 
-
     # relative_rates = [0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1]
 
     # base first
-    relative_rates = [1, .3, .1,  .03, .01, .003, .001, 0]
+    # relative_rates = [1, .3, .1,  .03, .01, .003, .001, 0]
+    relative_rates = [1, 0.1, 0.01, 0.001, 0.0001, 0]
 
     if args.dry_run:
         dryrun(args.datadir, relative_rates, total_rate=args.total_rate, duration=args.duration)
