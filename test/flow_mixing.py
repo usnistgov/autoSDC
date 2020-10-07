@@ -86,7 +86,7 @@ def dryrun(data_dir, relative_rates, total_rate=11, duration=30):
         print(data_dir / logfile, setpoint)
         meta.append({'logfile': logfile, 'setpoint': setpoint, 'ts': datetime.now().isoformat()})
 
-        time.sleep(3)
+        time.sleep(0.1)
 
     print(json.dumps(meta))
 
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     # basic to neutral
     total_rate = args.total_rate
     # relative_rates = [1, 0.1, 0.01, 0.001]
-    relative_rates = [1, 0.3, 0.1,  0.01]
+    relative_rates = [1, 0.3, 0.1,  0.03, 0.01]
     basic_rates = [{'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate} for x in relative_rates]
 
 
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     acidic_rates = [{'H2SO4': x * total_rate, 'K2SO4': (1-x) * total_rate} for x in relative_rates[::-1]]
 
     # relative_rates = basic_rates + [{'K2SO4': total_rate}] + acidic_rates
-    relative_rates = basic_rates + acidic_rates
+    relative_rates = [{'K2SO4': total_rate}] + acidic_rates
 
 
     if args.dry_run:
