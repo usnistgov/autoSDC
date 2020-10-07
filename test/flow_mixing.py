@@ -95,11 +95,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='flow mixing test harness')
     parser.add_argument('datadir', type=str, help='data and log directory')
     parser.add_argument('--total-rate', type=float, default=5, help='total flow rate in mL/min')
-    parser.add_argument('--duration', type=float, default=75, help='hold time in s')
+    parser.add_argument('--duration', type=float, default=60, help='hold time in s')
     parser.add_argument('--dashboard', action='store_true', help='set up ZMQ publisher for dashboard')
     parser.add_argument('--dry-run', action='store_true', help='generate test output')
     args = parser.parse_args()
 
+    print(args)
     # relative_rates = [0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1]
 
     # base first
@@ -109,14 +110,16 @@ if __name__ == '__main__':
 
     # basic to neutral
     total_rate = args.total_rate
-    relative_rates = [1, 0.1, 0.01, 0.001]
+    # relative_rates = [1, 0.1, 0.01, 0.001]
+    relative_rates = [1, 0.3, 0.1,  0.01]
     basic_rates = [{'KOH': x * total_rate, 'K2SO4': (1-x) * total_rate} for x in relative_rates]
 
 
     # switch the acid ordering to go from neutral to acidic
     acidic_rates = [{'H2SO4': x * total_rate, 'K2SO4': (1-x) * total_rate} for x in relative_rates[::-1]]
 
-    relative_rates = basic_rates + [{'K2SO4': total_rate}] + acidic_rates
+    # relative_rates = basic_rates + [{'K2SO4': total_rate}] + acidic_rates
+    relative_rates = basic_rates + acidic_rates
 
 
     if args.dry_run:
