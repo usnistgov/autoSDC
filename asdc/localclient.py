@@ -128,7 +128,9 @@ class SDC():
         self.plot_cv = config.get('plot_cv', False)
         self.plot_current = config.get('plot_current', False)
 
-        exptfile = os.path.join(self.data_dir, config.get('default_experiment'))
+
+        expt_dir, _ = os.path.split(self.data_dir)
+        exptfile = os.path.join(expt_dir, config.get('default_experiment'))
         if os.path.isfile(exptfile):
             with open(exptfile, 'r') as f:
                 self.default_experiment = json.load(f)
