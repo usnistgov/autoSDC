@@ -68,7 +68,7 @@ class LPRData(EchemData):
             status = max(status, Status.WARN)
 
         if not valid_scan_range(df, potential_window=w * 1e-3):
-            logger.warning('scan range does not span +/- {w} mV')
+            logger.warning(f'scan range does not span +/- {w} mV')
             status = max(status, Status.WARN)
 
         slope, intercept, r2 = polarization_resistance(df)
