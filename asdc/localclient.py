@@ -109,6 +109,13 @@ class SDC():
         self.logfile = logfile
         self.configvalues = config
 
+        exptfile = config.get('default_experiment')
+        if os.path.isfile(exptfile):
+            with open(exptfile, 'r') as f:
+                self.default_experiment = json.load(f)
+        else:
+            self.default_experiment = None
+
         with sdc.position.controller(ip='192.168.10.11') as pos:
             initial_versastat_position = pos.current_position()
             logger.debug(f'initial vs position: {initial_versastat_position}')
