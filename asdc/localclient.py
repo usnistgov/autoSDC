@@ -617,7 +617,7 @@ class SDC():
         logger.debug(f'local vars: {locals}')
         return
 
-    def establish_droplet(self, x_wafer: float, y_wafer: float, flow_instructions: Dict = {}):
+    def establish_droplet(self, flow_instructions: Dict = {}, x_wafer: Optional[float] = None, y_wafer: Optional[float] = None):
 
         relative_rates = flow_instructions.get('relative_rates')
         target_rate = float(flow_instructions.get('flow_rate', 1.0))
@@ -653,7 +653,8 @@ class SDC():
             height_difference = max(0, height_difference)
             with sdc.position.sync_z_step(height=height_difference, speed=self.speed) as stage:
 
-                self.move_stage(x_wafer, y_wafer, self.cell_frame)
+                if x_wafer is not None and y_wafer is not None:
+                    self.move_stage(x_wafer, y_wafer, self.cell_frame)
 
                 # counterpump slower to fill the droplet
                 logger.debug('filling droplet')
@@ -848,7 +849,7 @@ class SDC():
 
         x_combi, y_combi = header.get('x'), header.get('y')
 
-        self.establish_droplet(x_combi, y_combi, instructions[0])
+        self.establish_droplet(instructions[0], x_combi, y_combi,)
         logger.info(f'current pH reading is {self.phmeter.pH[-1]}')
 
         meta = {
@@ -946,7 +947,7 @@ class SDC():
                 y_combi = sample.get('y_combi')
                 primary_key = sample.get('id')
 
-                self.establish_droplet(x_combi, y_combi, flow_instructions)
+                self.establish_droplet(flow_instructions, x_combi, y_combi)
 
         # run cleanup and optical characterization
         self.pump_array.stop_all(counterbalance='full', fast=True)
@@ -1350,7 +1351,7 @@ class SDC():
 
         for x, y in points:
             logger.info(f'visiting {x}, {y}')
-            isdc.establish_droplet(x, y, flowrates)
+            isdc.establish_droplet(flowrates, x, y)
             time.sleep(10)
 
 def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
