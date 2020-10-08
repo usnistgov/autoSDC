@@ -128,14 +128,11 @@ class SDC():
         self.plot_cv = config.get('plot_cv', False)
         self.plot_current = config.get('plot_current', False)
 
+        self.default_experiment = config.get('default_experiment')
+        if self.default_experiment is not None and type(self.default_experiment) is str:
+            self.default_experiment = json.loads(self.default_experiment)
 
-        expt_dir, _ = os.path.split(self.data_dir)
-        exptfile = os.path.join(expt_dir, config.get('default_experiment'))
-        if os.path.isfile(exptfile):
-            with open(exptfile, 'r') as f:
-                self.default_experiment = json.load(f)
-        else:
-            self.default_experiment = None
+        self.default_flowrate = config.get('default_flowrate')
 
         # define a positive height to perform characterization
         h = float(config.get('characterization_height', 0.004))
