@@ -109,13 +109,6 @@ class SDC():
         self.logfile = logfile
         self.configvalues = config
 
-        exptfile = config.get('default_experiment')
-        if os.path.isfile(exptfile):
-            with open(exptfile, 'r') as f:
-                self.default_experiment = json.load(f)
-        else:
-            self.default_experiment = None
-
         with sdc.position.controller(ip='192.168.10.11') as pos:
             initial_versastat_position = pos.current_position()
             logger.debug(f'initial vs position: {initial_versastat_position}')
@@ -134,6 +127,13 @@ class SDC():
         self.notify = config.get('notify_slack', True)
         self.plot_cv = config.get('plot_cv', False)
         self.plot_current = config.get('plot_current', False)
+
+        exptfile = os.path.join(self.data_dir, config.get('default_experiment'))
+        if os.path.isfile(exptfile):
+            with open(exptfile, 'r') as f:
+                self.default_experiment = json.load(f)
+        else:
+            self.default_experiment = None
 
         # define a positive height to perform characterization
         h = float(config.get('characterization_height', 0.004))
