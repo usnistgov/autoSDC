@@ -217,8 +217,7 @@ class PHMeter():
                     df.sink(lambda x: self.socket.send_pyobj(x))
 
                 # main measurement loop to run at interval
-
-                while True:
+                while not stop_event.is_set():
 
                     target_ts = time.time() + interval
 
@@ -226,12 +225,9 @@ class PHMeter():
                     source.emit(reading)
 
                     # wait out the rest of the interval
-                    # but return immediately if signalled
-                    delta = target_ts - time.time()
-                    stop_event.wait(timeout=max(0, delta))
-
-                    if stop_event.is_set():
-                        return
+                    # but continue immediately if this iteration took longer than the interval
+                    # return immediately if signalled
+                    stop_event.wait(timeout=max(0, target_ts - time.time()))
 
     @contextmanager
     def monitor(self, interval=30, logfile='pHmeter_test.csv'):
