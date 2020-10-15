@@ -233,10 +233,10 @@ class PumpArray():
                 # TODO: solutions need better names
                 name = list(solution.keys())[0]
 
-                r = self.eval('tvolume', pump_id=pump_id, check_response=True, fast=True)
+                r = self.eval('tvolume', pump_id=pump_id, check_response=True, fast=True, ser=ser)
                 target_volume = decode_level(r)
 
-                r = self.eval('ivolume', pump_id=pump_id, check_response=True, fast=True)
+                r = self.eval('ivolume', pump_id=pump_id, check_response=True, fast=True, ser=ser)
                 infused_volume = decode_level(r)
 
                 # print(f'tvolume: {target_volume} mL')
