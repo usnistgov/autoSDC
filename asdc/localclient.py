@@ -648,7 +648,25 @@ class SDC():
         purge_ratio = 0.95
         purge_rates = self._scale_flow(relative_rates, nominal_rate=purge_rate)
 
-        self.pump_array.check_levels(purge_rates, purge_time)
+        levels = self.pump_array.levels(purge_rates, purge_time)
+        logger.info(f'current solution levels: {levels}')
+
+        # compute required volumes in mL
+        volume_needed = {key: purge_time * rate / 60 for key, rate in purge_rates.items()}
+
+        surplus = {key: levels[key] - volume_needed[key] for key in purge_rates.keys()}
+
+        # trigger a refill if there won't be more than 5 mL headroom after the push
+        to_refill = {
+            key: self.pump_array.get_pump_id(key)
+            for key, value in surplus.items() if value < 5
+        }
+
+        if len(to_refill) > 0:
+            pump_ids = [f'{name} (pump {id})' for name, id in to_refill.items()]
+            pump_ids = ', '.join(pump_ids)
+            logger.warning(f'Refill and reset syringes: {pump_ids}')
+            input('refill and reset pumps to proceed')
 
         # droplet workflow -- start at zero
         logger.debug('starting droplet workflow')

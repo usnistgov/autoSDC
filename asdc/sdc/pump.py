@@ -192,14 +192,10 @@ class PumpArray():
             if q in value:
                 return key
 
-    def check_levels(self, setpoints: dict[str, float], duration: float):
+    def levels(self):
         """ check syringe levels to ensure enough solution is available for a given push
 
         for each pump, run IVOLUME and TVOLUME to compute the remaining solution level
-
-        Arguments:
-            setpoints: absolute flow rates for each syringe pump in mL/min
-            duration: time in seconds for the push
 
         Note: does not handle the case where the target setpoint is reached and the pump stops!
               This function is meant to be used preemptively to avoid this happening in the first place.
@@ -230,13 +226,13 @@ class PumpArray():
 
             return level
 
-        # compute required volumes in mL
-        volume_needed = {key: duration * rate / 60 for key, rate in setpoints.items()}
-
         volume_remaining = {}
         with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
-            for name, volume in volume_needed.items():
-                pump_id = self.get_pump_id(name)
+            for pump_id, solution in self.solutions.items():
+
+                # TODO: solutions need better names
+                name = list(solution.keys())[0]
+
                 r = self.eval('tvolume', pump_id=pump_id, check_response=True, fast=True)
                 target_volume = decode_level(r)
 
@@ -248,8 +244,6 @@ class PumpArray():
                 print(f'remaining: {target_volume - infused_volume} mL')
                 volume_remaining[name] = target_volume - infused_volume
 
-        print(f'needed: {volume_needed}')
-        surplus = {name: volume_remaining[name] - volume_needed[name] for name in setpoints.keys()}
         return volume_remaining
 
     def set_rates(self, setpoints, units='ml/min', start=False, fast=False):
