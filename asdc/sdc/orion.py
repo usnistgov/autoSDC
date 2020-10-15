@@ -65,7 +65,7 @@ class PHMeter():
         if zmq_pub:
             self.context = zmq.asyncio.Context.instance()
             self.socket = self.context.socket(zmq.PUB)
-            self.socket.bind(DASHBOARD_URI)
+            self.socket.connect(DASHBOARD_URI)
         else:
             self.socket = None
 

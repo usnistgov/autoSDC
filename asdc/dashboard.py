@@ -21,14 +21,17 @@ DASHBOARD_ADDRESS = '127.0.0.1'
 
 context = zmq.asyncio.Context.instance()
 socket = context.socket(zmq.SUB)
-socket.connect(f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}")
+socket.bind(f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}")
 socket.setsockopt(zmq.SUBSCRIBE, b"")
 
 # use a streamz.DataFrame to stream data from zmq socket
-source = streamz.Stream()
-# example = pd.DataFrame({'pH': [], 'temperature': []})
+pH_source = streamz.Stream()
+example = pd.DataFrame({'pH': [], 'temperature': []})
+pH = DataFrame(pH_source, example=example)
+
+echem_source = streamz.Stream()
 example = pd.DataFrame({'current': [], 'potential': [], 'elapsed_time': []})
-df = DataFrame(source, example=example)
+df = DataFrame(echem_source, example=example)
 # df = source.to_dataframe(example=example).window(1000).full()
 
 # pipe = Pipe(data=example)
@@ -37,8 +40,13 @@ df = DataFrame(source, example=example)
 async def loop():
     """ stream pandas dataframe chunks from zmq socket... """
     while True:
+        channel = await socket.recv_string()
         new_data = await socket.recv_pyobj()
-        source.emit(new_data)
+
+        if channel == 'pH':
+            pH_source.emit(new_data)
+        elif channel == 'echem':
+            echem_source.emit(new_data)
 
 # run the zmq client loop in the background
 asyncio.create_task(loop())
@@ -51,14 +59,17 @@ options = dict(
     xlabel = 'elapsed time (s)'
 )
 pn.Column(
-    # pn.panel(hv.DynamicMap(hv.Curve, streams=[Buffer(df.pH)]).opts(title='pH', **options)),
+    # pn.panel(hv.DynamicMap(hv.Curve, streams=[Buffer(pH.pH)]).opts(title='pH', **options)),
+    pn.panel(hv.DynamicMap(
+        partial(hv.Curve, vdims=['pH']), streams=[Buffer(pH, length=4000)] #, xformatter='%b %d'
+    ).opts(title='potential', xformatter='%b %d', **options)),
     # pn.panel(hv.DynamicMap(hv.Curve, streams=[Buffer(df.temperature)]).opts(title='temperature', **options))
     pn.panel(hv.DynamicMap(
         partial(hv.Curve, kdims=['elapsed_time'], vdims=['potential']), streams=[Buffer(df, index=False, length=4000)]
-    ).opts(title='pH', **options)),
+    ).opts(title='potential', **options)),
     pn.panel(hv.DynamicMap(
         partial(hv.Curve, kdims=['potential'], vdims=['current']), streams=[Buffer(df, index=False, length=4000)]
-    ).opts(title='temperature', **options))
+    ).opts(title='current', **options))
     # pn.panel(df.hvplot(x='potential', y='current', backlog=1000).opts(title='echem', **options)),
     # pn.panel(hv.DynamicMap(hv.Curve, streams=[pipe]).opts(title='temperature', **options))
 
