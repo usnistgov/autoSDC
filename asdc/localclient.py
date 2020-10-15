@@ -625,10 +625,22 @@ class SDC():
         return
 
     def establish_droplet(self, flow_instructions: Dict = {}, x_wafer: Optional[float] = None, y_wafer: Optional[float] = None):
+        """ Form a new droplet with composition specified by `flow_instructions`.
+
+        if both `x_wafer` and `y_wafer` are specified, the cell will move to these sample coordinates before forming a droplet
+
+        Arguments:
+            flow_instructions: specification of droplet composition and loop flow rates.
+                Example: `{"op": "set_flow", "pH": 10, "flow_rate": 1.25, "relative_rates": {"NaCl": 1.0}, "purge_time": 90}`
+            x_wafer: sample x coordinate to move to before forming a droplet
+            y_wafer: sample y coordinate to move to before forming a droplet
+
+        """
 
         relative_rates = flow_instructions.get('relative_rates')
         target_rate = float(flow_instructions.get('flow_rate', 1.0))
         purge_time = float(flow_instructions.get('purge_time', 30))
+        pH_target = float(flow_instructions.get('pH'))
 
         # droplet workflow -- start at zero
         logger.debug('starting droplet workflow')
@@ -711,6 +723,18 @@ class SDC():
             self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
             self.pump_array.stop_all(fast=True)
             self.reglo.stop(Channel.DRAIN)
+
+
+        current_pH_reading = self.phmeter.pH[-1]
+        if pH_target is not None:
+            pH_error = abs(current_pH_reading - pH_target)
+        else:
+            pH_error = 0
+
+        if  pH_error > 0.5:
+            logger.warning(f'current pH reading of {current_pH_reading} does not match target of {pH_target}')
+        else:
+            logger.info(f'current pH reading is {current_pH_reading} (target is {pH_target})')
 
         return
 
@@ -856,8 +880,8 @@ class SDC():
 
         x_combi, y_combi = header.get('x'), header.get('y')
 
-        self.establish_droplet(instructions[0], x_combi, y_combi,)
-        logger.info(f'current pH reading is {self.phmeter.pH[-1]}')
+        flow_instructions = instructions[0]
+        self.establish_droplet(flow_instructions, x_combi, y_combi,)
 
         meta = {
             'intent': intent,
