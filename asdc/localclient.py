@@ -1371,7 +1371,10 @@ class SDC():
         """ shut off the syringe and counterbalance pumps """
         self.pump_array.stop_all(counterbalance='off')
 
-    def batch_execute_experiments(self, instructions_file):
+    def load_experiments(self, instructions_file=None):
+        root_dir = os.path.dirname(self.data_dir)
+        if instructions_file is None:
+            instructions_file = os.path.join(root_dir, 'instructions.json')
 
         with open(instructions_file, 'r') as f:
             instructions = json.load(f)
@@ -1380,6 +1383,12 @@ class SDC():
             location_idx = self.db['location'].count()
             logger.info(f'resuming starting at sample location {location_idx}')
             instructions = instructions[location_idx:]
+
+        return instructions
+
+    def batch_execute_experiments(self, instructions_file=None):
+
+        instructions = self.load_experiments(instructions_file)
 
         for instruction_chain in instructions:
             logger.debug(json.dumps(instruction_chain))
