@@ -648,7 +648,7 @@ class SDC():
         purge_ratio = 0.95
         purge_rates = self._scale_flow(relative_rates, nominal_rate=purge_rate)
 
-        levels = self.pump_array.levels(purge_rates, purge_time)
+        levels = self.pump_array.levels()
         logger.info(f'current solution levels: {levels}')
 
         # compute required volumes in mL
