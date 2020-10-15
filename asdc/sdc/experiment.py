@@ -218,8 +218,13 @@ class Tafel(TafelArgs):
 class OpenCircuit(OpenCircuitArgs):
     """ Open circuit hold
 
+    If a `stabilization_window` is specified, allow the OCP hold to terminate early
+    if the OCP fluctuation is less than `stabilization_range` volts over the window.
+
     Attributes:
-        duration (float) : (s)
+        duration (float) : maximum OCP hold duration (s)
+        stabilization_range (float): maximum allowed fluctuation for OCP stabilization (V)
+        stabilization_window (float): OCP stabilization time period (s)
 
     Example:
         json:
