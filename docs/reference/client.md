@@ -45,7 +45,7 @@ This slack command wraps [move_stage][asdc.client.SDC.move_stage], and will lift
 
 ### stop_pumps
 
-::: asdc.client.SDC.stop_pumps
+::: asdc.localclient.SDC.stop_pumps
 
 **Example:**
 
@@ -88,9 +88,6 @@ and helpfully report timings for each step in a slack message.
 | `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
 
 
-### imagecap
-::: asdc.client.SDC.imagecap
-
 
 ### reflectance
 slack command to collect a reflectance linescan ([implementation][asdc.client.SDC.reflectance]).
@@ -116,13 +113,6 @@ will append subsequent comments to the comment field in the database. (refer to 
 `#!json @sdc comment 1 we observed something strange with this deposition`
 
 
-### bubble
-::: asdc.client.SDC.bubble
-
-**Example:**
-
-`#!json @sdc bubble 1`
-
 
 ### checkpoint
 
@@ -135,7 +125,7 @@ will append subsequent comments to the comment field in the database. (refer to 
 
 ## SDC Client implementation
 
-::: asdc.client.SDC
+::: asdc.localclient.SDC
 
 
 ## configuration

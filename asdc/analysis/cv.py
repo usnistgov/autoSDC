@@ -19,9 +19,11 @@ class CVData(EchemData):
         return 'CV'
 
     def check_quality(self):
+        """ CV heuristics: not implemented. """
         return True
 
     def plot(self, fit=False):
+        """ plot CV: current vs potential """
         # # super().plot('current', 'potential')
         plt.plot(self['potential'], self['current'])
         plt.xlabel('potential (V)')

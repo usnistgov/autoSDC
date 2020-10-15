@@ -66,6 +66,7 @@ class OCPData(EchemData):
         return 'OCP'
 
     def check_quality(self):
+        """ OCP convergence criteria """
         convergence_stats = ocp_convergence(self)
 
         if convergence_stats['spike'] > 0.1:
@@ -76,6 +77,7 @@ class OCPData(EchemData):
         return convergence_stats
 
     def plot(self):
+        """ plot open circuit potential vs elapsed time """
         # super().plot('elapsed_time', 'potential')
         plt.plot(self.elapsed_time, self.potential)
         plt.xlabel('elapsed time (s)')

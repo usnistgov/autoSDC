@@ -81,6 +81,10 @@ class LPRData(EchemData):
         return status
 
     def plot(self, fit=False):
+        """ LPR plot: plot current vs potential
+
+        Optional: plot a regression line computing the polarization resistance
+        """
         # # super().plot('current', 'potential')
         plt.plot(self['current'], self['potential'])
         plt.axvline(0, color='k', alpha=0.5, linewidth=0.5)

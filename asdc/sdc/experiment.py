@@ -20,7 +20,7 @@ from .experiment_defaults import *
 MIN_SAMPLING_FREQUENCY = 1.0e-5
 
 def from_command(instruction):
-    """ {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_size": 0.1, "step_time": 0.5} """
+    """ {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_height": 0.1, "step_time": 0.5} """
 
     # don't mangle the original dictionary at all
     instruction_data = instruction.copy()
@@ -40,12 +40,16 @@ def from_command(instruction):
 class LPR(LPRArgs):
     """ linear polarization resistance
 
-    initial_potential (float:volt)
-    final_potential (float:volt)
-    step_size: (float: V)
-    step_time: (float:second)
+    Attributes:
+        initial_potential (float): starting potential (V)
+        final_potential (float): ending potential (V)
+        step_height (float): scan step size (V)
+        step_time (float): scan point duration (s)
 
-    {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_size": 0.1, "step_time": 0.5}
+    Example:
+        ```json
+        {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_height": 0.1, "step_time": 0.5}
+        ```
 
     """
     versus: str = 'VS OC'
@@ -66,13 +70,17 @@ class LPR(LPRArgs):
 class StaircaseLSV(StaircaseLSVArgs):
     """ staircase linear scan voltammetry
 
-    initial_potential (float:volt)
-    final_potential (float:volt)
-    step_height: (float:volt)
-    step_time: (float:second)
-    scan_rate (float:volt/second)
+    Attributes:
+        initial_potential (float): starting potential (V)
+        final_potential (float): ending potential (V)
+        step_height (float): scan step size (V)
+        step_time (float): scan point duration (s)
 
-    {"op": "staircase_lsv", "initial_potential": 0.0, "final_potential": 1.0, "step_height": 0.001, "step_time": 0.8}
+
+    Example:
+        ```json
+        {"op": "staircase_lsv", "initial_potential": 0.0, "final_potential": 1.0, "step_height": 0.001, "step_time": 0.8}
+        ```
     """
     versus: str = 'VS REF'
     setup_func: str = 'AddStaircaseLinearScanVoltammetry'
@@ -93,10 +101,14 @@ class StaircaseLSV(StaircaseLSVArgs):
 class Potentiostatic(PotentiostaticArgs):
     """ potentiostatic: hold at constant potential
 
-    potential (float:volt)
-    duration (float:second)
+    Attributes:
+        potential (float): (V)
+        duration (float) : (s)
 
-    {"op": "potentiostatic", "potential": Number(volts), "duration": Time(seconds)}
+    Example:
+        ```json
+        {"op": "potentiostatic", "potential": Number(volts), "duration": Time(seconds)}
+        ```
     """
     n_points: int = 3000
     duration: int = 10
@@ -119,13 +131,19 @@ class Potentiostatic(PotentiostaticArgs):
 
 @dataclass
 class LSV(LSVArgs):
-    """ linear scan voltammetry
+    """linear scan voltammetry
 
-    initial_potential (float:volt)
-    final_potential (float:volt)
-    scan_rate (float:volt/second)
+    Attributes:
+        initial_potential (float): starting potential (V)
+        final_potential (float): ending potential (V)
+        scan_rate (float): scan rate (V/s)
+        current_range (str): current range setting to use
 
-    {"op": "lsv", "initial_potential": 0.0, "final_potential": 1.0, "scan_rate": 0.075}
+    Example:
+        ```json
+        {"op": "lsv", "initial_potential": 0.0, "final_potential": 1.0, "scan_rate": 0.075}
+        ```
+
     """
     versus: str = 'VS REF'
     setup_func: str = 'AddLinearScanVoltammetry'
@@ -146,7 +164,16 @@ class LSV(LSVArgs):
 class Tafel(TafelArgs):
     """ Tafel analysis
 
-    {"op": "tafel", "initial_potential": V, "final_potential": V, "step_height": V, "step_time": s}
+    Attributes:
+        initial_potential (float): starting potential (V)
+        final_potential (float): ending potential (V)
+        step_height (float): scan step size (V)
+        step_time (float): scan point duration (s)
+
+    Example:
+        ```json
+        {"op": "tafel", "initial_potential": V, "final_potential": V, "step_height": V, "step_time": s}
+        ```
 
     """
     versus: str = 'VS OC'
@@ -169,9 +196,19 @@ class Tafel(TafelArgs):
 class OpenCircuit(OpenCircuitArgs):
     """ Open circuit hold
 
-    duration (float:second)
+    Attributes:
+        duration (float) : (s)
 
-    {"op": "open_circuit", "duration": Time, "time_per_point": Time}
+    Example:
+        json:
+        ```json
+        {"op": "open_circuit", "duration": 60, "time_per_point": 0.5}
+        ```
+
+        python:
+        ```python
+        expt = OpenCircuit(duration=60, time_per_point=0.5)
+        ```
     """
     setup_func: str = 'AddOpenCircuit'
 
@@ -190,9 +227,13 @@ class OpenCircuit(OpenCircuitArgs):
 class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):
     """ Corrosion open circuit hold
 
-    duration (float:second)
+    Attributes:
+        duration (float) : (s)
 
-    {"op": "corrosion_oc", "duration": Time}
+    Example:
+        ```json
+        {"op": "corrosion_oc", "duration": Time, "time_per_point": Time}
+        ```
     """
     setup_func: str = 'AddCorrosionOpenCircuit'
 
@@ -207,22 +248,26 @@ class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):
 class CyclicVoltammetry(CyclicVoltammetryArgs):
     """ set up a CV experiment
 
-    initial_potential (float:volt)
-    vertex_potential_1 (float:volt)
-    vertex_potential_2 (float:volt)
-    final_potential (float:volt)
-    scan_rate (float)
-    cycles (int)
+    Attributes:
+        initial_potential (float): (V)
+        vertex_potential_1 (float): (V)
+        vertex_potential_2 (float): (V)
+        final_potential (float) : (V)
+        scan_rate (float): scan rate in (V/s)
+        cycles (int): number of cycles
 
-    {
-        "op": "cv",
-        "initial_potential": 0.0,
-        "vertex_potential_1": -1.0,
-        "vertex_potential_2": 1.2,
-        "final_potential": 0.0,
-        "scan_rate": 0.075,
-        "cycles": 2
-    }
+    Example:
+        ```json
+        {
+            "op": "cv",
+            "initial_potential": 0.0,
+            "vertex_potential_1": -1.0,
+            "vertex_potential_2": 1.2,
+            "final_potential": 0.0,
+            "scan_rate": 0.075,
+            "cycles": 2
+        }
+        ```
     """
 
     versus: str = 'VS REF'
