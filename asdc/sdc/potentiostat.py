@@ -5,10 +5,16 @@ import clr
 import sys
 import json
 import time
+import asyncio
 import inspect
 import logging
+import streamz
+import numpy as np
+import pandas as pd
 from datetime import datetime
 from contextlib import contextmanager
+
+from streamz.dataframe import DataFrame
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -147,7 +153,8 @@ class Potentiostat():
 
         metadata['timestamp_end'] = datetime.now()
         metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
-        results = self.read_buffers()
+        # results = self.read_buffers()
+        results = pd.concat(chunks, ignore_index=True)
 
         # cast results into specific e-chem result type
         # (which subclass pandas.DataFrame and have a validation and plotting interface)
