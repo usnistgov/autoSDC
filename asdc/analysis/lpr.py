@@ -12,6 +12,7 @@ from asdc._slack import SlackHandler
 logger = logging.getLogger(__name__)
 
 def current_crosses_zero(df: pd.DataFrame) -> bool:
+    """ verify that a valid LPR scan has a current trace that crosses zero """
     current= df['current']
     logger.debug('LPR check')
     return  current.min() < 0 and current.max() > 0
@@ -30,12 +31,21 @@ def _scan_range(df, potential_window=0.005) -> tuple[float, float]:
     return lb, ub
 
 def valid_scan_range(df: EchemData, potential_window: float = 0.005) -> bool:
+    """ check that an LPR scan has sufficient coverage around the open circuit potential """
     current, potential = df['current'], df['potential']
     lb, ub = _scan_range(df, potential_window=potential_window)
 
     return potential.min() <= lb and potential.max() >= ub
 
 def polarization_resistance(df: EchemData, potential_window: float = 0.005) -> tuple[float, float, float]:
+    """ extract polarization resistance: fit a linear model relating measured current to potential
+
+    Arguments:
+        df: polarization resistance scan data
+        potential_window: symmetric potential range around open circuit potential to fit polarization resistance model
+
+    """
+
     current, potential = df['current'].values, df['potential'].values
 
     lb, ub = _scan_range(df, potential_window=potential_window)

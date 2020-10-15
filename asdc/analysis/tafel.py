@@ -9,6 +9,7 @@ from asdc.analysis.echem_data import EchemData
 logger = logging.getLogger(__name__)
 
 def current_crosses_zero(df):
+    """ verify that a valid Tafel scan should has a current trace that crosses zero """
     current = df['current']
     success = current.min() < 0 and current.max() > 0
 
@@ -33,6 +34,7 @@ class TafelData(EchemData):
         return current_crosses_zero(self)
 
     def plot(self, fit=False):
+        """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
         plt.plot(self['potential'], np.log10(np.abs(self['current'])))
         plt.axvline(0, color='k', alpha=0.5, linewidth=0.5)
