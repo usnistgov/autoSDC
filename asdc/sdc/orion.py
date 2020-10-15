@@ -162,7 +162,7 @@ class PHMeter():
             self.write('GETMEAS')
             response = self.ser.read_until(b'>')
             timestamp = datetime.now()
-            print(response)
+            # print(response)
 
             data = self._process_pH(response.decode(), timestamp)
             return data

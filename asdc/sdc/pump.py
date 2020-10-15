@@ -239,9 +239,9 @@ class PumpArray():
                 r = self.eval('ivolume', pump_id=pump_id, check_response=True, fast=True)
                 infused_volume = decode_level(r)
 
-                print(f'tvolume: {target_volume} mL')
-                print(f'ivolume: {infused_volume} mL')
-                print(f'remaining: {target_volume - infused_volume} mL')
+                # print(f'tvolume: {target_volume} mL')
+                # print(f'ivolume: {infused_volume} mL')
+                # print(f'remaining: {target_volume - infused_volume} mL')
                 volume_remaining[name] = target_volume - infused_volume
 
         return volume_remaining
