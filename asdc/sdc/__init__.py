@@ -24,6 +24,6 @@ if sys.platform == 'win32':
 else:
 # except ModuleNotFoundError:
 
-    from .shims import pump
+    # from .shims import pump
     from .shims import position
     from .shims import potentiostat

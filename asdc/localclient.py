@@ -642,6 +642,14 @@ class SDC():
         purge_time = float(flow_instructions.get('purge_time', 30))
         pH_target = float(flow_instructions.get('pH'))
 
+        # some hardcoded configuration
+        pulse_flowrate = -10.0
+        purge_rate = 11.0
+        purge_ratio = 0.95
+        purge_rates = self._scale_flow(relative_rates, nominal_rate=purge_rate)
+
+        self.pump_array.check_levels(purge_rates, purge_time)
+
         # droplet workflow -- start at zero
         logger.debug('starting droplet workflow')
 
@@ -656,8 +664,6 @@ class SDC():
                 self.reglo.stop(Channel.LOOP)
 
                 if self.cleanup_pulse_duration > 0:
-                    pulse_flowrate = -10.0
-                    # self.reglo.continuousFlow(pulse_flowrate, channel=Channel.LOOP)
                     self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
                     time.sleep(self.cleanup_pulse_duration)
 
@@ -704,9 +710,6 @@ class SDC():
         # purge... (and monitor pH)
         with self.phmeter.monitor(interval=5, logfile=os.path.join(self.data_dir, 'purge.csv')):
             logger.debug('purging solution')
-            purge_rate = 11.0
-            purge_ratio = 0.95
-            purge_rates = self._scale_flow(relative_rates, nominal_rate=purge_rate)
             self.pump_array.set_rates(purge_rates, start=True, fast=True)
             self.reglo.set_rates(
                 {Channel.LOOP: -purge_ratio * purge_rate, Channel.DRAIN: -purge_ratio * purge_rate}
