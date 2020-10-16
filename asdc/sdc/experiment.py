@@ -3,8 +3,8 @@ import json
 import time
 import numpy as np
 import pandas as pd
-from typing import Optional, Dict, List, Sequence
 from datetime import datetime
+from typing import Optional, Dict, List, Sequence
 
 import streamz
 import streamz.dataframe
@@ -225,6 +225,7 @@ class OpenCircuit(OpenCircuitArgs):
         duration (float) : maximum OCP hold duration (s)
         stabilization_range (float): maximum allowed fluctuation for OCP stabilization (V)
         stabilization_window (float): OCP stabilization time period (s)
+        minimum_duration (float): minimum OCP stabilization time period (s)
 
     Example:
         json:
@@ -239,6 +240,7 @@ class OpenCircuit(OpenCircuitArgs):
     """
     stabilization_range: float = 0.01
     stabilization_window: float = 0
+    minimum_duration: float = 0
     stop_execution: bool = False
     setup_func: str = 'AddOpenCircuit'
 
@@ -254,7 +256,8 @@ class OpenCircuit(OpenCircuitArgs):
         return analysis.OCPData(echem_data)
 
     def signal_stop(self, value):
-        if value < self.stabilization_range:
+        elapsed = datetime.now() - self.start_ts
+        if elapsed.total_seconds() > self.minimum_duration and value < self.stabilization_range:
             self.stop_execution = True
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
@@ -262,6 +265,8 @@ class OpenCircuit(OpenCircuitArgs):
 
         the potentiostat interface will check `experiment.stop_execution`
         """
+        self.start_ts = datetime.now()
+
         if self.stabilization_window <= 0:
             # by default, do not register early stopping at all
             # if the stabilization window is set to some positive time interval, proceed
