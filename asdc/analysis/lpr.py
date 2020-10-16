@@ -18,13 +18,13 @@ def current_crosses_zero(df: pd.DataFrame) -> bool:
     return  current.min() < 0 and current.max() > 0
 
 def _scan_range(df, potential_window=0.005) -> tuple[float, float]:
-    current, potential = df['current'], df['potential']
+    current, potential = df['current'].values, df['potential'].values
 
     # find rough open circuit potential -- find zero crossing of current trace
     # if the LPR fit is any good, then the intercept should give
     # a more precise estimate of the open circuit potential
     zcross = np.argmin(np.abs(current))
-    ocp = potential.iloc[zcross]
+    ocp = potential[zcross]
 
     # select a window around OCP to fit
     lb, ub = ocp - potential_window, ocp + potential_window
