@@ -151,6 +151,7 @@ class Potentiostat():
                 self.skip()
                 stop_flagged = True
 
+        logger.debug('finished running experiment')
         metadata['timestamp_end'] = datetime.now()
         metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
         # results = self.read_buffers()
