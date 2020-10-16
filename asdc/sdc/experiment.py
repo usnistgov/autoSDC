@@ -222,7 +222,10 @@ class OpenCircuit(OpenCircuitArgs):
     if the OCP fluctuation is less than `stabilization_range` volts over the window.
 
     Attributes:
-        duration (float) : maximum OCP hold duration (s)
+        duration (float): maximum OCP hold duration (s)
+        time_per_point (float): voltage sampling period (s)
+
+    Attributes:
         stabilization_range (float): maximum allowed fluctuation for OCP stabilization (V)
         stabilization_window (float): OCP stabilization time period (s)
         minimum_duration (float): minimum OCP stabilization time period (s)

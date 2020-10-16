@@ -25,7 +25,7 @@ DASHBOARD_URI = f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}"
 
 context = zmq.asyncio.Context.instance()
 socket = context.socket(zmq.PUB)
-socket.bind(DASHBOARD_URI)
+# socket.bind(DASHBOARD_URI)
 
 shim_data = os.path.join(os.path.split(__file__)[0], 'data')
 # df = pd.read_csv(os.path.join(shim_data, 'test_data.csv'), index_col=0)

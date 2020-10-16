@@ -731,7 +731,7 @@ class SDC():
         time.sleep(3)
 
         # purge... (and monitor pH)
-        with self.phmeter.monitor(interval=5, logfile=os.path.join(self.data_dir, 'purge.csv')):
+        with self.phmeter.monitor(interval=1, logfile=os.path.join(self.data_dir, 'purge.csv')):
             logger.debug('purging solution')
             self.pump_array.set_rates(purge_rates, start=True, fast=True)
             self.reglo.set_rates(
