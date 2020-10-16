@@ -68,7 +68,7 @@ class LPRData(EchemData):
     def name(self):
         return 'LPR'
 
-    def check_quality(df, r2_thresh=0.9999, w=5):
+    def check_quality(df, r2_thresh=0.95, w=5):
         """ log results of quality checks and return a status code for control flow in the caller """
 
         status = Status.OK
