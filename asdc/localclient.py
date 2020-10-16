@@ -699,6 +699,10 @@ class SDC():
                 if x_wafer is not None and y_wafer is not None:
                     self.move_stage(x_wafer, y_wafer, self.cell_frame)
 
+                logger.debug('starting rinse')
+                self.reglo.set_rates({Channel.RINSE: 5.0})
+                time.sleep(2)
+
                 # counterpump slower to fill the droplet
                 logger.debug('filling droplet')
                 cell_fill_rates = self._scale_flow(relative_rates, nominal_rate=self.fill_rate)
@@ -721,6 +725,7 @@ class SDC():
 
             logger.debug('equalizing differential pumping rate')
             self.reglo.continuousFlow(-self.fill_rate, channel=Channel.DRAIN)
+            self.reglo.stop(Channel.RINSE)
 
         # drop down to contact...
         time.sleep(3)
