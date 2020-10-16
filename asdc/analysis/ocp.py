@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 from csaps import csaps
 from pandas import DataFrame
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from asdc.analysis.echem_data import EchemData
