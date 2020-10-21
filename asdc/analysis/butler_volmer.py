@@ -4,8 +4,6 @@ import numpy as np
 from asdc.analysis.echem_data import EchemData
 
 def butler_volmer(x, E_oc, j0, alpha_c, alpha_a):
-    # alpha_a = 1 - alpha_c
-    # alpha_a = alpha_c
     overpotential = x - E_oc
     current = j0 * (np.exp(alpha_a * overpotential) - np.exp(-alpha_c * overpotential))
     return current
@@ -19,7 +17,16 @@ def log_butler_volmer(x, E_oc, j0, alpha_c, alpha_a):
     return np.log10(np.clip(abscurrent, 1e-9, np.inf))
 
 class ButlerVolmerModel(lmfit.Model):
-    """ model log current under butler-volmer model """
+    """ model log current under butler-volmer model
+
+    Example:
+        ```
+        bv = butler_volmer.ButlerVolmerModel()
+        pars = bv.guess(tafel)
+        E, logI = bv.slice(tafel, pars['E_oc'], w=0.1)
+        bv_fit = bv.fit(logI, x=E, params=pars)
+        ```
+    """
     def __init__(self, independent_vars=['x'], prefix='', nan_policy='omit', **kwargs):
         kwargs.update({'prefix': prefix, 'nan_policy': nan_policy,
                        'independent_vars': independent_vars})
@@ -41,7 +48,7 @@ class ButlerVolmerModel(lmfit.Model):
         pars = self.make_params(E_oc=E_oc_guess, j0=i_corr, alpha_c=0.5, alpha_a=0.5)
         return lmfit.models.update_param_vals(pars, self.prefix, **kwargs)
 
-    def guess(self, data, **kwargs):
+    def guess(self, data: EchemData, **kwargs):
 
         E = data.potential.values
         logI = np.log10(np.abs(data.current.values))
@@ -58,7 +65,7 @@ class ButlerVolmerModel(lmfit.Model):
         pars = self.make_params(E_oc=E_oc_guess, j0=i_corr, alpha_c=0.5, alpha_a=0.5)
         return lmfit.models.update_param_vals(pars, self.prefix, **kwargs)
 
-    def slice(self, data, E_oc, w=0.15):
+    def slice(self, data: EchemData, E_oc: float, w: float = 0.15):
         E = data.potential.values
         logI = np.log10(np.abs(data.current.values))
 
