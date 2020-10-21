@@ -201,9 +201,11 @@ class SDC():
         pump_array_port = config.get('pump_array_port', 'COM10')
         self.backfill_duration = config.get('backfill_duration', 15)
 
+        diameter = config.get('syringe_diameter', 29.5)
+
         try:
             self.pump_array = sdc.pump.PumpArray(
-                self.solutions, port=pump_array_port, timeout=1
+                self.solutions, port=pump_array_port, timeout=1, diameter=diameter
             )
         except:
             logger.exception('could not connect to pump array')
@@ -624,7 +626,7 @@ class SDC():
         logger.debug(f'local vars: {locals}')
         return
 
-    def establish_droplet(self, flow_instructions: Dict = {}, x_wafer: Optional[float] = None, y_wafer: Optional[float] = None):
+    def establish_droplet(self, flow_instructions: Dict = {}, x_wafer: Optional[float] = None, y_wafer: Optional[float] = None, logfile: str = None):
         """ Form a new droplet with composition specified by `flow_instructions`.
 
         if both `x_wafer` and `y_wafer` are specified, the cell will move to these sample coordinates before forming a droplet
@@ -731,7 +733,10 @@ class SDC():
         time.sleep(3)
 
         # purge... (and monitor pH)
-        with self.phmeter.monitor(interval=1, logfile=os.path.join(self.data_dir, 'purge.csv')):
+        if logfile is None:
+            logfile = os.path.join(self.data_dir, 'purge.csv')
+
+        with self.phmeter.monitor(interval=1, logfile=logfile):
             logger.debug('purging solution')
             self.pump_array.set_rates(purge_rates, start=True, fast=True)
             self.reglo.set_rates(
@@ -907,7 +912,7 @@ class SDC():
         x_combi, y_combi = header.get('x'), header.get('y')
 
         flow_instructions = instructions[0]
-        self.establish_droplet(flow_instructions, x_combi, y_combi,)
+        self.establish_droplet(flow_instructions, x_combi, y_combi)
 
         meta = {
             'intent': intent,

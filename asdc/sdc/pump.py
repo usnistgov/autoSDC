@@ -7,6 +7,7 @@ import numpy as np
 from scipy import optimize
 from chempy import equilibria
 from collections import defaultdict
+from collections.abc import Iterable
 
 from asdc.sdc.utils import encode
 from asdc.sdc.microcontroller import PeristalticPump
@@ -65,6 +66,7 @@ class PumpArray():
     def __init__(
             self,
             solutions=SOLUTIONS,
+            diameter=29.5,
             port='COM7',
             baud=115200,
             timeout=1,
@@ -81,6 +83,7 @@ class PumpArray():
         the id string should be something like 'USB serial port for Syringe Pump (COM*)'
         """
         self.solutions = solutions
+        self.syringe_diameter = diameter
 
         # serial interface things
         self.port = port
@@ -91,6 +94,9 @@ class PumpArray():
         self.flow_rate = flow_rate
         self.flow_units = flow_units
         self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
+
+        # pump initialization
+        self.diameter(self.syringe_diameter)
 
     def relative_rates(self):
         total_rate = sum(self.flow_setpoint.values())
@@ -104,7 +110,12 @@ class PumpArray():
         if fast or self.fast:
             command = '@{}'.format(command)
 
-        command = '{} {}'.format(pump_id, command)
+        # TODO: run a command for every configured pump if pump_id is None
+        # if isinstance(pump_id, Iterable):
+        #     for id in pump_id:
+        #         self.eval()
+
+        command = f'{pump_id} {command}'
 
         if ser is not None:
             ser.write(encode(command))
@@ -153,14 +164,19 @@ class PumpArray():
                 self.eval('stop', pump_id=pump_id, ser=ser, fast=fast)
                 time.sleep(0.25)
 
-    def diameter(self, pump_id=0, setpoint=None):
+    def diameter(self, setpoint=None, pump_id=None):
 
         if setpoint is not None:
             command = 'diameter {}'.format(setpoint)
         else:
             command = 'diameter'
 
-        self.eval(command, pump_id=pump_id)
+        if pump_id is None:
+            with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
+                for id in self.solutions.keys():
+                    self.eval(command, pump_id=id, ser=ser, fast=fast)
+        else:
+            self.eval(command, pump_id=pump_id)
 
     def infusion_rate(self, ser=None, pump_id=0, rate=None, units='ml/min', fast=False):
 
