@@ -92,6 +92,10 @@ class LPRData(EchemData):
         logger.info(f'LPR slope: {slope} (R2={r2}), OCP: {intercept}')
         return status
 
+    def fit(self):
+        slope, intercept, r2 = polarization_resistance(self)
+        return slope, intercept, r2
+
     def plot(self, fit=False):
         """ LPR plot: plot current vs potential
 

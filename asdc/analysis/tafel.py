@@ -49,6 +49,12 @@ class TafelData(EchemData):
         logger.info(f'Tafel: OCP: {ocp}, i_corr: {i_corr}')
         return current_crosses_zero(self)
 
+    def fit(self):
+        model = fit_bv(self)
+        i_corr = model.best_values["j0"]
+        ocp = model.best_values["E_oc"]
+        return ocp, i_corr
+
     def plot(self, fit=False):
         """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
