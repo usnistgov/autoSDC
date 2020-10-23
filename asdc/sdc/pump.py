@@ -11,7 +11,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 from asdc.sdc.utils import encode
 from asdc.sdc.microcontroller import PeristalticPump
@@ -254,10 +254,12 @@ class PumpArray():
                 name = list(solution.keys())[0]
 
                 r = self.eval('tvolume', pump_id=pump_id, check_response=True, fast=True, ser=ser)
+                print(r.decode())
                 logger.debug(f'tvolume: {r.decode()}')
                 target_volume = decode_level(r)
 
                 r = self.eval('ivolume', pump_id=pump_id, check_response=True, fast=True, ser=ser)
+                print(r.decode())
                 logger.debug(f'ivolume: {r.decode()}')
                 infused_volume = decode_level(r)
 
