@@ -174,7 +174,7 @@ class PumpArray():
         if pump_id is None:
             with serial.Serial(port=self.port, baudrate=self.baud, timeout=self.timeout) as ser:
                 for id in self.solutions.keys():
-                    self.eval(command, pump_id=id, ser=ser, fast=True)
+                    self.eval(command, pump_id=id, ser=ser, fast=True, check_response=True)
         else:
             self.eval(command, pump_id=pump_id)
 
