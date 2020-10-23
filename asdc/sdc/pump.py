@@ -3,11 +3,15 @@ from __future__ import annotations
 import time
 import chempy
 import serial
+import logging
 import numpy as np
 from scipy import optimize
 from chempy import equilibria
 from collections import defaultdict
 from collections.abc import Iterable
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 from asdc.sdc.utils import encode
 from asdc.sdc.microcontroller import PeristalticPump
@@ -96,7 +100,7 @@ class PumpArray():
         self.flow_setpoint = {pump_id: 0.0 for pump_id in self.solutions.keys()}
 
         # pump initialization
-        self.diameter(self.syringe_diameter)
+        # self.diameter(self.syringe_diameter)
 
     def relative_rates(self):
         total_rate = sum(self.flow_setpoint.values())
@@ -250,9 +254,11 @@ class PumpArray():
                 name = list(solution.keys())[0]
 
                 r = self.eval('tvolume', pump_id=pump_id, check_response=True, fast=True, ser=ser)
+                logger.debug(f'tvolume: {r.decode()}')
                 target_volume = decode_level(r)
 
                 r = self.eval('ivolume', pump_id=pump_id, check_response=True, fast=True, ser=ser)
+                logger.debug(f'ivolume: {r.decode()}')
                 infused_volume = decode_level(r)
 
                 # print(f'tvolume: {target_volume} mL')
