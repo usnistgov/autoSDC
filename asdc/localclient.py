@@ -60,7 +60,12 @@ web_client = _slack.sc
 logger = logging.getLogger()
 
 def save_plot(results: EchemData, figpath: str, post_slack: bool = True, title=None):
-    results.plot()
+
+    try:
+        results.plot()
+    except Exception as err:
+        logger.error(f'data check: {err}')
+
     plt.savefig(figpath, bbox_inches='tight')
     plt.clf()
     plt.close()
@@ -957,7 +962,12 @@ class SDC():
                         }
 
                     results, m = pstat.run(experiment)
-                    status = results.check_quality()
+
+                    try:
+                        status = results.check_quality()
+                    except Exception as err:
+                        logger.error(f'data check: {err}')
+
                     metadata.update(m)
 
                     if self.pump_array:
