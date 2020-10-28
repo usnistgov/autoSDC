@@ -178,6 +178,10 @@ class LSV(LSVArgs):
         args = LSVArgs.from_dict(args)
         return args.format()
 
+    def marshal(self, echem_data: Dict[str, Sequence[float]]):
+        return analysis.LSVData(echem_data)
+
+
 @dataclass
 class Tafel(TafelArgs):
     """ Tafel analysis
