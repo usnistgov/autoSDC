@@ -131,6 +131,7 @@ class SDC():
         self.confirm = config.get('confirm', True)
         self.confirm_experiment = config.get('confirm_experiment', True)
         self.notify = config.get('notify_slack', True)
+        self.plot_slack = config.get('plot_slack', False)
         self.plot_cv = config.get('plot_cv', False)
         self.plot_current = config.get('plot_current', False)
 
@@ -979,7 +980,7 @@ class SDC():
 
                     if plot:
                         figpath = os.path.join(self.figure_dir, f"{opname}_plot_{location_id}_{sequence_id}.png")
-                        save_plot(results, figpath, post_slack=True, title=f"{opname} {location_id}")
+                        save_plot(results, figpath, post_slack=self.plot_slack, title=f"{opname} {location_id}")
 
         logger.info(f"finished experiment {location_id}: {summary}")
 
