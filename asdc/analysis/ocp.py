@@ -8,7 +8,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from asdc.analysis.echem_data import EchemData
-from asdc._slack import SlackHandler
 
 logger = logging.getLogger(__name__)
 

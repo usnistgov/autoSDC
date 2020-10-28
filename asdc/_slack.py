@@ -5,8 +5,11 @@ import slack
 import logging
 import requests
 
-with open('slacktoken.txt', 'r') as f:
-    SLACK_TOKEN = f.read()
+try:
+    with open('slacktoken.txt', 'r') as f:
+        SLACK_TOKEN = f.read()
+except:
+    SLACK_TOKEN = os.environ.get('ASDC_SLACK_TOKEN')
 
 sc = slack.WebClient(SLACK_TOKEN)
 
