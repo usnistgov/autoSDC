@@ -17,13 +17,11 @@ from . import reglo
 from . import experiment
 from . import microcontroller
 
-if sys.platform == 'win32':
+try:
     from . import position
     from . import potentiostat
 
-else:
-# except ModuleNotFoundError:
-
+except ImportError:
     # from .shims import pump
     from .shims import position
     from .shims import potentiostat
