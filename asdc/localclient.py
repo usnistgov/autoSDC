@@ -945,11 +945,14 @@ class SDC():
             with sdc.potentiostat.controller(start_idx=potentiostat_id) as pstat:
                 for sequence_id, instruction in enumerate(instructions):
 
-                    logger.info(f'running {instruction}')
+
+                    logger.debug(f'running {instruction}')
 
                     opname = instruction.get('op')
                     if opname is None:
                         continue
+
+                    logger.info(f'running {opname}')
 
                     experiment = sdc.experiment.from_command(instruction)
 

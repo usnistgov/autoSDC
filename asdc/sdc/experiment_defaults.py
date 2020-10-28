@@ -38,7 +38,7 @@ class SDCArgs:
         paramstring = ','.join(
             [str(arg).upper() for name, arg in self.__dict__.items()]
         )
-        logger.info(f'running {self.name}: {paramstring}')
+        logger.debug(f'running {self.name}: {paramstring}')
         return paramstring
 
     def as_dict(self):
