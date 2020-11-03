@@ -100,7 +100,7 @@ def process_row(row, db, dir=dir):
 
     return row
 
-def load_session(db_path: str) -> pd.DataFrame:
+def load_session(db_path: str, verbose: bool = False) -> pd.DataFrame:
     """ load metadata and analyze results
 
     scan number (scan numbers by type (this will be useful if we begin more dynamic scan orders))
@@ -117,6 +117,8 @@ def load_session(db_path: str) -> pd.DataFrame:
     records = []
     with dataset.connect(f'sqlite:///{db_path}') as db:
         for location in db['location']:
+            if verbose:
+                print(location)
             records.append(process_row(location, db, dir=dir))
 
     return pd.DataFrame(records)

@@ -1,1 +1,11 @@
-pythonnet
+streamz
+pandas
+numpy
+lmfit
+ruamel
+asyncio
+dataset
+aioconsole
+slackclient
+
+# pythonnet
