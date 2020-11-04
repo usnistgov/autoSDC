@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from enum import IntEnum
 
@@ -19,3 +20,7 @@ class EchemData(pd.DataFrame):
         Fail -- error, no point in performing subsequent work
         """
         raise NotImplementedError
+
+    def clip_current_to_range(self):
+        """ discard current values where current exceeds hard current limit """
+        self.current[self.current.abs() > self.current_range] = np.nan

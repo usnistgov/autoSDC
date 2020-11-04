@@ -22,7 +22,7 @@ def current_crosses_zero(df):
     return success
 
 def fit_bv(df, w=0.2):
-    bv = butler_volmer.ButlerVolmerModel()
+    bv = butler_volmer.ButlerVolmerLogModel()
     pars = bv.guess(df)
     E, I = bv.slice(df, pars['E_oc'], w=w)
     bv_fit = bv.fit(I, x=E, params=pars)
@@ -62,11 +62,12 @@ class TafelData(EchemData):
 
         if fit:
             ylim = plt.ylim()
-            model = fit_bv(self, w=0.15)
-            print(f'i_corr: {model.best_values["j0"]}')
+            model = fit_bv(self, w=0.2)
+            # print(f'i_corr: {model.best_values["j0"]}')
+
             x = np.linspace(self.potential.min(), self.potential.max(), 200)
             I_mod = model.eval(model.params, x=x)
-            plt.plot(x, np.log10(np.abs(I_mod)), linestyle='--', color='k', alpha=0.5)
+            plt.plot(x, I_mod, linestyle='--', color='k', alpha=0.5)
             plt.axhline(np.log10(model.best_values['j0']), color='k', alpha=0.5, linewidth=0.5)
 
             nu = self.potential.values - model.best_values['E_oc']
