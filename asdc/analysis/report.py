@@ -10,7 +10,9 @@ def process_pH(pH_file, dir='data'):
     try:
         df = pd.read_csv(os.path.join(dir, pH_file))
         data['pH_initial'] = df.pH.iloc[0]
+        data['pH_final'] = df.pH.iloc[-1]
         data['pH_avg'] = df.pH.mean()
+        data['pH_med'] = df.pH.median()
         data['T_initial'] = df.temperature.iloc[0]
         data['T_avg'] = df.temperature.mean()
     except:
