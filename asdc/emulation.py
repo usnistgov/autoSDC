@@ -77,7 +77,7 @@ def model_property(X, y, dx=1.0, ls=None, optimize=True, kernel='RBF', return_re
     elif kernel == 'RQ':
         k = gpflow.kernels.RationalQuadratic(lengthscales=ls)
     elif kernel == 'matern':
-        k = gpflow.kernels.Matern32(lengthscales=l)
+        k = gpflow.kernels.Matern32(lengthscales=ls)
     elif kernel == 'gam':
         # generalized additive model
         k = gpflow.kernels.Sum(
