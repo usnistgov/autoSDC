@@ -8,8 +8,8 @@ def butler_volmer(x, E_oc, j0, alpha_c, alpha_a):
     current = j0 * (np.exp(alpha_a * overpotential) - np.exp(-alpha_c * overpotential))
     return current
 
-def log_butler_volmer(x, E_oc, j0, alpha_c, alpha_a):
-    abscurrent = np.abs(butler_volmer(x, E_oc, j0, alpha_c, alpha_a))
+def log_butler_volmer(x, E_oc, i_corr, alpha_c, alpha_a):
+    abscurrent = np.abs(butler_volmer(x, E_oc, i_corr, alpha_c, alpha_a))
 
     # clip absolute current values so that the lmfit model
     # does not produce NaN values when evaluating the log current
@@ -100,7 +100,7 @@ class ButlerVolmerLogModel(lmfit.Model):
         self._set_paramhints_prefix()
 
     def _set_paramhints_prefix(self):
-        self.set_param_hint('j0', min=0)
+        self.set_param_hint('i_corr', min=0)
         self.set_param_hint('alpha_c', min=0.1)
         self.set_param_hint('alpha_a', min=0.1)
 
@@ -112,7 +112,7 @@ class ButlerVolmerLogModel(lmfit.Model):
         # unlog the data to guess corrosion current
         i_corr = np.max(10**data)
 
-        pars = self.make_params(E_oc=E_oc_guess, j0=i_corr, alpha_c=0.5, alpha_a=0.5)
+        pars = self.make_params(E_oc=E_oc_guess, i_corr=i_corr, alpha_c=0.5, alpha_a=0.5)
         return lmfit.models.update_param_vals(pars, self.prefix, **kwargs)
 
     def guess(self, data: EchemData, **kwargs):
@@ -134,7 +134,7 @@ class ButlerVolmerLogModel(lmfit.Model):
         # guess corrosion current
         i_corr = np.max(10**logI[np.isfinite(logI)])
 
-        pars = self.make_params(E_oc=E_oc_guess, j0=i_corr, alpha_c=0.5, alpha_a=0.5)
+        pars = self.make_params(E_oc=E_oc_guess, i_corr=i_corr, alpha_c=0.5, alpha_a=0.5)
         return lmfit.models.update_param_vals(pars, self.prefix, **kwargs)
 
     def slice(self, data: EchemData, E_oc: float, w: float = 0.15):
@@ -151,14 +151,16 @@ class ButlerVolmerLogModel(lmfit.Model):
 def butler_volmer_nuc(x, E_oc, i_corr, alpha_c, alpha_a, E_nuc, A, p, i_pass):
     overpotential = x - E_oc
     driving_force = x - E_nuc
+    # driving_force = np.clip(driving_force, 0, np.inf)
 
     # nucleation model
     S = np.exp(-A * driving_force**p)
+    # S[np.isnan(S)] = 1
+    S[driving_force <= 0] = 1
 
     # see eq 5 in Bellezze et al (10.1016/j.corsci.2017.10.012)
     current = i_corr * (S * np.exp(alpha_a * overpotential) - np.exp(-alpha_c * overpotential)) + (1-S)*i_pass
-    return current
-
+    return np.log10(np.clip(np.abs(current), 1e-9, np.inf))
 
 class ButlerVolmerNucleationModel(lmfit.Model):
     """ model current under butler-volmer model with a nucleation and growth active/passive effect
@@ -175,15 +177,17 @@ class ButlerVolmerNucleationModel(lmfit.Model):
         kwargs.update({'prefix': prefix, 'nan_policy': nan_policy,
                        'independent_vars': independent_vars})
         super().__init__(butler_volmer_nuc, **kwargs)
+        self._set_paramhints_prefix()
 
     def _set_paramhints_prefix(self):
         """ E_oc, i_corr, alpha_c, alpha_a, E_nuc, A, p, i_pass """
         self.set_param_hint('i_corr', min=0)
         self.set_param_hint('alpha_c', min=0)
         self.set_param_hint('alpha_a', min=0)
-        self.set_param_hint('A', min=1e-4, max=1e-3)
+        # self.set_param_hint('A', min=1e-4, max=1e-3)
+        self.set_param_hint('A', min=0)
         self.set_param_hint('p', min=2, max=3)
-        self.set_param_hint('i_pass', min=0)
+        self.set_param_hint('i_pass', min=0, max=1, value=0.1)
 
     def guess(self, data: EchemData, **kwargs):
         """ E_oc, i_corr, alpha_c, alpha_a, E_nuc, A, p, i_pass """
@@ -198,15 +202,19 @@ class ButlerVolmerNucleationModel(lmfit.Model):
         E, I = self.slice(data, E_oc_guess)
 
         # guess corrosion current
-        i_corr = np.max(I)
+        #  i_corr = np.max(I)
+        i_corr = np.max(10**I[np.isfinite(I)])
 
+        self.set_param_hint('E_nuc', min=E_oc_guess, max=E_oc_guess+0.5)
         pars = self.make_params(
             E_oc=E_oc_guess,
             i_corr=i_corr,
             alpha_c=0.5,
             alpha_a=0.5,
             E_nuc=E_oc_guess + 0.2,
-            A=5e-4
+            A=5e-4,
+            i_pass=0.1,
+            p=2
         )
         return lmfit.models.update_param_vals(pars, self.prefix, **kwargs)
 
@@ -215,4 +223,4 @@ class ButlerVolmerNucleationModel(lmfit.Model):
         I = data.current.values
 
         slc = (E > E_oc - w) & (E < E_oc + w)
-        return E[slc], I[slc]
+        return E[slc], np.log10(np.abs(I[slc]))

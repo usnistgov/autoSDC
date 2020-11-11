@@ -65,18 +65,22 @@ class TafelData(EchemData):
             model = fit_bv(self, w=0.2)
             # print(f'i_corr: {model.best_values["j0"]}')
 
-            x = np.linspace(self.potential.min(), self.potential.max(), 200)
+            x = np.linspace(self.potential.min()-0.5, self.potential.max()+0.5, 200)
             I_mod = model.eval(model.params, x=x)
             plt.plot(x, I_mod, linestyle='--', color='k', alpha=0.5)
             plt.axhline(np.log10(model.best_values['j0']), color='k', alpha=0.5, linewidth=0.5)
 
-            nu = self.potential.values - model.best_values['E_oc']
+            # nu = self.potential.values - model.best_values['E_oc']
+            nu = x - model.best_values['E_oc']
             icorr = np.log10(model.best_values['j0'])
             bc = model.best_values['alpha_c'] / np.log(10)
             ba = model.best_values['alpha_a'] / np.log(10)
 
-            plt.plot(self.potential.values, -nu*bc + icorr, color='k', alpha=0.5, linewidth=0.5)
-            plt.plot(self.potential.values, nu*ba + icorr, color='k', alpha=0.5, linewidth=0.5)
+            # plt.plot(self.potential.values, -nu*bc + icorr, color='k', alpha=0.5, linewidth=0.5)
+            # plt.plot(self.potential.values, nu*ba + icorr, color='k', alpha=0.5, linewidth=0.5)
+            plt.plot(x, -nu*bc + icorr, color='k', alpha=0.5, linewidth=0.5)
+            plt.plot(x, nu*ba + icorr, color='k', alpha=0.5, linewidth=0.5)
+
 
             plt.ylim(ylim)
 
