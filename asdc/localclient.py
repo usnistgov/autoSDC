@@ -661,6 +661,7 @@ class SDC():
 
         # compute required volumes in mL
         volume_needed = {key: purge_time * rate / 60 for key, rate in purge_rates.items()}
+        logger.info(f'solution push target: {volume_needed}')
 
         surplus = {key: levels[key] - volume_needed[key] for key in purge_rates.keys()}
 
