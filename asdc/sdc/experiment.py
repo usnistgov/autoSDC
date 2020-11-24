@@ -275,7 +275,6 @@ class OpenCircuit(OpenCircuitArgs):
         the potentiostat interface will check `experiment.stop_execution`
         """
         self.start_ts = datetime.now()
-        print('ok')
 
         if self.stabilization_window <= 0:
             # by default, do not register early stopping at all
