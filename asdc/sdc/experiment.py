@@ -232,6 +232,7 @@ class OpenCircuit(OpenCircuitArgs):
     Attributes:
         stabilization_range (float): maximum allowed fluctuation for OCP stabilization (V)
         stabilization_window (float): OCP stabilization time period (s)
+        smoothing_window (float): window for rolling mean applied to OCP before computing range
         minimum_duration (float): minimum OCP stabilization time period (s)
 
     Example:
@@ -247,6 +248,7 @@ class OpenCircuit(OpenCircuitArgs):
     """
     stabilization_range: float = 0.01
     stabilization_window: float = 0
+    smoothing_window: float = 10
     minimum_duration: float = 0
     stop_execution: bool = False
     setup_func: str = 'AddOpenCircuit'
@@ -273,6 +275,7 @@ class OpenCircuit(OpenCircuitArgs):
         the potentiostat interface will check `experiment.stop_execution`
         """
         self.start_ts = datetime.now()
+        print('ok')
 
         if self.stabilization_window <= 0:
             # by default, do not register early stopping at all
@@ -289,9 +292,12 @@ class OpenCircuit(OpenCircuitArgs):
             chunk_min = min(new.values)
             return min(old, chunk_min)
 
+        # compute rolling mean
+        smoothed_potential = sdf.rolling(self.smoothing_window).potential.mean()
+
         # compute rolling window range on potential
-        potential_max = sdf.rolling(self.stabilization_window).potential.max()
-        potential_min = sdf.rolling(self.stabilization_window).potential.min()
+        potential_max = smoothed_potential.rolling(self.stabilization_window).max()
+        potential_min = smoothed_potential.rolling(self.stabilization_window).min()
 
         # compute minimum rolling window range in each chunk
         potential_range = (potential_max - potential_min).stream.accumulate(_min, start=np.inf)
