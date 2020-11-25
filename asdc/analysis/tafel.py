@@ -40,7 +40,7 @@ class TafelData(EchemData):
 
     def check_quality(self):
         model = fit_bv(self)
-        i_corr = model.best_values["j0"]
+        i_corr = model.best_values["i_corr"]
         ocp = model.best_values["E_oc"]
         print(f'i_corr: {i_corr}')
 
@@ -49,7 +49,7 @@ class TafelData(EchemData):
 
     def fit(self):
         model = fit_bv(self)
-        i_corr = model.best_values["j0"]
+        i_corr = model.best_values["i_corr"]
         ocp = model.best_values["E_oc"]
         return ocp, i_corr
 
@@ -68,11 +68,11 @@ class TafelData(EchemData):
             x = np.linspace(self.potential.min()-0.5, self.potential.max()+0.5, 200)
             I_mod = model.eval(model.params, x=x)
             plt.plot(x, I_mod, linestyle='--', color='k', alpha=0.5)
-            plt.axhline(np.log10(model.best_values['j0']), color='k', alpha=0.5, linewidth=0.5)
+            plt.axhline(np.log10(model.best_values['i_corr']), color='k', alpha=0.5, linewidth=0.5)
 
             # nu = self.potential.values - model.best_values['E_oc']
             nu = x - model.best_values['E_oc']
-            icorr = np.log10(model.best_values['j0'])
+            icorr = np.log10(model.best_values['i_corr'])
             bc = model.best_values['alpha_c'] / np.log(10)
             ba = model.best_values['alpha_a'] / np.log(10)
 
