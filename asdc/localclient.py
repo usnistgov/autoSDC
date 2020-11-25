@@ -723,7 +723,9 @@ class SDC():
                         Channel.DRAIN: -self.fill_counter_ratio * self.fill_rate
                     }
                 )
-                time.sleep(self.fill_time)
+                time.sleep(self.fill_time/2)
+                self.reglo.stop(Channel.RINSE)
+                time.sleep(self.fill_time/2)
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
@@ -734,7 +736,7 @@ class SDC():
 
             logger.debug('equalizing differential pumping rate')
             self.reglo.continuousFlow(-self.fill_rate, channel=Channel.DRAIN)
-            self.reglo.stop(Channel.RINSE)
+
 
         # drop down to contact...
         time.sleep(3)
