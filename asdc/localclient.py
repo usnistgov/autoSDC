@@ -22,6 +22,9 @@ import traceback
 
 import cv2
 import imageio
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 import sympy
