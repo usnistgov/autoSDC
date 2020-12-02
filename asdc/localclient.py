@@ -690,7 +690,7 @@ class SDC():
 
             if self.cleanup_pause > 0:
                 logger.debug('cleaning up...')
-                self.reglo.set_rates({Channel.DRAIN: -5.0})
+                self.reglo.set_rates({Channel.DRAIN: -10.0})
                 self.reglo.stop(Channel.LOOP)
 
                 if self.cleanup_pulse_duration > 0:
@@ -950,7 +950,6 @@ class SDC():
         with self.phmeter.monitor(interval=5, logfile=pH_logfile):
             with sdc.potentiostat.controller(start_idx=potentiostat_id) as pstat:
                 for sequence_id, instruction in enumerate(instructions):
-
 
                     logger.debug(f'running {instruction}')
 
