@@ -648,6 +648,15 @@ class SDC():
 
         """
 
+        def check_syringe_levels(volume_needed: Dict[str,float], levels: Dict[str,float], headroom: float = 5) -> List[str]:
+            """ compare the volume needed for a push with the current pump levels """
+            surplus = {key: levels[key] - volume_needed[key] for key in volume_needed.keys()}
+
+            # trigger a refill if there won't be more than 5 mL (default)  headroom after the push
+            to_refill = [key for key, value in surplus.items() if value < headroom]
+            return to_refill
+
+
         relative_rates = flow_instructions.get('relative_rates')
         target_rate = float(flow_instructions.get('flow_rate', 1.0))
         purge_time = float(flow_instructions.get('purge_time', 30))
@@ -659,26 +668,22 @@ class SDC():
         purge_ratio = 0.95
         purge_rates = self._scale_flow(relative_rates, nominal_rate=purge_rate)
 
-        levels = self.pump_array.levels()
-        logger.info(f'current solution levels: {levels}')
-
         # compute required volumes in mL
         volume_needed = {key: purge_time * rate / 60 for key, rate in purge_rates.items()}
         logger.info(f'solution push target: {volume_needed}')
 
-        surplus = {key: levels[key] - volume_needed[key] for key in purge_rates.keys()}
+        levels = self.pump_array.levels()
+        logger.info(f'current solution levels: {levels}')
 
-        # trigger a refill if there won't be more than 5 mL headroom after the push
-        to_refill = {
-            key: self.pump_array.get_pump_id(key)
-            for key, value in surplus.items() if value < 5
-        }
+        to_refill = check_syringe_levels(volume_needed, levels)
 
-        if len(to_refill) > 0:
-            pump_ids = [f'{name} (pump {id})' for name, id in to_refill.items()]
+        while len(to_refill) > 0:
+            pump_ids = [f'{name} (pump {self.pump_array.get_pump_id(name)})' for name in to_refill]
             pump_ids = ', '.join(pump_ids)
             logger.warning(f'Refill and reset syringes: {pump_ids}')
             input('refill and reset pumps to proceed')
+            levels = self.pump_array.levels()
+            to_refill = check_syringe_levels(volume_needed, levels)
 
         # droplet workflow -- start at zero
         logger.debug('starting droplet workflow')
