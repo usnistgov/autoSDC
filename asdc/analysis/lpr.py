@@ -146,7 +146,7 @@ class LPRData(EchemData):
         return status
 
     def fit(self):
-        slope, intercept, r2 = polarization_resistance(self)
+        slope, intercept, r2 = best_lpr_fit(self, 0.005)
         return slope, intercept, r2
 
     def plot(self, fit=False):
@@ -163,7 +163,7 @@ class LPRData(EchemData):
         if fit:
             ylim = plt.ylim()
             x = np.linspace(self.current.min(), self.current.max(), 100)
-            slope, intercept, r_value = polarization_resistance(self)
+            slope, intercept, r_value = self.fit()
             plt.plot(x, intercept + slope * x, linestyle='--', color='k', alpha=0.5)
             plt.ylim(ylim)
 
