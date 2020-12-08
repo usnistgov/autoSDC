@@ -2,7 +2,7 @@ import os
 import json
 import dataset
 import pandas as pd
-
+import numpy as np
 from asdc import analysis
 
 def process_pH(pH_file, dir='data'):
