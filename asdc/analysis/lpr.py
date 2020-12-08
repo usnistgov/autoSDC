@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import lmfit
 import logging
 import numpy as np
 import pandas as pd
@@ -35,6 +36,61 @@ def valid_scan_range(df: EchemData, potential_window: float = 0.005) -> bool:
     lb, ub = _scan_range(df, potential_window=potential_window)
 
     return potential.min() <= lb and potential.max() >= ub
+
+def best_lpr_fit(df:EchemData, potential_window, r2_thresh=0.95):
+
+    # straightforward linear fit
+    slope, intercept, r2 = polarization_resistance(df, potential_window)
+
+    current, potential,time = df['current'].values, df['potential'].values,df['elapsed_time'].values
+
+    if r2<r2_thresh:
+        ps_list=[0,.33,.66]
+        best_chisq = np.inf
+        result = None
+        for ps in ps_list:
+            chisq, dc_current = sin_fit(time, current,phase_shift=ps*np.pi*2)
+            if chisq < best_chisq:
+                result = dc_current
+                best_chisq = chisq
+        dc_current=result
+
+        corrected = pd.DataFrame({'current': dc_current, 'potential': potential})
+        slope2, intercept2, r22=polarization_resistance(corrected, potential_window)
+        if r22>r2:
+            slope=slope2
+            intercept=intercept2
+            r2=r22
+    return slope, intercept, r2
+
+def sinfun(x,amp,afreq,bfreq,phaseshift):
+    return amp * np.sin( x * (afreq*x +bfreq) + phaseshift )
+
+
+def sin_fit(time,current,phase_shift=0):
+
+    # aliases to make lmfit code more idiomatic...
+    x, y = time, current
+
+    mod=lmfit.models.PolynomialModel(5,prefix='bkgd_')
+    pars=mod.guess(y,x=x)
+    sinmodel =lmfit.Model(sinfun,prefix='sin_')
+    mod+=sinmodel
+    #sinpars=sinmodel.make_params(amp=(np.max(y)-np.min(y))/4,freq=1/20*2*np.pi,phaseshift=0)
+    sinpars=sinmodel.make_params(amp=(np.max(y)-np.min(y)-pars['bkgd_c0']*np.max(x))/2,bfreq=1/20*2*np.pi,phaseshift=phase_shift,afreq=0)
+    sinpars['sin_phaseshift'].min=0
+    sinpars['sin_phaseshift'].max=2*np.pi
+    sinpars['sin_bfreq'].min=0
+    #sinpars['sin_bfreq'].max=1
+    sinpars['sin_amp'].min=0
+    sinpars['sin_amp'].max=(np.max(y)-np.min(y))/2
+    pars+=sinpars
+    out = mod.fit(y, pars, x=x,method='nelder')
+    comps = out.eval_components(x=x)
+    y_real=y-comps['sin_']
+    dc_current=comps['bkgd_']
+    chiaq=out.chisqr
+    return chiaq,dc_current
 
 def polarization_resistance(df: EchemData, potential_window: float = 0.005) -> tuple[float, float, float]:
     """ extract polarization resistance: fit a linear model relating measured current to potential
