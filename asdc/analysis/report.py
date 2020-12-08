@@ -42,7 +42,7 @@ def process_lpr(experiments, dir='data',r2_thresh=0.95):
         lpr = pd.read_csv(datafile)
         lpr = analysis.LPRData(lpr)
         lpr.check_quality(r2_thresh=r2_thresh)
-        
+
 
         pr, ocp, r2 = lpr.fit()
         if r2<r2_thresh:
@@ -54,12 +54,12 @@ def process_lpr(experiments, dir='data',r2_thresh=0.95):
     df = pd.DataFrame(data)
 
     data = {}
-    data['polarization_resistance'] = df['polarization_resistance'].nanmean()
-    data['polarization_std'] = df['polarization_resistance'].nanstd()
-    data['lpr_r2']=df['lpr_r2'].nanmean()
-    data['lpr_r2_std']=df['lpr_r2'].nanstd()
-    data['lpr_E_oc'] = df['E_oc'].nanmean()
-    data['lpr_E_oc_std'] = df['E_oc'].nanstd()
+    data['polarization_resistance'] = np.nanmean(df['polarization_resistance'])
+    data['polarization_std'] = np.nanstd(df['polarization_resistance'])
+    data['lpr_r2'] = np.nanmean(df['lpr_r2'])
+    data['lpr_r2_std'] = np.nanstd(df['lpr_r2'])
+    data['lpr_E_oc'] = np.nanmean(df['E_oc'])
+    data['lpr_E_oc_std'] = np.nanstd(df['E_oc'])
 
     return data
 
