@@ -43,7 +43,7 @@ def best_lpr_fit(df:EchemData, potential_window, r2_thresh=0.95):
     slope, intercept, r2 = polarization_resistance(df, potential_window)
 
     current, potential,time = df['current'].values, df['potential'].values,df['elapsed_time'].values
-
+    fit_current=current
     if r2<r2_thresh:
         ps_list=[0,.33,.66]
         best_chisq = np.inf
@@ -61,7 +61,8 @@ def best_lpr_fit(df:EchemData, potential_window, r2_thresh=0.95):
             slope=slope2
             intercept=intercept2
             r2=r22
-    return slope, intercept, r2
+            fit_current=dc_current
+    return slope, intercept, r2,fit_current
 
 def sinfun(x,amp,afreq,bfreq,phaseshift):
     return amp * np.sin( x * (afreq*x +bfreq) + phaseshift )
@@ -146,8 +147,8 @@ class LPRData(EchemData):
         return status
 
     def fit(self):
-        slope, intercept, r2 = best_lpr_fit(self, 0.005)
-        return slope, intercept, r2
+        slope, intercept, r2, fit_current = best_lpr_fit(self, 0.005)
+        return slope, intercept, r2,fit_current
 
     def plot(self, fit=False):
         """ LPR plot: plot current vs potential
@@ -155,7 +156,7 @@ class LPRData(EchemData):
         Optional: plot a regression line computing the polarization resistance
         """
         # # super().plot('current', 'potential')
-        plt.plot(self['current'], self['potential'])
+        plt.plot(self['current'], self['potential'],'.')
         plt.axvline(0, color='k', alpha=0.5, linewidth=0.5)
         plt.xlabel('current (A)')
         plt.ylabel('potential (V)')
@@ -163,8 +164,9 @@ class LPRData(EchemData):
         if fit:
             ylim = plt.ylim()
             x = np.linspace(self.current.min(), self.current.max(), 100)
-            slope, intercept, r_value = self.fit()
+            slope, intercept, r_value,fit_current = self.fit()
             plt.plot(x, intercept + slope * x, linestyle='--', color='k', alpha=0.5)
+            plt.plot(fit_current,self['potential'])
             plt.ylim(ylim)
 
         plt.tight_layout()
