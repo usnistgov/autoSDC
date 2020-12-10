@@ -150,8 +150,8 @@ class LPRData(EchemData):
         """ fit a polarization resistance model (linear model in +/- 5mV of OCP) """
         slope, intercept, r2, fit_current = best_lpr_fit(self, 0.005)
 
-        self.slope = slope
-        self.intercept = intercept
+        self.polarization_resistance = slope
+        self.open_circuit_potential = intercept
         self.r_value = r2
         self.fit_current = fit_current
 
@@ -159,7 +159,7 @@ class LPRData(EchemData):
 
     def predict(self, x):
         """ evaluate the fitted linear model """
-        return self.intercept + self.slope * x
+        return self.open_circuit_potential + self.polarization_resistance * x
 
     def plot(self, fit=False):
         """ LPR plot: plot current vs potential
