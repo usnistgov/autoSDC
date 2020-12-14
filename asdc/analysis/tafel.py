@@ -74,7 +74,7 @@ class TafelData(EchemData):
             #x = np.linspace(self.potential.min()-0.5, self.potential.max()+0.5, 200)
             #I_mod = model.eval(model.params, x=x)
             plt.plot(V_mod, I_mod, linestyle='--', color='k', alpha=0.5)
-            plt.axhline(np.log10(model.best_values['i_corr']), color='k', alpha=0.5, linewidth=0.5)
+            plt.axhline(np.log10(i_corr), color='k', alpha=0.5, linewidth=0.5)
 
             # nu = self.potential.values - model.best_values['E_oc']
             nu = V_mod - ocp
