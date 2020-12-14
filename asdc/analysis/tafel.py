@@ -51,7 +51,11 @@ class TafelData(EchemData):
         model = fit_bv(self)
         i_corr = model.best_values["i_corr"]
         ocp = model.best_values["E_oc"]
-        return ocp, i_corr
+        alpha_c = model.best_values['alpha_c'] 
+        alpha_a = model.best_values['alpha_a'] 
+        V_mod = np.linspace(self.potential.min()-0.5, self.potential.max()+0.5, 200)
+        I_mod = model.eval(model.params, x=V_mod)
+        return ocp, i_corr,alpha_a,alpha_c,V_mod,I_mod
 
     def plot(self, fit=False):
         """ Tafel plot: log current against the potential """
@@ -64,7 +68,7 @@ class TafelData(EchemData):
 
         if fit:
             ylim = plt.ylim()
-            model = fit_bv(self, w=0.2)
+            ocp, i_corr,alpha_a,alpha_c,V_mod,I_mod=self.fit()
             # print(f'i_corr: {model.best_values["j0"]}')
 
             x = np.linspace(self.potential.min()-0.5, self.potential.max()+0.5, 200)
@@ -73,10 +77,10 @@ class TafelData(EchemData):
             plt.axhline(np.log10(model.best_values['i_corr']), color='k', alpha=0.5, linewidth=0.5)
 
             # nu = self.potential.values - model.best_values['E_oc']
-            nu = x - model.best_values['E_oc']
-            icorr = np.log10(model.best_values['i_corr'])
-            bc = model.best_values['alpha_c'] / np.log(10)
-            ba = model.best_values['alpha_a'] / np.log(10)
+            nu = x - ocp
+            icorr = np.log10(i_corr)
+            bc =alpha_c / np.log(10)
+            ba = alpha_a / np.log(10)
 
             # plt.plot(self.potential.values, -nu*bc + icorr, color='k', alpha=0.5, linewidth=0.5)
             # plt.plot(self.potential.values, nu*ba + icorr, color='k', alpha=0.5, linewidth=0.5)
