@@ -77,15 +77,15 @@ class TafelData(EchemData):
             plt.axhline(np.log10(model.best_values['i_corr']), color='k', alpha=0.5, linewidth=0.5)
 
             # nu = self.potential.values - model.best_values['E_oc']
-            nu = x - ocp
+            nu = V_mod - ocp
             icorr = np.log10(i_corr)
             bc =alpha_c / np.log(10)
             ba = alpha_a / np.log(10)
 
             # plt.plot(self.potential.values, -nu*bc + icorr, color='k', alpha=0.5, linewidth=0.5)
             # plt.plot(self.potential.values, nu*ba + icorr, color='k', alpha=0.5, linewidth=0.5)
-            plt.plot(x, -nu*bc + icorr, color='k', alpha=0.5, linewidth=0.5)
-            plt.plot(x, nu*ba + icorr, color='k', alpha=0.5, linewidth=0.5)
+            plt.plot(V_mod, -nu*bc + icorr, color='k', alpha=0.5, linewidth=0.5)
+            plt.plot(V_mod, nu*ba + icorr, color='k', alpha=0.5, linewidth=0.5)
 
 
             plt.ylim(ylim)
