@@ -59,6 +59,8 @@ class TafelData(EchemData):
         plt.plot(self['potential'], np.log10(np.abs(self['current'])))
         plt.xlabel('potential (V)')
         plt.ylabel('log current (A)')
+        ylim = plt.ylim()
+        xlim = plt.xlim()
 
         if fit:
             ylim = plt.ylim()
@@ -83,5 +85,6 @@ class TafelData(EchemData):
 
 
             plt.ylim(ylim)
+            plt.xlim(xlim)
 
         plt.tight_layout()
