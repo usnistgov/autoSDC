@@ -176,7 +176,7 @@ class LPRData(EchemData):
 
         return slope, intercept, r2
 
-    def predict(self, x):
+    def evaluate_model(self, x):
         """ evaluate the fitted linear model """
         return self.open_circuit_potential + self.polarization_resistance * x
 
@@ -196,7 +196,7 @@ class LPRData(EchemData):
 
             ylim = plt.ylim()
             x = np.linspace(self.current.min(), self.current.max(), 100)
-            plt.plot(x, self.predict(x), linestyle="--", color="k", alpha=0.5)
+            plt.plot(x, self.evaluate_model(x), linestyle="--", color="k", alpha=0.5)
             plt.plot(self.fit_current, self["potential"])
             plt.ylim(ylim)
 
