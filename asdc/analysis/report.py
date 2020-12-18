@@ -70,8 +70,8 @@ def process_tafel(experiment, dir="data"):
     tafel = analysis.TafelData(pd.read_csv(os.path.join(dir, experiment["datafile"])))
     tafel.clip_current_to_range()
 
-    E_oc, i_corr = tafel.fit()
-    return {"tafel_E_oc": E_oc, "i_corr": i_corr}
+    model = tafel.fit()
+    return {"tafel_E_oc": tafel.ocp, "i_corr": tafel.i_corr}
 
 
 def process_row(row, db, dir=dir):
