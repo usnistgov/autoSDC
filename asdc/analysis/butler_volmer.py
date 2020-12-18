@@ -1,6 +1,8 @@
 import lmfit
 import numpy as np
-
+from scipy import stats
+from scipy import signal
+from skimage import filters
 from asdc.analysis.echem_data import EchemData
 
 
@@ -114,8 +116,9 @@ class ButlerVolmerLogModel(lmfit.Model):
 
     def _set_paramhints_prefix(self):
         self.set_param_hint("i_corr", min=0)
-        self.set_param_hint("alpha_c", min=0.1)
-        self.set_param_hint("alpha_a", min=0.1)
+        # self.set_param_hint("alpha_c", min=0.01)
+        # self.set_param_hint("alpha_c", vary=False)
+        # self.set_param_hint("alpha_a", min=0.1, vary=False)
 
     def _guess(self, data, x=None, **kwargs):
         # guess open circuit potential: minimum log current
@@ -149,8 +152,21 @@ class ButlerVolmerLogModel(lmfit.Model):
         # guess corrosion current
         i_corr = np.max(10 ** logI[np.isfinite(logI)])
 
+        # guess tafel constants -- fit linear models to the log current away from the OCP cusp
+        # anodic branch first:
+        s = (data.potential > E_oc_guess + 0.1) & (data.potential < E_oc_guess + 0.2)
+        alpha_a, *rest = stats.linregress(
+            data.potential[s], np.log(np.abs(data.current[s]))
+        )
+
+        # cathodic branch:
+        s = (data.potential > E_oc_guess - 0.2) & (data.potential < E_oc_guess - 0.1)
+        alpha_c, *rest = stats.linregress(
+            data.potential[s], np.log(np.abs(data.current[s]))
+        )
+
         pars = self.make_params(
-            E_oc=E_oc_guess, i_corr=i_corr, alpha_c=0.5, alpha_a=0.5
+            E_oc=E_oc_guess, i_corr=i_corr, alpha_c=abs(alpha_c), alpha_a=abs(alpha_a)
         )
         return lmfit.models.update_param_vals(pars, self.prefix, **kwargs)
 
@@ -162,6 +178,15 @@ class ButlerVolmerLogModel(lmfit.Model):
         E, logI = E[slc], np.log10(np.abs(I[slc]))
 
         mask = np.isfinite(logI)
+
+        # try to detect linear regions and fit only there...
+        # deriv = signal.savgol_filter(logI, 9, 2, deriv=1)
+        # th = filters.threshold_triangle(np.abs(deriv))
+        # mask[np.abs(deriv) > th] = 0
+
+        # mask[logI < -4.1] = 0
+        # mask[np.argsort(logI)[:2]] = 0
+
         return E[mask], logI[mask]
 
 

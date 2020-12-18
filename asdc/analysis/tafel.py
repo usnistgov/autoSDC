@@ -26,9 +26,27 @@ def current_crosses_zero(df):
 def fit_bv(df, w=0.2):
     bv = butler_volmer.ButlerVolmerLogModel()
     pars = bv.guess(df)
-    E, I = bv.slice(df, pars["E_oc"], w=w)
-    bv_fit = bv.fit(I, x=E, params=pars)
-    return bv_fit
+    E, logI = bv.slice(df, pars["E_oc"], w=w)
+
+    # weights = np.square(1e-6 + np.abs(E - pars["E_oc"]))
+    # weights = 1 / np.square(np.abs(logI))
+    weights = 1 / np.exp(logI)
+
+    for p in ("alpha_c", "alpha_a"):
+        pars[p].set(vary=False)
+
+    bv_fit = bv.fit(logI, x=E, params=pars, weights=weights)
+
+    refinement_pars = bv_fit.params
+    # refinement_pars["i_corr"].set(max=10**(logI.max()))
+    refinement_pars["E_oc"].set(vary=False)
+    for p in ("alpha_c", "alpha_a"):
+        refinement_pars[p].set(vary=True)
+
+    weights = np.square(np.exp(logI))
+    r = bv_fit.model.fit(logI, x=E, params=refinement_pars, weights=weights)
+
+    return r
 
 
 class TafelData(EchemData):
@@ -72,7 +90,7 @@ class TafelData(EchemData):
         I_mod = self.model.eval(self.model.params, x=V_mod)
         return V_mod, I_mod
 
-    def plot(self, fit=False):
+    def plot(self, fit=False, w=None):
         """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
         plt.plot(self["potential"], np.log10(np.abs(self["current"])))
@@ -83,7 +101,7 @@ class TafelData(EchemData):
 
         if fit:
             ylim = plt.ylim()
-            model = self.fit()
+            model = self.fit(w=w)
 
             # evaluate and plot model
             V, I_mod = self.evaluate_model()
