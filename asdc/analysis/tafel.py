@@ -90,7 +90,7 @@ class TafelData(EchemData):
         I_mod = self.model.eval(self.model.params, x=V_mod)
         return V_mod, I_mod
 
-    def plot(self, fit=False, w=None):
+    def plot(self, fit=False, w=0.2):
         """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
         plt.plot(self["potential"], np.log10(np.abs(self["current"])))
