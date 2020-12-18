@@ -7,5 +7,5 @@ asyncio
 dataset
 aioconsole
 slackclient
-
+pre-commit
 # pythonnet

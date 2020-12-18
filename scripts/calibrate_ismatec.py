@@ -1,5 +1,6 @@
 import sys
-sys.path.append('.')
+
+sys.path.append(".")
 
 import json
 import time
@@ -32,11 +33,11 @@ pump.stop()
 
 df = pd.DataFrame(
     {
-        'proportion': proportion,
-        'volts_in': volts_in,
-        'volts_out': volts_out,
-        'sem_volts_out': sem_volts_out
+        "proportion": proportion,
+        "volts_in": volts_in,
+        "volts_out": volts_out,
+        "sem_volts_out": sem_volts_out,
     }
 )
 
-df.to_csv('ismatec_calib.csv')
+df.to_csv("ismatec_calib.csv")

@@ -20,22 +20,24 @@ import zmq.asyncio
 
 # set up and bind zmq publisher socket
 DASHBOARD_PORT = 2345
-DASHBOARD_ADDRESS = '127.0.0.1'
+DASHBOARD_ADDRESS = "127.0.0.1"
 DASHBOARD_URI = f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}"
 
 context = zmq.asyncio.Context.instance()
 socket = context.socket(zmq.PUB)
 # socket.bind(DASHBOARD_URI)
 
-shim_data = os.path.join(os.path.split(__file__)[0], 'data')
+shim_data = os.path.join(os.path.split(__file__)[0], "data")
 # df = pd.read_csv(os.path.join(shim_data, 'test_data.csv'), index_col=0)
-df = pd.read_csv(os.path.join(shim_data, 'test_open_circuit.csv'), index_col=0)
+df = pd.read_csv(os.path.join(shim_data, "test_open_circuit.csv"), index_col=0)
+
 
 class VersaStatError(Exception):
     pass
 
+
 @contextmanager
-def controller(start_idx=17109013, initial_mode='potentiostat'):
+def controller(start_idx=17109013, initial_mode="potentiostat"):
     """ context manager that wraps potentiostat controller class Control. """
     ctl = Potentiostat(start_idx=start_idx, initial_mode=initial_mode)
     try:
@@ -44,23 +46,25 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
         yield ctl
     except Exception as exc:
         print(exc)
-        print('Exception: unwind potentiostat controller...')
+        print("Exception: unwind potentiostat controller...")
         ctl.stop()
         ctl.clear()
         ctl.disconnect()
         raise
     finally:
-        print('disconnect from potentiostat controller.')
+        print("disconnect from potentiostat controller.")
         ctl.stop()
         ctl.clear()
         ctl.disconnect()
 
-class Potentiostat():
-    """ Interface to the VersaSTAT SDK library for instrument control
+
+class Potentiostat:
+    """Interface to the VersaSTAT SDK library for instrument control
 
     methods are broken out into `Immediate` (direct instrument control) and `Experiment`.
     """
-    def __init__(self, start_idx=0, initial_mode='potentiostat', poll_interval=1):
+
+    def __init__(self, start_idx=0, initial_mode="potentiostat", poll_interval=1):
 
         self.instrument = None
         self.start_idx = start_idx
@@ -90,17 +94,17 @@ class Potentiostat():
         self.update_status()
         overload_status = self.overload_status()
         if overload_status != 0:
-            print('OVERLOAD:', overload_status)
+            print("OVERLOAD:", overload_status)
         return overload_status
 
     def read_buffers(self):
         return {
-            'current': self.current(),
-            'potential': self.potential(),
-            'elapsed_time': self.elapsed_time(),
-            'applied_potential': self.applied_potential(),
-            'current_range': self.current_range_history(),
-            'segment': self.segment()
+            "current": self.current(),
+            "potential": self.potential(),
+            "elapsed_time": self.elapsed_time(),
+            "applied_potential": self.applied_potential(),
+            "current_range": self.current_range_history(),
+            "segment": self.segment(),
         }
 
     def run(self, experiment):
@@ -117,10 +121,7 @@ class Potentiostat():
         # argstring = experiment.setup(self.instrument.Experiment)
         argstring = str(experiment)
 
-        metadata = {
-            'timestamp_start': datetime.now(),
-            'parameters': argstring
-        }
+        metadata = {"timestamp_start": datetime.now(), "parameters": argstring}
         self.start()
 
         error_codes = set()
@@ -134,10 +135,10 @@ class Potentiostat():
             self.points_available = idx * chunk_size
             time.sleep(self.poll_interval)
             error_codes.add(self.check_overload())
-            print(f'points: {self.points_available}')
+            print(f"points: {self.points_available}")
 
-        metadata['timestamp_end'] = datetime.now()
-        metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
+        metadata["timestamp_end"] = datetime.now()
+        metadata["error_codes"] = json.dumps(list(map(int, error_codes)))
         results = self.read_buffers()
 
         # cast results into specific e-chem result type
@@ -147,20 +148,19 @@ class Potentiostat():
         return results, metadata
 
     def read_chunk(self, start):
-        return pd.DataFrame({
-            'current': self.current(start=start),
-            'potential': self.potential(start=start),
-            'elapsed_time': self.elapsed_time(start=start),
-        })
+        return pd.DataFrame(
+            {
+                "current": self.current(start=start),
+                "potential": self.potential(start=start),
+                "elapsed_time": self.elapsed_time(start=start),
+            }
+        )
 
     def stream(self, experiment):
         """ stream the data from the potentiostat... """
         source = streamz.Stream()
 
-        metadata = {
-            'timestamp_start': datetime.now(),
-            'parameters': str(experiment)
-        }
+        metadata = {"timestamp_start": datetime.now(), "parameters": str(experiment)}
         self.start()
 
         # build a list of pd.DataFrames
@@ -172,7 +172,7 @@ class Potentiostat():
 
         # monitor convergence
         # hacky -- rely on measurement interval being ~1s
-        example = pd.DataFrame({'current': [], 'potential': [], 'elapsed_time': []})
+        example = pd.DataFrame({"current": [], "potential": [], "elapsed_time": []})
         sdf = DataFrame(source, example=example)
         early_stop = experiment.register_early_stopping(sdf)
 
@@ -183,18 +183,18 @@ class Potentiostat():
         cursor = 0
 
         # while self.sequence_running():
-        for idx in range(1, n_iters+1):
+        for idx in range(1, n_iters + 1):
             self.points_available += chunk_size
             source.emit(self.read_chunk(cursor))
             cursor += chunk_size
 
             if experiment.stop_execution:
-                print('stopping early')
+                print("stopping early")
                 break
 
             time.sleep(self.poll_interval)
 
-        metadata['timestamp_end'] = datetime.now()
+        metadata["timestamp_end"] = datetime.now()
         results = self.read_buffers()
 
         # cast results into specific e-chem result type
@@ -212,30 +212,43 @@ class Potentiostat():
 
     # Immediate methods -- direct instrument control
 
-    def set_cell(self, status='on'):
+    def set_cell(self, status="on"):
         """ turn the cell on or off """
 
-        if status not in ('on', 'off'):
-            raise ArgumentError('specify valid cell status in {on, off}')
+        if status not in ("on", "off"):
+            raise ArgumentError("specify valid cell status in {on, off}")
 
-    def choose_cell(self, choice='external'):
+    def choose_cell(self, choice="external"):
         """ choose between the internal and external cells. """
 
-        if choice not in ('internal', 'external'):
-            raise ArgumentError('specify valid cell in {internal, external}')
+        if choice not in ("internal", "external"):
+            raise ArgumentError("specify valid cell in {internal, external}")
 
     def set_mode(self, mode):
         """ choose between potentiostat and galvanostat modes. """
 
-        if mode not in ('potentiostat', 'galvanostat'):
-            raise ArgumentError('set mode = {potentiostat, galvanostat}')
+        if mode not in ("potentiostat", "galvanostat"):
+            raise ArgumentError("set mode = {potentiostat, galvanostat}")
 
     def set_current_range(self, current_range):
 
-        valid_current_ranges = ['2A', '200mA', '20mA', '2mA', '200uA', '20uA', '2uA', '200nA', '20nA', '2nA']
+        valid_current_ranges = [
+            "2A",
+            "200mA",
+            "20mA",
+            "2mA",
+            "200uA",
+            "20uA",
+            "2uA",
+            "200nA",
+            "20nA",
+            "2nA",
+        ]
 
         if current_range not in valid_current_ranges:
-            raise ArgumentError('specify valid current range ({})'.format(valid_current_ranges))
+            raise ArgumentError(
+                "specify valid current range ({})".format(valid_current_ranges)
+            )
 
         self.current_range = current_range
 
@@ -244,7 +257,7 @@ class Potentiostat():
         pass
 
     def set_dc_current(self, current):
-        """ Set the output DC current (in Amps). This current must be within the instruments capability.
+        """Set the output DC current (in Amps). This current must be within the instruments capability.
 
         Calling this method also changes to Galvanostat mode and sets the current range to the correct value.
         WARNING: Once cell is enabled after setting the DC current, do not change to potentiostatic mode or change the current range.
@@ -260,14 +273,14 @@ class Potentiostat():
         """ Sets the output AC Amplitude (in RMS Volts). This amplitude must be within the instruments capabilities."""
         pass
 
-    def set_ac_waveform(self, mode='on'):
-        waveform_modes = ['on', 'off']
+    def set_ac_waveform(self, mode="on"):
+        waveform_modes = ["on", "off"]
 
         if mode not in waveform_modes:
-            raise ArgumentError('specify valid AC waveform mode {on, off}.')
+            raise ArgumentError("specify valid AC waveform mode {on, off}.")
 
     def update_status(self):
-        """ Retrieve the status information from the instrument.
+        """Retrieve the status information from the instrument.
         Also auto-ranges the current if an experiment sequence is not in progress.
 
         Call this prior to calling the status methods below.
@@ -284,20 +297,20 @@ class Potentiostat():
         return None
 
     def overload_status(self, raise_exception=False):
-        """ check for overloading.
-        0 indicates no overload, 1 indicates I (current) Overload, 2
-indicates E, Power Amp or Thermal Overload has occurred.
+        """check for overloading.
+                0 indicates no overload, 1 indicates I (current) Overload, 2
+        indicates E, Power Amp or Thermal Overload has occurred.
         """
         overload_cause = {
-            1: 'I (current) overload',
-            2: 'E, Power Amp, or Thermal overload'
+            1: "I (current) overload",
+            2: "E, Power Amp, or Thermal overload",
         }
 
         # overload_code = self.instrument.Immediate.GetOverload()
         overload_code = 0
 
         if overload_code and raise_exception:
-            msg = 'A ' + overload_cause[overload_code] + ' has occurred.'
+            msg = "A " + overload_cause[overload_code] + " has occurred."
             raise VersaStatError(msg)
 
         return overload_code
@@ -311,7 +324,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         return None
 
     def autorange_current(self, auto):
-        """ Enable or disable (default is enabled) automatic current ranging while an experiment is not running.
+        """Enable or disable (default is enabled) automatic current ranging while an experiment is not running.
         Disabling auto-ranging is useful when wanting to apply a DC current in immediate mode.
         """
         pass
@@ -329,9 +342,9 @@ indicates E, Power Amp or Thermal Overload has occurred.
         self.action_queue = []
 
     def start(self, max_wait_time=30, poll_interval=2):
-        """ Starts the sequence of actions in the instrument that is currently connected.
-        Wait until the instrument starts the action to return control flow. """
-        print('started experiment sequence successfully.')
+        """Starts the sequence of actions in the instrument that is currently connected.
+        Wait until the instrument starts the action to return control flow."""
+        print("started experiment sequence successfully.")
 
         return
 
@@ -340,7 +353,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         pass
 
     def skip(self):
-        """ Skips the currently running action and immediately starts the next action.
+        """Skips the currently running action and immediately starts the next action.
         If there is no more actions to run, the sequence is simply stopped.
         """
         self.action_queue.pop(0)
@@ -351,7 +364,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
 
     @property
     def points_available(self):
-        """  Returns the number of points that have been stored by the instrument after a sequence of actions has begun.
+        """Returns the number of points that have been stored by the instrument after a sequence of actions has begun.
         Returns -1 when all data has been retrieved from the instrument.
         """
         return self._points_available
@@ -361,10 +374,9 @@ indicates E, Power Amp or Thermal Overload has occurred.
         self._points_available = value
 
     def last_open_circuit(self):
-        """ Returns the last measured Open Circuit value.
-        This value is stored at the beginning of the sequence (and updated anytime the “AddMeasureOpenCircuit” action is called) """
+        """Returns the last measured Open Circuit value.
+        This value is stored at the beginning of the sequence (and updated anytime the “AddMeasureOpenCircuit” action is called)"""
         return None
-
 
     # The following Action Methods can be called in order to create a sequence of Actions.
     # A single string argument encodes multiple parameters as comma-separated lists...
@@ -380,45 +392,46 @@ indicates E, Power Amp or Thermal Overload has occurred.
         if num_points is None:
             num_points = self.points_available
 
-        return self._data['potential'].values[start:num_points]
+        return self._data["potential"].values[start:num_points]
 
     def current(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
             num_points = self.points_available
 
-        return self._data['current'].values[start:num_points]
+        return self._data["current"].values[start:num_points]
 
     def elapsed_time(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
             num_points = self.points_available
 
-        return self._data['elapsed_time'].values[start:num_points]
-
+        return self._data["elapsed_time"].values[start:num_points]
 
     def applied_potential(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
             num_points = self.points_available
 
-        return self._data['applied_potential'].values[start:num_points]
+        return self._data["applied_potential"].values[start:num_points]
 
     def segment(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
             num_points = self.points_available
 
-        return self._data['segment'].values[start:num_points]
+        return self._data["segment"].values[start:num_points]
 
     def current_range_history(self, start=0, num_points=None, as_list=True):
 
         if num_points is None:
             num_points = self.points_available
 
-        return self._data['current_range'].values[start:num_points]
+        return self._data["current_range"].values[start:num_points]
 
     def hardcoded_open_circuit(self, params):
-        default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
+        default_params = (
+            "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
+        )
         print(default_params)
         return status, default_params

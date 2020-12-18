@@ -17,32 +17,69 @@ from typing import Dict, List
 import zmq
 import zmq.asyncio
 
-MODEL_NUMBER = 'A221'
+MODEL_NUMBER = "A221"
 
 # the A221 meter responds to GETMEAS with a comma-delimited string
 # RESPONSE_COLUMNS contains field names for this string
 # LOGFILE_COLUMNS specifies the columns that we explicitly want to save
 RESPONSE_COLUMNS = (
-    'model', 'serialnum', 'software_ver', 'userid', 'timestamp', 'sample_id', 'channel','mode',
-    'pH', 'pH_unit', 'mV', 'mV_unit', 'temperature', 'temperature_unit', 'slope', 'slope_unit', 'methodnum', 'lognum'
+    "model",
+    "serialnum",
+    "software_ver",
+    "userid",
+    "timestamp",
+    "sample_id",
+    "channel",
+    "mode",
+    "pH",
+    "pH_unit",
+    "mV",
+    "mV_unit",
+    "temperature",
+    "temperature_unit",
+    "slope",
+    "slope_unit",
+    "methodnum",
+    "lognum",
 )
 
-LOGFILE_COLUMNS = ('timestamp', 'pH', 'pH_unit', 'mV', 'mV_unit', 'temperature', 'temperature_unit', 'slope', 'slope_unit')
+LOGFILE_COLUMNS = (
+    "timestamp",
+    "pH",
+    "pH_unit",
+    "mV",
+    "mV_unit",
+    "temperature",
+    "temperature_unit",
+    "slope",
+    "slope_unit",
+)
 
 # set up and bind zmq publisher socket
 DASHBOARD_PORT = 2345
-DASHBOARD_ADDRESS = '127.0.0.1'
+DASHBOARD_ADDRESS = "127.0.0.1"
 DASHBOARD_URI = f"tcp://{DASHBOARD_ADDRESS}:{DASHBOARD_PORT}"
 
+
 def encode(message: str) -> bytes:
-    message = message + '\r'
+    message = message + "\r"
     return message.encode()
 
-class PHMeter():
 
-    supported_modes = {'pH', 'mV'}
+class PHMeter:
 
-    def __init__(self, address, baud=19200, timeout=2, mode='pH', model_number=MODEL_NUMBER, buffer_size=64, zmq_pub=False):
+    supported_modes = {"pH", "mV"}
+
+    def __init__(
+        self,
+        address,
+        baud=19200,
+        timeout=2,
+        mode="pH",
+        model_number=MODEL_NUMBER,
+        buffer_size=64,
+        zmq_pub=False,
+    ):
         self.model_number = MODEL_NUMBER
 
         self.pH = collections.deque(maxlen=buffer_size)
@@ -54,7 +91,7 @@ class PHMeter():
             parity=serial.PARITY_NONE,
             bytesize=serial.EIGHTBITS,
             stopbits=serial.STOPBITS_ONE,
-            timeout=timeout
+            timeout=timeout,
         )
 
         self.mode = mode
@@ -78,9 +115,9 @@ class PHMeter():
         if mode in self.supported_modes:
             self._mode = mode
         else:
-            raise ValueError(f'meter mode must be one of {self.supported_modes}')
+            raise ValueError(f"meter mode must be one of {self.supported_modes}")
 
-        self.write(f'SETMODE {self.mode}')
+        self.write(f"SETMODE {self.mode}")
         return self.check_response()
 
     @property
@@ -110,14 +147,14 @@ class PHMeter():
 
     def check_response(self) -> bool:
         response = self.ser.read(size=2).decode()
-        print(f'response: {response}')
-        if response == '> ':
+        print(f"response: {response}")
+        if response == "> ":
             return True
         else:
             return False
 
     def set_csv(self):
-        self.write('SETCSV')
+        self.write("SETCSV")
         return self.check_response()
 
     def write(self, msg: str) -> None:
@@ -125,7 +162,7 @@ class PHMeter():
 
     @staticmethod
     def _to_dict(data: str) -> Dict[str, float]:
-        values = data.split(',')
+        values = data.split(",")
         d = dict(pH=float(values[1]), temperature=float(values[5]))
         return d
 
@@ -142,16 +179,16 @@ class PHMeter():
         data_idx = model_match.start()
 
         # remove any >, \r, and \n characters
-        data = re.sub('[\>\\r\\n]', '', response[data_idx:])
+        data = re.sub("[\>\\r\\n]", "", response[data_idx:])
 
         # strip any whitespace adjacent to the comma delimiters
         # and reconstruct the CSV string
-        values = list(map(str.strip, data.split(',')))
+        values = list(map(str.strip, data.split(",")))
 
         # coerce into pandas dataframe to select columns
         row = pd.DataFrame([values], columns=RESPONSE_COLUMNS)
-        v = row.loc[:,LOGFILE_COLUMNS]
-        v['timestamp'] = timestamp
+        v = row.loc[:, LOGFILE_COLUMNS]
+        v["timestamp"] = timestamp
         data = v.to_csv(header=False, index=False).strip()
 
         return data
@@ -159,8 +196,8 @@ class PHMeter():
     def read(self, count: int = 1):
 
         if count == 1:
-            self.write('GETMEAS')
-            response = self.ser.read_until(b'>')
+            self.write("GETMEAS")
+            response = self.ser.read_until(b">")
             timestamp = datetime.now()
             # print(response)
 
@@ -170,12 +207,12 @@ class PHMeter():
         elif count > 1:
             # FIXME: the multi-reading `GETMEAS` command will only return
             # a single `>` at the end of all the response lines...
-            self.write(f'GETMEAS {count}')
-            responses = [self.ser.read_until(b'>') for response in range(count)]
+            self.write(f"GETMEAS {count}")
+            responses = [self.ser.read_until(b">") for response in range(count)]
             data = [self._process_pH(response.decode()) for response in responses]
             return data
 
-    def readloop(self, stop_event=None, interval=30, logfile='pHmeter_test.csv'):
+    def readloop(self, stop_event=None, interval=30, logfile="pHmeter_test.csv"):
 
         # start an asyncio event loop in the worker thread...
         loop = asyncio.new_event_loop()
@@ -188,8 +225,8 @@ class PHMeter():
 
         def update_buffers(values):
             # push values into deques for external monitoring...
-            self.pH.append(values['pH'])
-            self.temperature.append(values['temperature'])
+            self.pH.append(values["pH"])
+            self.temperature.append(values["temperature"])
 
         # skip writing header line if appending to existing logfile
         write_header = True
@@ -197,11 +234,11 @@ class PHMeter():
             write_header = False
 
         with self.sync():
-            with open(logfile, 'a') as f:
+            with open(logfile, "a") as f:
 
                 if write_header:
                     # write a CSV header if the file is new
-                    print(','.join(LOGFILE_COLUMNS), file=f)
+                    print(",".join(LOGFILE_COLUMNS), file=f)
 
                 source = streamz.Source()
                 log = source.sink(lambda x: print(x, file=f))
@@ -230,8 +267,8 @@ class PHMeter():
                     stop_event.wait(timeout=max(0, target_ts - time.time()))
 
     @contextmanager
-    def monitor(self, interval=30, logfile='pHmeter_test.csv'):
-        """ use this like
+    def monitor(self, interval=30, logfile="pHmeter_test.csv"):
+        """use this like
 
         ```
         with meter.monitor(interval=10):
@@ -240,7 +277,9 @@ class PHMeter():
         """
         stop_event = threading.Event()
 
-        io_worker = threading.Thread(target=self.readloop, args=(stop_event, interval, logfile))
+        io_worker = threading.Thread(
+            target=self.readloop, args=(stop_event, interval, logfile)
+        )
         try:
             io_worker.start()
             yield
@@ -249,10 +288,12 @@ class PHMeter():
             io_worker.join()
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='pH meter client')
-    parser.add_argument('--port',  default='COM21', help='COM port for the pH meter')
-    parser.add_argument('--verbose', action='store_true', help='include extra debugging output')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="pH meter client")
+    parser.add_argument("--port", default="COM21", help="COM port for the pH meter")
+    parser.add_argument(
+        "--verbose", action="store_true", help="include extra debugging output"
+    )
     args = parser.parse_args()
 
     meter = PHMeter(args.port)

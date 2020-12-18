@@ -8,15 +8,15 @@ from asdc.analysis.echem_data import EchemData
 
 logger = logging.getLogger(__name__)
 
-class LSVData(EchemData):
 
+class LSVData(EchemData):
     @property
     def _constructor(self):
         return LSVData
 
     @property
     def name(self):
-        return 'LSV'
+        return "LSV"
 
     def check_quality(self):
         """ LSV heuristics: not implemented. """
@@ -25,8 +25,8 @@ class LSVData(EchemData):
     def plot(self, fit=False):
         """ plot LSV: current vs potential """
         # # super().plot('current', 'potential')
-        plt.plot(self['potential'], self['current'])
-        plt.xlabel('potential (V)')
-        plt.ylabel('current (A)')
+        plt.plot(self["potential"], self["current"])
+        plt.xlabel("potential (V)")
+        plt.ylabel("current (A)")
 
         plt.tight_layout()

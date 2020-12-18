@@ -2,16 +2,17 @@ import numpy as np
 import pandas as pd
 from enum import IntEnum
 
+
 class Status(IntEnum):
     OK = 0
     WARN = 1
     RETRY = 2
     FAIL = 3
 
-class EchemData(pd.DataFrame):
 
+class EchemData(pd.DataFrame):
     def check_quality(self):
-        """ run diagnostics, return status that explains what to do and why.
+        """run diagnostics, return status that explains what to do and why.
 
         maybe status could be like
         OK -- no errors, proceed

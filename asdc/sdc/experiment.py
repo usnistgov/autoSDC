@@ -22,26 +22,28 @@ from .experiment_defaults import *
 
 MIN_SAMPLING_FREQUENCY = 1.0e-5
 
+
 def from_command(instruction):
     """ {"op": "lpr", "initial_potential": -0.5, "final_potential": 0.5, "step_height": 0.1, "step_time": 0.5} """
 
     # don't mangle the original dictionary at all
     instruction_data = instruction.copy()
 
-    opname = instruction_data.get('op')
+    opname = instruction_data.get("op")
 
     Expt = potentiostat_ops.get(opname)
 
     if Expt is None:
         return None
 
-    del instruction_data['op']
+    del instruction_data["op"]
 
     return Expt(**instruction_data)
 
+
 @dataclass
 class LPR(LPRArgs):
-    """ linear polarization resistance
+    """linear polarization resistance
 
     Attributes:
         initial_potential (float): starting potential (V)
@@ -55,9 +57,10 @@ class LPR(LPRArgs):
         ```
 
     """
-    versus: str = 'VS OC'
+
+    versus: str = "VS OC"
     stop_execution: bool = False
-    setup_func: str = 'AddLinearPolarizationResistance'
+    setup_func: str = "AddLinearPolarizationResistance"
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
         return None
@@ -65,7 +68,7 @@ class LPR(LPRArgs):
     def getargs(self):
         # override any default arguments...
         args = self.__dict__
-        args['versus_initial'] = args['versus_final'] = args['versus']
+        args["versus_initial"] = args["versus_final"] = args["versus"]
 
         args = LPRArgs.from_dict(args)
         return args.format()
@@ -73,9 +76,10 @@ class LPR(LPRArgs):
     def marshal(self, echem_data: Dict[str, Sequence[float]]):
         return analysis.LPRData(echem_data)
 
+
 @dataclass
 class StaircaseLSV(StaircaseLSVArgs):
-    """ staircase linear scan voltammetry
+    """staircase linear scan voltammetry
 
     Attributes:
         initial_potential (float): starting potential (V)
@@ -89,9 +93,10 @@ class StaircaseLSV(StaircaseLSVArgs):
         {"op": "staircase_lsv", "initial_potential": 0.0, "final_potential": 1.0, "step_height": 0.001, "step_time": 0.8}
         ```
     """
-    versus: str = 'VS REF'
+
+    versus: str = "VS REF"
     stop_execution: bool = False
-    setup_func: str = 'AddStaircaseLinearScanVoltammetry'
+    setup_func: str = "AddStaircaseLinearScanVoltammetry"
     filter: Optional[str] = None
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
@@ -101,16 +106,17 @@ class StaircaseLSV(StaircaseLSVArgs):
 
         # override any default arguments...
         args = self.__dict__
-        args['versus_initial'] = args['versus_final'] = args['versus']
-        if args['filter'] is not None:
-            args['e_filter'] = args['i_filter'] = args['filter']
+        args["versus_initial"] = args["versus_final"] = args["versus"]
+        if args["filter"] is not None:
+            args["e_filter"] = args["i_filter"] = args["filter"]
 
         args = StaircaseLSVArgs.from_dict(args)
         return args.format()
 
+
 @dataclass
 class Potentiostatic(PotentiostaticArgs):
-    """ potentiostatic: hold at constant potential
+    """potentiostatic: hold at constant potential
 
     Attributes:
         potential (float): (V)
@@ -121,23 +127,26 @@ class Potentiostatic(PotentiostaticArgs):
         {"op": "potentiostatic", "potential": Number(volts), "duration": Time(seconds)}
         ```
     """
+
     n_points: int = 3000
     duration: int = 10
-    versus: str = 'VS REF'
+    versus: str = "VS REF"
     stop_execution: bool = False
-    setup_func: str = 'AddPotentiostatic'
+    setup_func: str = "AddPotentiostatic"
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
         return None
 
     def getargs(self):
 
-        time_per_point = np.maximum(self.duration / self.n_points, MIN_SAMPLING_FREQUENCY)
+        time_per_point = np.maximum(
+            self.duration / self.n_points, MIN_SAMPLING_FREQUENCY
+        )
 
         # override any default arguments...
         args = self.__dict__
-        args['time_per_point'] = time_per_point
-        args['versus_initial'] = args['versus']
+        args["time_per_point"] = time_per_point
+        args["versus_initial"] = args["versus"]
 
         args = PotentiostaticArgs.from_dict(args)
         return args.format()
@@ -159,9 +168,10 @@ class LSV(LSVArgs):
         ```
 
     """
-    versus: str = 'VS REF'
+
+    versus: str = "VS REF"
     stop_execution: bool = False
-    setup_func: str = 'AddLinearScanVoltammetry'
+    setup_func: str = "AddLinearScanVoltammetry"
     filter: Optional[str] = None
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
@@ -171,9 +181,9 @@ class LSV(LSVArgs):
 
         # override any default arguments...
         args = self.__dict__
-        args['versus_initial'] = args['versus_final'] = args['versus']
-        if args['filter'] is not None:
-            args['e_filter'] = args['i_filter'] = args['filter']
+        args["versus_initial"] = args["versus_final"] = args["versus"]
+        if args["filter"] is not None:
+            args["e_filter"] = args["i_filter"] = args["filter"]
 
         args = LSVArgs.from_dict(args)
         return args.format()
@@ -184,7 +194,7 @@ class LSV(LSVArgs):
 
 @dataclass
 class Tafel(TafelArgs):
-    """ Tafel analysis
+    """Tafel analysis
 
     Attributes:
         initial_potential (float): starting potential (V)
@@ -198,9 +208,10 @@ class Tafel(TafelArgs):
         ```
 
     """
-    versus: str = 'VS OC'
+
+    versus: str = "VS OC"
     stop_execution: bool = False
-    setup_func: str = 'AddTafel'
+    setup_func: str = "AddTafel"
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
         return None
@@ -209,7 +220,7 @@ class Tafel(TafelArgs):
 
         # override any default arguments...
         args = self.__dict__
-        args['versus_initial'] = args['versus_final'] = args['versus']
+        args["versus_initial"] = args["versus_final"] = args["versus"]
 
         args = TafelArgs.from_dict(args)
         return args.format()
@@ -220,7 +231,7 @@ class Tafel(TafelArgs):
 
 @dataclass
 class OpenCircuit(OpenCircuitArgs):
-    """ Open circuit hold
+    """Open circuit hold
 
     If a `stabilization_window` is specified, allow the OCP hold to terminate early
     if the OCP fluctuation is less than `stabilization_range` volts over the window.
@@ -246,12 +257,13 @@ class OpenCircuit(OpenCircuitArgs):
         expt = OpenCircuit(duration=60, time_per_point=0.5)
         ```
     """
+
     stabilization_range: float = 0.01
     stabilization_window: float = 0
     smoothing_window: float = 10
     minimum_duration: float = 0
     stop_execution: bool = False
-    setup_func: str = 'AddOpenCircuit'
+    setup_func: str = "AddOpenCircuit"
 
     def getargs(self):
 
@@ -266,11 +278,14 @@ class OpenCircuit(OpenCircuitArgs):
 
     def signal_stop(self, value):
         elapsed = datetime.now() - self.start_ts
-        if elapsed.total_seconds() > self.minimum_duration and value < self.stabilization_range:
+        if (
+            elapsed.total_seconds() > self.minimum_duration
+            and value < self.stabilization_range
+        ):
             self.stop_execution = True
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
-        """ streaming dataframe -> early stopping criterion
+        """streaming dataframe -> early stopping criterion
 
         the potentiostat interface will check `experiment.stop_execution`
         """
@@ -299,12 +314,15 @@ class OpenCircuit(OpenCircuitArgs):
         potential_min = smoothed_potential.rolling(self.stabilization_window).min()
 
         # compute minimum rolling window range in each chunk
-        potential_range = (potential_max - potential_min).stream.accumulate(_min, start=np.inf)
+        potential_range = (potential_max - potential_min).stream.accumulate(
+            _min, start=np.inf
+        )
         return potential_range.sink(self.signal_stop)
+
 
 @dataclass
 class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):
-    """ Corrosion open circuit hold
+    """Corrosion open circuit hold
 
     Attributes:
         duration (float) : (s)
@@ -314,8 +332,9 @@ class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):
         {"op": "corrosion_oc", "duration": Time, "time_per_point": Time}
         ```
     """
+
     stop_execution: bool = False
-    setup_func: str = 'AddCorrosionOpenCircuit'
+    setup_func: str = "AddCorrosionOpenCircuit"
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
         return None
@@ -327,9 +346,10 @@ class CorrosionOpenCircuit(CorrosionOpenCircuitArgs):
         args = CorrosionOpenCircuitArgs.from_dict(args)
         return args.format()
 
+
 @dataclass
 class CyclicVoltammetry(CyclicVoltammetryArgs):
-    """ set up a CV experiment
+    """set up a CV experiment
 
     Attributes:
         initial_potential (float): (V)
@@ -353,9 +373,9 @@ class CyclicVoltammetry(CyclicVoltammetryArgs):
         ```
     """
 
-    versus: str = 'VS REF'
+    versus: str = "VS REF"
     stop_execution: bool = False
-    setup_func: str = 'AddMultiCyclicVoltammetry'
+    setup_func: str = "AddMultiCyclicVoltammetry"
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
         return None
@@ -365,8 +385,8 @@ class CyclicVoltammetry(CyclicVoltammetryArgs):
         # override any default arguments...
         args = self.__dict__
 
-        for key in ('initial', 'vertex_1', 'vertex_2', 'final'):
-            args[f'versus_{key}'] = args['versus']
+        for key in ("initial", "vertex_1", "vertex_2", "final"):
+            args[f"versus_{key}"] = args["versus"]
 
         args = CyclicVoltammetryArgs.from_dict(args)
         return args.format()
@@ -376,12 +396,12 @@ class CyclicVoltammetry(CyclicVoltammetryArgs):
 
 
 potentiostat_ops = {
-    'cv': CyclicVoltammetry,
-    'lsv': LSV,
-    'lpr': LPR,
-    'tafel': Tafel,
-    'corrosion_oc': CorrosionOpenCircuit,
-    'open_circuit': OpenCircuit,
-    'potentiostatic': Potentiostatic,
-    'staircase_lsv': StaircaseLSV
+    "cv": CyclicVoltammetry,
+    "lsv": LSV,
+    "lpr": LPR,
+    "tafel": Tafel,
+    "corrosion_oc": CorrosionOpenCircuit,
+    "open_circuit": OpenCircuit,
+    "potentiostatic": Potentiostatic,
+    "staircase_lsv": StaircaseLSV,
 }

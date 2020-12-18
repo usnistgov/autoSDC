@@ -28,11 +28,13 @@ sys.path.append(vdkpath)
 clr.AddReference("VersaSTATControl")
 from VersaSTATControl import Instrument
 
+
 class VersaStatError(Exception):
     pass
 
+
 @contextmanager
-def controller(start_idx=17109013, initial_mode='potentiostat'):
+def controller(start_idx=17109013, initial_mode="potentiostat"):
     """ context manager that wraps potentiostat controller class Control. """
     ctl = Potentiostat(start_idx=start_idx, initial_mode=initial_mode)
     try:
@@ -41,7 +43,7 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
         yield ctl
     except Exception as exc:
         print(exc)
-        print('Exception: unwind potentiostat controller...')
+        print("Exception: unwind potentiostat controller...")
         ctl.stop()
         time.sleep(1)
         ctl.clear()
@@ -49,17 +51,19 @@ def controller(start_idx=17109013, initial_mode='potentiostat'):
         ctl.disconnect()
         raise
     finally:
-        print('disconnect from potentiostat controller.')
+        print("disconnect from potentiostat controller.")
         ctl.stop()
         ctl.clear()
         ctl.disconnect()
 
-class Potentiostat():
-    """ Interface to the VersaSTAT SDK library for instrument control
+
+class Potentiostat:
+    """Interface to the VersaSTAT SDK library for instrument control
 
     methods are broken out into `Immediate` (direct instrument control) and `Experiment`.
     """
-    def __init__(self, start_idx=0, initial_mode='potentiostat', poll_interval=1):
+
+    def __init__(self, start_idx=0, initial_mode="potentiostat", poll_interval=1):
 
         self.instrument = Instrument()
         self.start_idx = start_idx
@@ -83,20 +87,22 @@ class Potentiostat():
         self.update_status()
         overload_status = self.overload_status()
         if overload_status != 0:
-            print('OVERLOAD:', overload_status)
+            print("OVERLOAD:", overload_status)
         return overload_status
 
     def read_buffers(self, start=0):
         num_points = self.points_available() - start
 
-        return pd.DataFrame({
-            'current': self.current(start, num_points),
-            'potential': self.potential(start, num_points),
-            'elapsed_time': self.elapsed_time(start, num_points),
-            'applied_potential': self.applied_potential(start, num_points),
-            'current_range': self.current_range_history(start, num_points),
-            'segment': self.segment(start, num_points)
-        })
+        return pd.DataFrame(
+            {
+                "current": self.current(start, num_points),
+                "potential": self.potential(start, num_points),
+                "elapsed_time": self.elapsed_time(start, num_points),
+                "applied_potential": self.applied_potential(start, num_points),
+                "current_range": self.current_range_history(start, num_points),
+                "segment": self.segment(start, num_points),
+            }
+        )
 
     def run(self, experiment, clear=True):
         """ run an SDC experiment sequence -- busy wait until it's finished """
@@ -110,10 +116,7 @@ class Potentiostat():
 
         argstring = experiment.setup(self.instrument.Experiment)
 
-        metadata = {
-            'timestamp_start': datetime.now(),
-            'parameters': argstring
-        }
+        metadata = {"timestamp_start": datetime.now(), "parameters": argstring}
         self.start()
 
         error_codes = set()
@@ -129,7 +132,14 @@ class Potentiostat():
 
         # streaming dataframe for early stopping (and potential error checking) callbacks
         example = pd.DataFrame(
-            {'current': [], 'potential': [], 'elapsed_time': [], 'applied_potential': [], 'current_range': [], 'segment': []}
+            {
+                "current": [],
+                "potential": [],
+                "elapsed_time": [],
+                "applied_potential": [],
+                "current_range": [],
+                "segment": [],
+            }
         )
         sdf = DataFrame(source, example=example)
         early_stop = experiment.register_early_stopping(sdf)
@@ -147,13 +157,13 @@ class Potentiostat():
                 source.emit(data_chunk)
 
             if experiment.stop_execution and not stop_flagged:
-                logger.debug('stopping experiment early')
+                logger.debug("stopping experiment early")
                 self.skip()
                 stop_flagged = True
 
-        logger.debug('finished running experiment')
-        metadata['timestamp_end'] = datetime.now()
-        metadata['error_codes'] = json.dumps(list(map(int, error_codes)))
+        logger.debug("finished running experiment")
+        metadata["timestamp_end"] = datetime.now()
+        metadata["error_codes"] = json.dumps(list(map(int, error_codes)))
         # results = self.read_buffers()
         results = pd.concat(chunks, ignore_index=True)
 
@@ -175,54 +185,66 @@ class Potentiostat():
 
     # Immediate methods -- direct instrument control
 
-    def set_cell(self, status='on'):
+    def set_cell(self, status="on"):
         """ turn the cell on or off """
 
-        if status not in ('on', 'off'):
-            raise ArgumentError('specify valid cell status in {on, off}')
+        if status not in ("on", "off"):
+            raise ArgumentError("specify valid cell status in {on, off}")
 
-        if status == 'on':
+        if status == "on":
             self.instrument.Immediate.SetCellOn()
 
         else:
             self.instrument.Immediate.SetCellOff()
 
-    def choose_cell(self, choice='external'):
+    def choose_cell(self, choice="external"):
         """ choose between the internal and external cells. """
 
-        if choice not in ('internal', 'external'):
-            raise ArgumentError('specify valid cell in {internal, external}')
+        if choice not in ("internal", "external"):
+            raise ArgumentError("specify valid cell in {internal, external}")
 
-        if choice == 'external':
+        if choice == "external":
             self.instrument.Immediate.SetCellExternal()
 
-        elif choice == 'internal':
+        elif choice == "internal":
             self.instrument.Immediate.SetCellExternal()
 
     def set_mode(self, mode):
         """ choose between potentiostat and galvanostat modes. """
 
-        if mode not in ('potentiostat', 'galvanostat'):
-            raise ArgumentError('set mode = {potentiostat, galvanostat}')
+        if mode not in ("potentiostat", "galvanostat"):
+            raise ArgumentError("set mode = {potentiostat, galvanostat}")
 
-        if mode == 'potentiostat':
+        if mode == "potentiostat":
             self.instrument.Immediate.SetModePotentiostat()
 
-        elif mode == 'galvanostat':
+        elif mode == "galvanostat":
             self.instrument.Immediate.SetModeGalvanostat()
-
 
     def set_current_range(self, current_range):
 
-        valid_current_ranges = ['2A', '200mA', '20mA', '2mA', '200uA', '20uA', '2uA', '200nA', '20nA', '2nA']
+        valid_current_ranges = [
+            "2A",
+            "200mA",
+            "20mA",
+            "2mA",
+            "200uA",
+            "20uA",
+            "2uA",
+            "200nA",
+            "20nA",
+            "2nA",
+        ]
 
         if current_range not in valid_current_ranges:
-            raise ArgumentError('specify valid current range ({})'.format(valid_current_ranges))
+            raise ArgumentError(
+                "specify valid current range ({})".format(valid_current_ranges)
+            )
 
         self.current_range = current_range
 
         # dispatch the right SetIRange_* function....
-        current = 'SetIRange_{}'.format(current_range)
+        current = "SetIRange_{}".format(current_range)
         set_current = getattr(self.instrument.Immediate, current)
         set_current()
 
@@ -231,7 +253,7 @@ class Potentiostat():
         self.instrument.Immediate.SetDCPotential(potential)
 
     def set_dc_current(self, current):
-        """ Set the output DC current (in Amps). This current must be within the instruments capability.
+        """Set the output DC current (in Amps). This current must be within the instruments capability.
 
         Calling this method also changes to Galvanostat mode and sets the current range to the correct value.
         WARNING: Once cell is enabled after setting the DC current, do not change to potentiostatic mode or change the current range.
@@ -247,19 +269,19 @@ class Potentiostat():
         """ Sets the output AC Amplitude (in RMS Volts). This amplitude must be within the instruments capabilities."""
         self.instrument.Immediate.SetACAmplitude(amplitude)
 
-    def set_ac_waveform(self, mode='on'):
-        waveform_modes = ['on', 'off']
+    def set_ac_waveform(self, mode="on"):
+        waveform_modes = ["on", "off"]
 
         if mode not in waveform_modes:
-            raise ArgumentError('specify valid AC waveform mode {on, off}.')
+            raise ArgumentError("specify valid AC waveform mode {on, off}.")
 
-        if mode == 'on':
+        if mode == "on":
             self.instrument.Immediate.SetACWaveformOn()
-        elif mode == 'off':
+        elif mode == "off":
             self.instrument.Immediate.SetACWaveformOff()
 
     def update_status(self):
-        """ Retrieve the status information from the instrument.
+        """Retrieve the status information from the instrument.
         Also auto-ranges the current if an experiment sequence is not in progress.
 
         Call this prior to calling the status methods below.
@@ -276,19 +298,19 @@ class Potentiostat():
         return self.instrument.Immediate.GetI()
 
     def overload_status(self, raise_exception=False):
-        """ check for overloading.
-        0 indicates no overload, 1 indicates I (current) Overload, 2
-indicates E, Power Amp or Thermal Overload has occurred.
+        """check for overloading.
+                0 indicates no overload, 1 indicates I (current) Overload, 2
+        indicates E, Power Amp or Thermal Overload has occurred.
         """
         overload_cause = {
-            1: 'I (current) overload',
-            2: 'E, Power Amp, or Thermal overload'
+            1: "I (current) overload",
+            2: "E, Power Amp, or Thermal overload",
         }
 
         overload_code = self.instrument.Immediate.GetOverload()
 
         if overload_code and raise_exception:
-            msg = 'A ' + overload_cause[overload_code] + ' has occurred.'
+            msg = "A " + overload_cause[overload_code] + " has occurred."
             raise VersaStatError(msg)
 
         return overload_code
@@ -302,14 +324,13 @@ indicates E, Power Amp or Thermal Overload has occurred.
         return self.instrument.Immediate.GetCellEnabled()
 
     def autorange_current(self, auto):
-        """ Enable or disable (default is enabled) automatic current ranging while an experiment is not running.
+        """Enable or disable (default is enabled) automatic current ranging while an experiment is not running.
         Disabling auto-ranging is useful when wanting to apply a DC current in immediate mode.
         """
         if auto:
             self.instrument.Immediate.SetAutoIRangeOn()
         else:
             self.instrument.Immediate.SetAutoIRangeOff()
-
 
     # Experiment methods
     # Experiment actions apparently can be run asynchronously
@@ -318,15 +339,15 @@ indicates E, Power Amp or Thermal Overload has occurred.
         """ get the current experiment action queue. """
         # Returns a list of comma delimited action names that are supported by the instrument that is currently connected
         action_list = self.instrument.Experiment.GetActionList()
-        return action_list.split(',')
+        return action_list.split(",")
 
     def clear(self):
         """ clear the experiment action queue. """
         self.instrument.Experiment.Clear()
 
     def start(self, max_wait_time=30, poll_interval=2):
-        """ Starts the sequence of actions in the instrument that is currently connected.
-        Wait until the instrument starts the action to return control flow. """
+        """Starts the sequence of actions in the instrument that is currently connected.
+        Wait until the instrument starts the action to return control flow."""
 
         self.instrument.Experiment.Start()
 
@@ -346,7 +367,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
                 raise KeyboardInterrupt("could not start.")
                 break
 
-        print('started experiment sequence successfully.')
+        print("started experiment sequence successfully.")
 
         return
 
@@ -355,7 +376,7 @@ indicates E, Power Amp or Thermal Overload has occurred.
         self.instrument.Experiment.Stop()
 
     def skip(self):
-        """ Skips the currently running action and immediately starts the next action.
+        """Skips the currently running action and immediately starts the next action.
         If there is no more actions to run, the sequence is simply stopped.
         """
         self.instrument.Experiment.Skip()
@@ -365,16 +386,15 @@ indicates E, Power Amp or Thermal Overload has occurred.
         return self.instrument.Experiment.IsSequenceRunning()
 
     def points_available(self):
-        """  Returns the number of points that have been stored by the instrument after a sequence of actions has begun.
+        """Returns the number of points that have been stored by the instrument after a sequence of actions has begun.
         Returns -1 when all data has been retrieved from the instrument.
         """
         return self.instrument.Experiment.GetNumPointsAvailable()
 
     def last_open_circuit(self):
-        """ Returns the last measured Open Circuit value.
-        This value is stored at the beginning of the sequence (and updated anytime the “AddMeasureOpenCircuit” action is called) """
+        """Returns the last measured Open Circuit value.
+        This value is stored at the beginning of the sequence (and updated anytime the “AddMeasureOpenCircuit” action is called)"""
         return self.instrument.Experiment.GetLastMeasuredOC()
-
 
     # The following Action Methods can be called in order to create a sequence of Actions.
     # A single string argument encodes multiple parameters as comma-separated lists...
@@ -390,7 +410,6 @@ indicates E, Power Amp or Thermal Overload has occurred.
         if num_points is None:
             num_points = self.points_available()
             num_points = num_points - start
-
 
         values = self.instrument.Experiment.GetDataPotential(start, num_points)
 
@@ -465,7 +484,9 @@ indicates E, Power Amp or Thermal Overload has occurred.
         return values
 
     def hardcoded_open_circuit(self, params):
-        default_params = "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
+        default_params = (
+            "1,10,NONE,<,0,NONE,<,0,2MA,AUTO,AUTO,AUTO,INTERNAL,AUTO,AUTO,AUTO"
+        )
         status = self.instrument.Experiment.AddOpenCircuit(default_params)
         return status, default_params
 

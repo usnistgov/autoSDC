@@ -6,7 +6,7 @@ import numpy as np
 
 import regloicclib
 
-sys.path.append('.')
+sys.path.append(".")
 from asdc import sdc
 
 # needle defaults counterclockwise (-)
@@ -16,6 +16,7 @@ from asdc import sdc
 
 from enum import IntEnum
 
+
 class Channel(IntEnum):
     ALL = 0
     NEEDLE = 1
@@ -23,35 +24,38 @@ class Channel(IntEnum):
     LOOP = 3
     SOURCE = 4
 
+
 # 12 mL/min
+
 
 class Reglo(regloicclib.Pump):
     """ thin wrapper around the pump interface from regloicc """
-    def __init__(self, address='COM16', tubing_inner_diameter=1.52):
+
+    def __init__(self, address="COM16", tubing_inner_diameter=1.52):
 
         super().__init__(address=address)
         self.tubing_inner_diameter = tubing_inner_diameter
 
-        for channel in range(1,5):
+        for channel in range(1, 5):
             self.setTubingInnerDiameter(self.tubing_inner_diameter, channel=channel)
 
     # def stop(self):
     #     self.pump.stop()
 
     def droplet(
-            self,
-            prep_height=0.004,
-            wetting_height=0.0011,
-            fill_rate = 1.0,
-            fill_counter_ratio=0.75,
-            fill_time = None,
-            shrink_counter_ratio = 1.1,
-            shrink_time = None,
-            flow_rate = 0.5,
-            target_rate = 0.05,
-            cleanup_duration = 3,
-            cleanup_pulse_duration = 0,
-            stage_speed = 0.001,
+        self,
+        prep_height=0.004,
+        wetting_height=0.0011,
+        fill_rate=1.0,
+        fill_counter_ratio=0.75,
+        fill_time=None,
+        shrink_counter_ratio=1.1,
+        shrink_time=None,
+        flow_rate=0.5,
+        target_rate=0.05,
+        cleanup_duration=3,
+        cleanup_pulse_duration=0,
+        stage_speed=0.001,
     ):
         """ slack bot command for prototyping droplet contact routine
 
@@ -83,7 +87,7 @@ class Reglo(regloicclib.Pump):
             if cleanup_duration > 0:
                 # TODO: turn on the needle
                 # make an option to pulse loop and dump simultaneously, same rate opposite directions?
-                print('cleaning up...')
+                print("cleaning up...")
                 self.continuousFlow(-10.0, channel=Channel.NEEDLE.value)
                 self.stop(channel=Channel.SOURCE.value)
                 self.stop(channel=Channel.LOOP.value)
@@ -104,7 +108,7 @@ class Reglo(regloicclib.Pump):
             with sdc.position.sync_z_step(height=height_difference, speed=stage_speed):
 
                 # counterpump slower to fill the droplet
-                print('filling droplet')
+                print("filling droplet")
                 counter_flowrate = fill_rate * fill_counter_ratio
                 self.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
                 self.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
@@ -112,26 +116,25 @@ class Reglo(regloicclib.Pump):
 
                 fill_start = time.time()
                 if fill_time is None:
-                    input('*filling droplet*: press enter to continue...')
+                    input("*filling droplet*: press enter to continue...")
                 else:
                     time.sleep(fill_time)
                 fill_time = time.time() - fill_start
 
             # drop down to wetting height
             # counterpump faster to shrink the droplet
-            print('shrinking droplet')
+            print("shrinking droplet")
             shrink_flowrate = fill_rate * shrink_counter_ratio
             self.continuousFlow(-shrink_flowrate, channel=Channel.DUMP.value)
 
-
             shrink_start = time.time()
             if shrink_time is None:
-                input('*shrinking droplet*: press enter to continue...')
+                input("*shrinking droplet*: press enter to continue...")
             else:
                 time.sleep(shrink_time)
             shrink_time = time.time() - shrink_start
 
-            print('equalizing differential pumping rate')
+            print("equalizing differential pumping rate")
             self.continuousFlow(fill_rate, channel=Channel.SOURCE.value)
             self.continuousFlow(-fill_rate, channel=Channel.LOOP.value)
             self.continuousFlow(-fill_rate, channel=Channel.DUMP.value)
@@ -143,7 +146,7 @@ class Reglo(regloicclib.Pump):
         time.sleep(3)
 
         # purge...
-        print('purging solution')
+        print("purging solution")
         self.continuousFlow(6.0, channel=Channel.SOURCE.value)
         self.continuousFlow(-6.0, channel=Channel.LOOP.value)
         self.continuousFlow(-6.0, channel=Channel.DUMP.value)

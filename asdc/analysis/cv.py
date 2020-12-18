@@ -8,15 +8,15 @@ from asdc.analysis.echem_data import EchemData
 
 logger = logging.getLogger(__name__)
 
-class CVData(EchemData):
 
+class CVData(EchemData):
     @property
     def _constructor(self):
         return CVData
 
     @property
     def name(self):
-        return 'CV'
+        return "CV"
 
     def check_quality(self):
         """ CV heuristics: not implemented. """
@@ -25,8 +25,8 @@ class CVData(EchemData):
     def plot(self, fit=False):
         """ plot CV: current vs potential """
         # # super().plot('current', 'potential')
-        plt.plot(self['potential'], self['current'])
-        plt.xlabel('potential (V)')
-        plt.ylabel('current (A)')
+        plt.plot(self["potential"], self["current"])
+        plt.xlabel("potential (V)")
+        plt.ylabel("current (A)")
 
         plt.tight_layout()

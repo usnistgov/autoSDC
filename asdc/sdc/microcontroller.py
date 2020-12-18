@@ -7,14 +7,17 @@ from typing import Optional, Dict
 from asdc.sdc.utils import encode, decode
 from asdc.sdc.utils import flow_to_proportion, proportion_to_flow
 
-class MicrocontrollerInterface():
-    """ base interface for the equipment hooked up through a microcontroller board
+
+class MicrocontrollerInterface:
+    """base interface for the equipment hooked up through a microcontroller board
 
     This interface currently uses the [ndjson](https://github.com/ndjson/ndjson-spec) protocol to send commands to the board.
     """
 
-    def __init__(self, port: str = 'COM9', baudrate: int = 115200, timeout: float = 0.5):
-        """ Microcontroller interface
+    def __init__(
+        self, port: str = "COM9", baudrate: int = 115200, timeout: float = 0.5
+    ):
+        """Microcontroller interface
 
         Arguments:
             port: serial port for the microcontroller board
@@ -27,7 +30,7 @@ class MicrocontrollerInterface():
         self.timeout = timeout
 
     def eval(self, command: Dict, timeout: Optional[float] = None) -> str:
-        """ Microcontroller interface
+        """Microcontroller interface
 
         open a serial connection to the microcontroller, send an `ndjson` command,
         and fetch and return the result from the board.
@@ -45,10 +48,12 @@ class MicrocontrollerInterface():
         if timeout is None:
             timeout = self.timeout
 
-        with serial.Serial(port=self.port, baudrate=self.baudrate, timeout=timeout) as ser:
+        with serial.Serial(
+            port=self.port, baudrate=self.baudrate, timeout=timeout
+        ) as ser:
 
             # block until the whole command is echoed
-            ser.write(encode(json.dumps(command, separators=(',', ':'))))
+            ser.write(encode(json.dumps(command, separators=(",", ":"))))
             ack = ser.readline()
             print(decode(ack))
 
@@ -57,15 +62,18 @@ class MicrocontrollerInterface():
             return decode(response)
 
     def read(self):
-        with serial.Serial(port=self.port, baudrate=self.baudrate, timeout=self.timeout) as ser:
+        with serial.Serial(
+            port=self.port, baudrate=self.baudrate, timeout=self.timeout
+        ) as ser:
             response = ser.readlines()
             return decode(response)
+
 
 class Reflectometer(MicrocontrollerInterface):
     """ microcontroller interface for the [ThorLabs PDA36A2](https://www.thorlabs.com/thorproduct.cfm?partnumber=PDA36A2) """
 
     def collect(self, timeout: Optional[float] = None) -> float:
-        """ collect reading from laser reflectance setup
+        """collect reading from laser reflectance setup
 
         Arguments:
             timeout: override default serial interface timeout period (s)
@@ -86,6 +94,7 @@ class Reflectometer(MicrocontrollerInterface):
 
         return reflectance
 
+
 class PeristalticPump(MicrocontrollerInterface):
     """ microcontroller interface for the [ISMATEC peristaltic pump](http://www.ismatec.com/images/pdf/manuals/IP.pdf) """
 
@@ -97,13 +106,12 @@ class PeristalticPump(MicrocontrollerInterface):
         """ start pumping """
         return self.eval({"op": "stop"})
 
-
     def get_flow(self) -> float:
         """ get voltage encoding flow rate from the board... """
         return self.eval({"op": "get_flow"})
 
     def set_flow(self, rate: float):
-        """ set pumping rate to counterbalance a nominal target flow rate in mL/min
+        """set pumping rate to counterbalance a nominal target flow rate in mL/min
 
         This uses a rough calibration curve defined in [asdc.sdc.utils.flow_to_proportion][]
 
@@ -112,17 +120,18 @@ class PeristalticPump(MicrocontrollerInterface):
         """
 
         ismatec_proportion = flow_to_proportion(rate)
-        print(f'ismatec_proportion: {ismatec_proportion}')
+        print(f"ismatec_proportion: {ismatec_proportion}")
         self.eval({"op": "set_flow", "rate": ismatec_proportion})
 
     def set_flow_proportion(self, proportion: float):
-        """ set proportional flow rate
+        """set proportional flow rate
 
         Arguments:
             proportion: nominal flow rate as a fraction of the pump capacity in `(0, 1)`
 
         """
         self.eval({"op": "set_flow", "rate": proportion})
+
 
 class Light(MicrocontrollerInterface):
     """ microcontroller interface for the light (for illumination during optical characterization """
