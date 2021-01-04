@@ -749,26 +749,32 @@ class SDC:
         # droplet workflow -- start at zero
         logger.debug("starting droplet workflow")
 
+        # start surface flushing system
         self.reglo.set_rates({Channel.RINSE: 5.0, Channel.NEEDLE: -10.0})
         time.sleep(1)
 
         with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
 
             if self.cleanup_pause > 0:
+                cleanup_drain_rate = -10.0
+                cleanup_loop_rate = -cleanup_drain_rate / 2
                 logger.debug("cleaning up...")
-                self.reglo.set_rates({Channel.DRAIN: -10.0})
-                self.reglo.stop(Channel.LOOP)
+                self.reglo.set_rates(
+                    {Channel.DRAIN: cleanup_drain_rate, Channel.LOOP: cleanup_loop_rate}
+                )
 
                 if self.cleanup_pulse_duration > 0:
                     self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
                     time.sleep(self.cleanup_pulse_duration)
+                    self.reglo.continuousFlow(cleanup_drain_rate, channel=Channel.DRAIN)
 
-                    self.reglo.stop(channel=Channel.DRAIN)
-
+                # run the RINSE channel for only half the cleanup duration
+                # to allow the NEEDLE time to clean everything up
                 time.sleep(self.cleanup_pause / 2)
                 self.reglo.stop(Channel.RINSE)
+
                 time.sleep(self.cleanup_pause / 2)
-                self.reglo.stop(Channel.DRAIN)
+                self.reglo.stop((Channel.LOOP, Channel.DRAIN))
 
             height_difference = self.droplet_height - self.wetting_height
             height_difference = max(0, height_difference)
