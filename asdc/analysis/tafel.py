@@ -31,20 +31,25 @@ def fit_bv(df, w=0.2):
     # weights = np.square(1e-6 + np.abs(E - pars["E_oc"]))
     # weights = 1 / np.square(np.abs(logI))
     weights = 1 / np.exp(logI)
+    # weights = np.square(np.exp(logI))
 
-    for p in ("alpha_c", "alpha_a"):
-        pars[p].set(vary=False)
+    # for p in ("alpha_c", "alpha_a"):
+    #     pars[p].set(vary=False)
+    pars["i_corr"].set(max=10 ** (logI.max()))
 
-    bv_fit = bv.fit(logI, x=E, params=pars, weights=weights)
+    bv_fit = bv.fit(logI, x=E, params=pars, weights=weights, method="lbfgs")
+    return bv_fit
 
     refinement_pars = bv_fit.params
     # refinement_pars["i_corr"].set(max=10**(logI.max()))
     refinement_pars["E_oc"].set(vary=False)
     for p in ("alpha_c", "alpha_a"):
-        refinement_pars[p].set(vary=True)
+        refinement_pars[p].set(vary=False)
 
     weights = np.square(np.exp(logI))
-    r = bv_fit.model.fit(logI, x=E, params=refinement_pars, weights=weights)
+    r = bv_fit.model.fit(
+        logI, x=E, params=refinement_pars, weights=weights, method="lbfgsb"
+    )
 
     return r
 

@@ -116,6 +116,8 @@ class ButlerVolmerLogModel(lmfit.Model):
 
     def _set_paramhints_prefix(self):
         self.set_param_hint("i_corr", min=0)
+        self.set_param_hint("alpha_a", min=0)
+        self.set_param_hint("alpha_c", min=0)
         # self.set_param_hint("alpha_c", min=0.01)
         # self.set_param_hint("alpha_c", vary=False)
         # self.set_param_hint("alpha_a", min=0.1, vary=False)
@@ -150,7 +152,8 @@ class ButlerVolmerLogModel(lmfit.Model):
         E, logI = self.slice(data, E_oc_guess)
 
         # guess corrosion current
-        i_corr = np.max(10 ** logI[np.isfinite(logI)])
+        i_corr = np.max(10 ** logI[np.isfinite(logI)]) / 20
+        # i_corr = np.max(10 ** logI[np.isfinite(logI)]) / 2
 
         # guess tafel constants -- fit linear models to the log current away from the OCP cusp
         # anodic branch first:
@@ -185,7 +188,7 @@ class ButlerVolmerLogModel(lmfit.Model):
         # mask[np.abs(deriv) > th] = 0
 
         # mask[logI < -4.1] = 0
-        # mask[np.argsort(logI)[:2]] = 0
+        mask[np.argsort(logI)[:2]] = 0
 
         return E[mask], logI[mask]
 
