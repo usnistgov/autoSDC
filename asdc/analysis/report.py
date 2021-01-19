@@ -68,7 +68,7 @@ def process_lpr(experiments, dir="data", r2_thresh=0.95):
 def process_tafel(experiment, dir="data"):
 
     tafel = analysis.TafelData(pd.read_csv(os.path.join(dir, experiment["datafile"])))
-    tafel.clip_current_to_range()
+    # tafel.clip_current_to_range()
 
     model = tafel.fit()
     return {"tafel_E_oc": tafel.ocp, "i_corr": tafel.i_corr}

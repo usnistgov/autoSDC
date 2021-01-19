@@ -116,8 +116,8 @@ class ButlerVolmerLogModel(lmfit.Model):
 
     def _set_paramhints_prefix(self):
         self.set_param_hint("i_corr", min=0)
-        self.set_param_hint("alpha_a", min=0)
-        self.set_param_hint("alpha_c", min=0)
+        self.set_param_hint("alpha_a", min=0, max=50)
+        self.set_param_hint("alpha_c", min=0, max=50)
         # self.set_param_hint("alpha_c", min=0.01)
         # self.set_param_hint("alpha_c", vary=False)
         # self.set_param_hint("alpha_a", min=0.1, vary=False)
@@ -188,7 +188,8 @@ class ButlerVolmerLogModel(lmfit.Model):
         # mask[np.abs(deriv) > th] = 0
 
         # mask[logI < -4.1] = 0
-        mask[np.argsort(logI)[:2]] = 0
+        # mask[np.argsort(logI)[:2]] = 0
+        mask[np.argsort(logI)[:1]] = 0
 
         return E[mask], logI[mask]
 
