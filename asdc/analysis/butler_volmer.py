@@ -144,8 +144,9 @@ class ButlerVolmerLogModel(lmfit.Model):
         mask = np.isnan(I)
 
         # guess open circuit potential: minimum log current
-        I[mask] = np.inf
-        id_oc = np.argmin(np.abs(I))
+        I[mask] = -np.inf
+        # id_oc = np.argmin(np.abs(I))
+        id_oc = np.sign(I).argmax()
         E_oc_guess = E[id_oc]
         I[mask] = np.nan
 
@@ -157,13 +158,22 @@ class ButlerVolmerLogModel(lmfit.Model):
 
         # guess tafel constants -- fit linear models to the log current away from the OCP cusp
         # anodic branch first:
-        s = (data.potential > E_oc_guess + 0.1) & (data.potential < E_oc_guess + 0.2)
+        s = (
+            (data.potential > E_oc_guess + 0.1)
+            & (data.potential < E_oc_guess + 0.2)
+            & np.isfinite(data.current)
+        )
         alpha_a, *rest = stats.linregress(
             data.potential[s], np.log(np.abs(data.current[s]))
         )
 
         # cathodic branch:
-        s = (data.potential > E_oc_guess - 0.2) & (data.potential < E_oc_guess - 0.1)
+        s = (
+            (data.potential > E_oc_guess - 0.2)
+            & (data.potential < E_oc_guess - 0.1)
+            & np.isfinite(data.current)
+        )
+
         alpha_c, *rest = stats.linregress(
             data.potential[s], np.log(np.abs(data.current[s]))
         )

@@ -68,7 +68,7 @@ def process_lpr(experiments, dir="data", r2_thresh=0.95):
 def process_tafel(experiment, dir="data"):
 
     tafel = analysis.TafelData(pd.read_csv(os.path.join(dir, experiment["datafile"])))
-    # tafel.clip_current_to_range()
+    tafel.clip_current_to_range()
 
     model = tafel.fit()
     return {"tafel_E_oc": tafel.ocp, "i_corr": tafel.i_corr}
@@ -134,6 +134,9 @@ def load_session(db_path: str, verbose: bool = False) -> pd.DataFrame:
         for location in db["location"]:
             if verbose:
                 print(location)
-            records.append(process_row(location, db, dir=dir))
+            try:
+                records.append(process_row(location, db, dir=dir))
+            except ValueError:
+                print(f"fail {location}")
 
     return pd.DataFrame(records)
