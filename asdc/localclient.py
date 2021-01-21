@@ -1033,10 +1033,14 @@ class SDC:
             header = instructions[0]
             instructions = instructions[1:]
 
-        x_combi, y_combi = header.get("x"), header.get("y")
+        x_combi, y_combi = header.get("x", None), header.get("y", None)
 
         flow_instructions = instructions[0]
         self.establish_droplet(flow_instructions, x_combi, y_combi)
+
+        # hack? set wafer coords to zero if they are not specified
+        if x_combi is None and y_combi is None:
+            x_combi, y_combi = 0, 0
 
         meta = {
             "intent": intent,
