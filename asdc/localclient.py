@@ -680,6 +680,41 @@ class SDC:
         logger.debug(f"local vars: {locals}")
         return
 
+    def cleanup_droplet(self):
+        """ pick up the cell head and do a rinse and clean. """
+        pulse_flowrate = -10.0
+
+        # start surface flushing system
+        self.reglo.set_rates({Channel.RINSE: 5.0, Channel.NEEDLE: -10.0})
+        time.sleep(1)
+
+        # lift up the cell; don't set it back down
+        with sdc.position.controller() as pos:
+            pos.update_z(delta=abs(self.wetting_height))
+
+        if self.cleanup_pause > 0:
+            cleanup_drain_rate = -10.0
+            cleanup_loop_rate = -cleanup_drain_rate / 2
+            logger.debug("cleaning up...")
+            self.reglo.set_rates(
+                {Channel.DRAIN: cleanup_drain_rate, Channel.LOOP: cleanup_loop_rate}
+            )
+
+            if self.cleanup_pulse_duration > 0:
+                self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
+                time.sleep(self.cleanup_pulse_duration)
+                self.reglo.continuousFlow(cleanup_drain_rate, channel=Channel.DRAIN)
+
+            # run the RINSE channel for only half the cleanup duration
+            # to allow the NEEDLE time to clean everything up
+            time.sleep(self.cleanup_pause / 2)
+            self.reglo.stop(Channel.RINSE)
+
+            time.sleep(self.cleanup_pause / 2)
+            self.reglo.stop((Channel.LOOP, Channel.DRAIN))
+
+        return
+
     def establish_droplet(
         self,
         flow_instructions: Dict = {},
