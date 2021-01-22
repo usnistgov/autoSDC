@@ -179,7 +179,7 @@ class ButlerVolmerLogModel(lmfit.Model):
         )
 
         pars = self.make_params(
-            E_oc=E_oc_guess, i_corr=i_corr, alpha_c=abs(alpha_c), alpha_a=abs(alpha_a)
+            E_oc=E_oc_guess, i_corr=i_corr, alpha_c=abs(alpha_c)*2, alpha_a=abs(alpha_a)*2
         )
         return lmfit.models.update_param_vals(pars, self.prefix, **kwargs)
 

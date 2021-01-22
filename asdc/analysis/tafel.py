@@ -37,7 +37,7 @@ def fit_bv(df, w=0.2):
         pars[p].set(vary=False)
     pars["i_corr"].set(max=10 ** (logI.max()))
 
-    bv_fit = bv.fit(logI, x=E, params=pars, method="leastsq")%, weights=weights
+    bv_fit = bv.fit(logI, x=E, params=pars, method="leastsq")#, weights=weights
 
     refinement_pars = bv_fit.params
     # refinement_pars["i_corr"].set(max=10**(logI.max()))
@@ -49,7 +49,7 @@ def fit_bv(df, w=0.2):
 
     r = bv_fit.model.fit(
         logI, x=E, params=refinement_pars, method="lbfgsb"
-    )%, weights=weights
+    )#, weights=weights
 
     return r
 
