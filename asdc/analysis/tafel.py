@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from asdc.analysis.echem_data import EchemData
 from asdc.analysis import butler_volmer
 
+import tafel_fitter.tafel as tafelfit
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,7 +74,7 @@ class TafelData(EchemData):
         logger.info(f"Tafel: OCP: {ocp}, i_corr: {i_corr}")
         return current_crosses_zero(self)
 
-    def fit(self, w=0.2):
+    def fit_bv(self, w=0.2):
         """ fit a butler volmer model to Tafel data """
         self.model = fit_bv(self, w=w)
 
@@ -85,6 +87,22 @@ class TafelData(EchemData):
 
         return self.model
 
+    def fit(self):
+        self.ocp = tafelfit.estimate_ocp(
+            self["potential"].values, self["current"].values
+        )
+
+        u = self["potential"].values - self.ocp
+        tafel_data, fits = tafelfit.tafel_fit(
+            u, self["current"].values, windows=np.arange(0.025, 0.25, 0.001)
+        )
+
+        self.tafel_data = tafel_data
+        self.i_corr = (tafel_data["cathodic"]["j0"] + tafel_data["anodic"]["j0"]) / 2
+
+        self.alpha_c = tafel_data["cathodic"]["dlog(j)/dV"]
+        self.alpha_a = tafel_data["anodic"]["dlog(j)/dV"]
+
     def evaluate_model(self, V_mod=None):
         """ evaluate butler-volmer model on regular grid """
         if V_mod is None:
@@ -96,6 +114,56 @@ class TafelData(EchemData):
         return V_mod, I_mod
 
     def plot(self, fit=False, w=0.2):
+        """ Tafel plot: log current against the potential """
+        # # super().plot('current', 'potential')
+        plt.plot(self["potential"], np.log10(np.abs(self["current"])))
+        plt.xlabel("potential (V)")
+        plt.ylabel("log current (A)")
+        ylim = plt.ylim()
+        xlim = plt.xlim()
+
+        if fit:
+            ylim = plt.ylim()
+            self.fit()
+            overpotential = self["potential"] - self.ocp
+
+            lims = plt.gca().get_ylim()
+
+            colors = ["g", "m"]
+            for idx, (segment, best_fit) in enumerate(self.tafel_data.items()):
+
+                plt.plot(
+                    self["potential"].values,
+                    np.log10(best_fit["j0"]) + best_fit["dlog(j)/dV"] * overpotential,
+                    color=colors[idx],
+                )
+                plt.axhline(
+                    np.log10(best_fit["j0"]), label=f"j0 {segment}", color=colors[idx]
+                )
+                plt.axvline(
+                    self.ocp + best_fit["window_min"],
+                    color="k",
+                    alpha=0.2,
+                    linestyle="--",
+                )
+                plt.axvline(
+                    self.ocp + best_fit["window_max"],
+                    color="k",
+                    alpha=0.2,
+                    linestyle="--",
+                )
+
+            plt.ylim(*lims)
+
+            log_i_corr = np.log10(self.i_corr)
+            plt.axhline(log_i_corr, color="k", alpha=0.5, linewidth=0.5)
+
+            plt.ylim(ylim)
+            plt.xlim(xlim)
+
+        plt.tight_layout()
+
+    def plot_bv(self, fit=False, w=0.2):
         """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
         plt.plot(self["potential"], np.log10(np.abs(self["current"])))
