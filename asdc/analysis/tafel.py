@@ -91,15 +91,16 @@ class TafelData(EchemData):
 
         return self.model
 
-    def fit(self):
+    def fit(self, window=(0.025, 0.25)):
         isna = np.isnan(self["current"].values)
         potential = self["potential"].values[~isna]
         current = self["current"].values[~isna]
         self.ocp = tafelfit.estimate_ocp(potential, current)
 
         u = potential - self.ocp
+        wmin, wmax = window
         tafel_data, fits = tafelfit.tafel_fit(
-            u, current, windows=np.arange(0.025, 0.25, 0.001)
+            u, current, windows=np.arange(wmin, wmax, 0.001)
         )
 
         self.tafel_data = tafel_data
@@ -118,7 +119,7 @@ class TafelData(EchemData):
         I_mod = self.model.eval(self.model.params, x=V_mod)
         return V_mod, I_mod
 
-    def plot(self, fit=False, w=0.2):
+    def plot(self, fit=False, w=0.2, window=(0.025, 0.25)):
         """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
         plt.plot(self["potential"], np.log10(np.abs(self["current"])))
@@ -129,7 +130,7 @@ class TafelData(EchemData):
 
         if fit:
             ylim = plt.ylim()
-            self.fit()
+            self.fit(window=window)
             overpotential = self["potential"] - self.ocp
 
             lims = plt.gca().get_ylim()
