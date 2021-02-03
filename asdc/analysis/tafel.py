@@ -57,6 +57,10 @@ def fit_bv(df, w=0.2):
 
 
 class TafelData(EchemData):
+
+    # normal properties
+    _metadata = ["tafel_data", "ocp", "i_corr", "alpha_c", "alpha_a"]
+
     @property
     def _constructor(self):
         return TafelData
@@ -88,13 +92,14 @@ class TafelData(EchemData):
         return self.model
 
     def fit(self):
-        self.ocp = tafelfit.estimate_ocp(
-            self["potential"].values, self["current"].values
-        )
+        isna = np.isnan(self["current"].values)
+        potential = self["potential"].values[~isna]
+        current = self["current"].values[~isna]
+        self.ocp = tafelfit.estimate_ocp(potential, current)
 
-        u = self["potential"].values - self.ocp
+        u = potential - self.ocp
         tafel_data, fits = tafelfit.tafel_fit(
-            u, self["current"].values, windows=np.arange(0.025, 0.25, 0.001)
+            u, current, windows=np.arange(0.025, 0.25, 0.001)
         )
 
         self.tafel_data = tafel_data
