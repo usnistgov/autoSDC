@@ -1,13 +1,11 @@
 import logging
-import numpy as np
-import pandas as pd
-from scipy import stats
-import matplotlib.pyplot as plt
 
-from asdc.analysis.echem_data import EchemData
-from asdc.analysis import butler_volmer
+import matplotlib.pyplot as plt
+import numpy as np
 
 import tafel_fitter.tafel as tafelfit
+from asdc.analysis import butler_volmer
+from asdc.analysis.echem_data import EchemData
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +98,7 @@ class TafelData(EchemData):
         u = potential - self.ocp
         wmin, wmax = window
         tafel_data, fits = tafelfit.tafel_fit(
-            u, current, windows=np.arange(wmin, wmax, 0.001)
+            u, current, windows=np.arange(wmin, wmax, 0.001), clip_inflection=True
         )
 
         self.tafel_data = tafel_data
