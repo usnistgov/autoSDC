@@ -136,6 +136,32 @@ class PotentiostaticArgs(SDCArgs):
 
 
 @dataclass
+class PotentiodynamicArgs(SDCArgs):
+    initial_potential: float = 0.0
+    versus_initial: str = "VS REF"
+    final_potential: float = 0.0
+    versus_final: str = "VS REF"
+    step_height: float = 0.1
+    step_time: float = 1.0
+    limit_1_type: Optional[str] = None
+    limit_1_direction: str = "<"
+    limit_1_value: float = 0
+    limit_2_type: Optional[str] = None
+    limit_2_direction: str = "<"
+    limit_2_value: float = 0
+    current_range: str = "AUTO"
+    acquisition_mode: str = "AUTO"
+    electrometer: str = "AUTO"
+    e_filter: str = "AUTO"
+    i_filter: str = "AUTO"
+    leave_cell_on: str = "YES"
+    cell: str = "EXTERNAL"
+    enable_ir_compensation: str = "DISABLED"
+    bandwidth: str = "AUTO"
+    low_current_interface_bandwidth: str = "AUTO"
+
+
+@dataclass
 class LSVArgs(SDCArgs):
     initial_potential: float = 0.0
     versus_initial: str = "VS REF"

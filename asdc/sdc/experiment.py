@@ -153,6 +153,47 @@ class Potentiostatic(PotentiostaticArgs):
 
 
 @dataclass
+class Potentiodynamic(PotentiodynamicArgs):
+    """potentiodynamic
+
+    Attributes:
+        initial_potential (float): starting potential (V)
+        final_potential (float): ending potential (V)
+        step_height (float): scan step size (V)
+        step_time (float): scan point duration (s)
+
+    Example:
+        ```json
+        {"op": "potentiodynamic", "initial_potential": 0.0, "final_potential": 1.0, "step_height": 0.001, "step_time": 0.8}
+        ```
+    """
+
+    n_points: int = 3000
+    duration: int = 10
+    versus: str = "VS REF"
+    stop_execution: bool = False
+    setup_func: str = "AddPotentiodynamic"
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
+
+    def getargs(self):
+
+        # override any default arguments...
+        args = self.__dict__
+        args["versus_initial"] = args["versus_final"] = args["versus"]
+
+        if args["filter"] is not None:
+            args["e_filter"] = args["i_filter"] = args["filter"]
+
+        args = PotentiodynamicArgs.from_dict(args)
+        return args.format()
+
+    def marshal(self, echem_data: Dict[str, Sequence[float]]):
+        return analysis.PotentiodynamicData(echem_data)
+
+
+@dataclass
 class LSV(LSVArgs):
     """linear scan voltammetry
 
@@ -403,5 +444,6 @@ potentiostat_ops = {
     "corrosion_oc": CorrosionOpenCircuit,
     "open_circuit": OpenCircuit,
     "potentiostatic": Potentiostatic,
+    "potentiodynamic": Potentiodynamic,
     "staircase_lsv": StaircaseLSV,
 }
