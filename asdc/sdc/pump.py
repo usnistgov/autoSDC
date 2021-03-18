@@ -270,6 +270,12 @@ class PumpArray:
 
             return level
 
+        volume_remaining = {
+            list(solution.keys())[0]: 1000
+            for pump_id, solution in self.solutions.items()
+        }
+        return volume_remaining
+
         volume_remaining = {}
         with serial.Serial(
             port=self.port, baudrate=self.baud, timeout=self.timeout
@@ -282,6 +288,7 @@ class PumpArray:
                 r = self.eval(
                     "tvolume", pump_id=pump_id, check_response=True, fast=True, ser=ser
                 )
+
                 print(r.decode())
                 logger.debug(f"tvolume: {r.decode()}")
                 target_volume = decode_level(r)
