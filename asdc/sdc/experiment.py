@@ -151,6 +151,9 @@ class Potentiostatic(PotentiostaticArgs):
         args = PotentiostaticArgs.from_dict(args)
         return args.format()
 
+    def marshal(self, echem_data: Dict[str, Sequence[float]]):
+        return analysis.PotentiostaticData(echem_data)
+
 
 @dataclass
 class Potentiodynamic(PotentiodynamicArgs):
