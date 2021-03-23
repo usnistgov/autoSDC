@@ -394,8 +394,8 @@ class CyclicVoltammetry(CyclicVoltammetryArgs):
 
     Attributes:
         initial_potential (float): (V)
-        vertex_potential_1 (float): (V)
-        vertex_potential_2 (float): (V)
+        vertex_1_potential (float): (V)
+        vertex_2_potential (float): (V)
         final_potential (float) : (V)
         scan_rate (float): scan rate in (V/s)
         cycles (int): number of cycles

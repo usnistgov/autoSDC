@@ -70,7 +70,9 @@ class SDCArgs:
             return
 
         # update any potential that is relative to "VS HOLD"
-        to_update = [key for key, value in self.as_dict() if value == "VS HOLD"]
+        to_update = [
+            key for key, value in self.as_dict().values() if value == "VS HOLD"
+        ]
 
         for versus_key in to_update:
 
