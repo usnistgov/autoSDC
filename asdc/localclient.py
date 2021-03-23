@@ -265,6 +265,11 @@ class SDC:
             self.reflectometer = None
             self.light = None
 
+        # keep track of OCP trace value to run relative scans
+        # without having to chain ametek backend calls explicitly
+        # better to chain experiments and split them at serialization time?
+        self.ocp_hold_value = None
+
     def get_last_known_position(self, x_versa, y_versa, resume=False):
         """set up initial cell reference relative to a previous database entry if possible
 
@@ -1061,6 +1066,9 @@ class SDC:
         # heuristic check for experimental error signals?
         """
 
+        # reset OCP reference value
+        self.ocp_hold_value = None
+
         # check for an instruction group name/intent
         intent = instructions[0].get("intent")
 
@@ -1115,6 +1123,11 @@ class SDC:
                     if experiment is None:
                         continue
 
+                    # set up data-dependent experiments?
+                    # check if voltage reference is vs hold (good name for this?)
+                    # load values from db/disk -- alternatively previous experiment sets it?
+                    experiment.update_relative_scan(self.ocp_hold_value)
+
                     metadata = {
                         "op": opname,
                         "location_id": location_id,
@@ -1127,6 +1140,11 @@ class SDC:
                         status = results.check_quality()
                     except Exception as err:
                         logger.error(f"data check: {err}")
+
+                    if experiment.name == "OpenCircuit":
+                        # record open circuit potential after hold for
+                        # reference by downstream experiments
+                        self.ocp_hold_value = results["potential"].iloc[-5:].mean()
 
                     metadata.update(m)
 
