@@ -25,8 +25,8 @@ class PotentiostaticData(EchemData):
     def plot(self, fit=False):
         """ plot Potentiostatic: current vs potential """
         # # super().plot('current', 'potential')
-        plt.plot(self["potential"], self["current"])
-        plt.xlabel("potential (V)")
+        plt.plot(self["elapsed_time"], self["current"])
+        plt.xlabel("elapsed time (s)")
         plt.ylabel("current (A)")
 
         plt.tight_layout()
