@@ -23,7 +23,11 @@ def current_crosses_zero(df):
     return success
 
 
-def fit_bv(df, w=0.2):
+def fit_bv(df, w=0.2, tafeldata=None):
+    """fit butler volmer model to tafel curve.
+
+    If tafeldata is supplied, constrain based on tafel-fitter results
+    """
     bv = butler_volmer.ButlerVolmerLogModel()
     pars = bv.guess(df)
     E, logI = bv.slice(df, pars["E_oc"], w=w)
@@ -36,6 +40,23 @@ def fit_bv(df, w=0.2):
     for p in ("alpha_c", "alpha_a"):
         pars[p].set(vary=False)
     pars["i_corr"].set(max=10 ** (logI.max()))
+
+    if tafeldata is not None:
+        vmin = min(
+            tafeldata["cathodic"]["window_min"], tafeldata["anodic"]["window_min"]
+        )
+        vmax = max(
+            tafeldata["cathodic"]["window_max"], tafeldata["anodic"]["window_max"]
+        )
+        U = E - pars["E_oc"]
+        slc = (U > vmin) & (U < vmax)
+        E, logI = E[slc], logI[slc]
+        print(E.shape)
+        weights = np.ones_like(logI)  # / np.exp(logI)
+        i_corr_estimates = (tafeldata["cathodic"]["j0"], tafeldata["anodic"]["j0"])
+        pars["i_corr"].set(min=min(i_corr_estimates), max=max(i_corr_estimates))
+
+    print(pars)
 
     bv_fit = bv.fit(logI, x=E, params=pars, weights=weights, method="leastsq")
 
@@ -52,6 +73,31 @@ def fit_bv(df, w=0.2):
     )
 
     return r
+
+
+def plot_bv(df, model):
+
+    # evaluate and plot model
+    V = np.linspace(df.potential.min() - 0.1, df.potential.max() + 0.1, 500)
+
+    I_mod = model.eval(model.params, x=V)
+
+    vals = model.best_values
+    overpotential = V - vals["E_oc"]
+    bc = vals["alpha_c"] / np.log(10)
+    ba = vals["alpha_a"] / np.log(10)
+    log_i_corr = np.log10(vals["i_corr"])
+
+    plt.plot(V, I_mod, linestyle="--", color="k", alpha=0.5)
+    plt.axhline(log_i_corr, color="k", alpha=0.5, linewidth=0.5)
+
+    cpt_style = dict(color="k", alpha=0.5, linewidth=0.5)
+
+    # cathodic branch
+    plt.plot(V, -overpotential * bc + log_i_corr, **cpt_style)
+
+    # anodic branch
+    plt.plot(V, overpotential * ba + log_i_corr, **cpt_style)
 
 
 class TafelData(EchemData):
@@ -93,7 +139,7 @@ class TafelData(EchemData):
         isna = np.isnan(self["current"].values)
         potential = self["potential"].values[~isna]
         current = self["current"].values[~isna]
-        self.ocp = tafelfit.estimate_ocp(potential, current)
+        self.ocp = tafelfit.estimate_ocp(potential, current, w=3)
 
         u = potential - self.ocp
         wmin, wmax = window
