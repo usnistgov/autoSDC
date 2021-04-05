@@ -103,7 +103,7 @@ def plot_bv(df, model):
 class TafelData(EchemData):
 
     # normal properties
-    _metadata = ["tafel_data", "ocp", "i_corr", "alpha_c", "alpha_a"]
+    _metadata = ["tafel_data", "tafel_fits", "ocp", "i_corr", "alpha_c", "alpha_a"]
 
     @property
     def _constructor(self):
@@ -135,7 +135,7 @@ class TafelData(EchemData):
 
         return self.model
 
-    def fit(self, window=(0.025, 0.25)):
+    def fit(self, window=(0.025, 0.25), truncate=False):
         isna = np.isnan(self["current"].values)
         potential = self["potential"].values[~isna]
         current = self["current"].values[~isna]
@@ -144,10 +144,11 @@ class TafelData(EchemData):
         u = potential - self.ocp
         wmin, wmax = window
         tafel_data, fits = tafelfit.tafel_fit(
-            u, current, windows=np.arange(wmin, wmax, 0.001), clip_inflection=True
+            u, current, windows=np.arange(wmin, wmax, 0.001), clip_inflection=truncate
         )
 
         self.tafel_data = tafel_data
+        self.tafel_fits = fits
         self.i_corr = (tafel_data["cathodic"]["j0"] + tafel_data["anodic"]["j0"]) / 2
 
         self.alpha_c = tafel_data["cathodic"]["dlog(j)/dV"]
@@ -163,7 +164,19 @@ class TafelData(EchemData):
         I_mod = self.model.eval(self.model.params, x=V_mod)
         return V_mod, I_mod
 
-    def plot(self, fit=False, w=0.2, window=(0.025, 0.25)):
+    def plot_all_fits(self):
+        colors = ["g", "m"]
+        overpotential = self["potential"] - self.ocp
+        for color, (segment, rows) in zip(colors, self.tafel_fits.items()):
+            for row_id, row in rows.iterrows():
+                plt.plot(
+                    self["potential"].values,
+                    np.log10(row["j0"]) + row["dlog(j)/dV"] * overpotential,
+                    color=color,
+                    alpha=0.5,
+                )
+
+    def plot(self, fit=False, w=0.2, window=(0.025, 0.25), plot_all=False):
         """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
         plt.plot(self["potential"], np.log10(np.abs(self["current"])))
@@ -202,6 +215,8 @@ class TafelData(EchemData):
                     alpha=0.2,
                     linestyle="--",
                 )
+            if plot_all:
+                self.plot_all_fits()
 
             plt.ylim(*lims)
 
