@@ -135,7 +135,7 @@ class TafelData(EchemData):
 
         return self.model
 
-    def fit(self, window=(0.025, 0.25), truncate=False):
+    def fit(self, window=(0.025, 0.25), truncate=False, median=True):
         isna = np.isnan(self["current"].values)
         potential = self["potential"].values[~isna]
         current = self["current"].values[~isna]
@@ -149,10 +149,20 @@ class TafelData(EchemData):
 
         self.tafel_data = tafel_data
         self.tafel_fits = fits
-        self.i_corr = (tafel_data["cathodic"]["j0"] + tafel_data["anodic"]["j0"]) / 2
 
-        self.alpha_c = tafel_data["cathodic"]["dlog(j)/dV"]
-        self.alpha_a = tafel_data["anodic"]["dlog(j)/dV"]
+        if median:
+            self.i_corr = (
+                fits["cathodic"]["j0"].median() + fits["anodic"]["j0"].median()
+            ) / 2
+            self.alpha_c = fits["cathodic"]["dlog(j)/dV"].median()
+            self.alpha_a = fits["anodic"]["dlog(j)/dV"].median()
+
+        else:
+            self.i_corr = (
+                tafel_data["cathodic"]["j0"] + tafel_data["anodic"]["j0"]
+            ) / 2
+            self.alpha_c = tafel_data["cathodic"]["dlog(j)/dV"]
+            self.alpha_a = tafel_data["anodic"]["dlog(j)/dV"]
 
     def evaluate_model(self, V_mod=None):
         """ evaluate butler-volmer model on regular grid """
@@ -175,6 +185,15 @@ class TafelData(EchemData):
                     color=color,
                     alpha=0.5,
                 )
+
+            plt.plot(
+                self["potential"].values,
+                np.log10(np.median(rows["j0"]))
+                + np.median(rows["dlog(j)/dV"]) * overpotential,
+                color="k",
+                linestyle="--",
+                zorder=1000,
+            )
 
     def plot(self, fit=False, w=0.2, window=(0.025, 0.25), plot_all=False):
         """ Tafel plot: log current against the potential """
