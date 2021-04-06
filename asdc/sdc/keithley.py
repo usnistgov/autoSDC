@@ -1,4 +1,5 @@
 """Keithley 2450 interface -- extends qcodes Keithley2450."""
+import json
 import time
 
 import numpy as np
@@ -21,6 +22,24 @@ class Keithley(Keithley2450):
         """Extend qcodes Keithley2450 interface."""
         super().__init__(name=name, address=address, timeout=timeout)
         self.reset()
+
+    def run(self, experiment):
+        """Just wrap around constant current for now"""
+
+        argstring = experiment.getargs()
+        metadata = {"timestamp_start": datetime.now(), "parameters": argstring}
+
+        results = self.constant_current(
+            experiment.potential, experiment.duration, experiment.interval
+        )
+
+        metadata["timestamp_end"] = datetime.now()
+        metadata["error_codes"] = json.dumps([])
+
+        # cast to EChemData type
+        results = experiment.marshal(results)
+
+        return results, metadata
 
     def constant_current(self, setpoint: float, duration: float, interval: float):
         """Apply constant current `setpoint` (A) for `duration` (s).
@@ -78,7 +97,7 @@ class Keithley(Keithley2450):
             columns={
                 "relative_time": "elapsed_time",
                 "source_value": "current",
-                "measurement": "voltage",
+                "measurement": "potential",
             },
             inplace=True,
         )

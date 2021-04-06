@@ -29,16 +29,55 @@ def from_command(instruction):
     # don't mangle the original dictionary at all
     instruction_data = instruction.copy()
 
-    opname = instruction_data.get("op")
+    opname = instruction_data.pop("op")
+    instrument = instruction_data.pop("instrument", "versastat")
 
     Expt = potentiostat_ops.get(opname)
 
     if Expt is None:
         return None
 
-    del instruction_data["op"]
+    return Expt(**instruction_data), instrument
 
-    return Expt(**instruction_data)
+
+@dataclass
+class ConstantCurrent(SDCArgs):
+    """constant current experiment
+
+    Attributes:
+        potential (float): potential (V)
+        duration (float): scan length (s)
+        interval (float): scan point duration (s)
+
+    Example:
+        ```json
+        {
+          "op": "constant_current",
+          "instrument": "keithley",
+          "potential": -0.5,
+          "duration": 120,
+          "interval": 0.5
+        }
+        ```
+    """
+
+    potential: float = 0.0
+    duration: float = 120
+    interval: float = 1.0
+
+    stop_execution: bool = False
+    setup_func: None
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
+
+    def getargs(self):
+        # override any default arguments...
+        args = self.__dict__
+        return json.dumps(args)
+
+    def marshal(self, echem_data: Dict[str, Sequence[float]]):
+        return analysis.ConstantCurrentData(echem_data)
 
 
 @dataclass
@@ -449,4 +488,5 @@ potentiostat_ops = {
     "potentiostatic": Potentiostatic,
     "potentiodynamic": Potentiodynamic,
     "staircase_lsv": StaircaseLSV,
+    "constant_current": ConstantCurrent,
 }
