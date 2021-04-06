@@ -125,19 +125,35 @@ class SDC:
         self.logfile = logfile
         self.configvalues = config
 
+        self.keithley = sdc.keithley.Keithley2450()
+
+        # stage initialization
+        self.speed = config.get("speed", 1e-3)
+
         with sdc.position.controller(ip="192.168.10.11") as pos:
             initial_versastat_position = pos.current_position()
             logger.debug(f"initial vs position: {initial_versastat_position}")
 
         self.initial_versastat_position = initial_versastat_position
         self.initial_combi_position = pd.Series(config["initial_combi_position"])
+        self.v_position = self.initial_versastat_position
+        self.c_position = self.initial_combi_position
+        self.initialize_z_position = config.get("initialize_z_position", False)
+
+        # which wafer direction is aligned with position controller +x direction?
+        self.frame_orientation = config.get("frame_orientation", "-y")
+
         self.step_height = config.get("step_height", 0.0)
         self.cleanup_pause = config.get("cleanup_pause", 0)
         self.cleanup_pulse_duration = config.get("cleanup_pulse_duration", 0)
         self.cell = config.get("cell", "INTERNAL")
-        self.speed = config.get("speed", 1e-3)
+
+        # logging / operations config
         self.data_dir = config.get("data_dir", os.getcwd())
         self.figure_dir = config.get("figure_dir", os.getcwd())
+
+        self.test = config.get("test", False)
+        self.test_cell = config.get("test_cell", False)
         self.confirm = config.get("confirm", True)
         self.confirm_experiment = config.get("confirm_experiment", True)
         self.notify = config.get("notify_slack", True)
@@ -174,17 +190,7 @@ class SDC:
         self.shrink_counter_ratio = config.get("shrink_counter_ratio", 1.3)
         self.shrink_time = config.get("shrink_time", 2)
 
-        self.test = config.get("test", False)
-        self.test_cell = config.get("test_cell", False)
         self.solutions = config.get("solutions")
-
-        self.v_position = self.initial_versastat_position
-        self.c_position = self.initial_combi_position
-
-        self.initialize_z_position = config.get("initialize_z_position", False)
-
-        # which wafer direction is aligned with position controller +x direction?
-        self.frame_orientation = config.get("frame_orientation", "-y")
 
         self.db_file = os.path.join(self.data_dir, config.get("db_file", "testb.db"))
         self.db = dataset.connect(f"sqlite:///{self.db_file}")
@@ -255,7 +261,6 @@ class SDC:
             self.phmeter = sdc.orion.PHMeter(orion_port, zmq_pub=zmq_pub)
         except:
             logger.exception("could not connect to the Orion pH meter")
-            # raise
 
         try:
             self.reflectometer = sdc.microcontroller.Reflectometer(port=adafruit_port)
@@ -1118,7 +1123,7 @@ class SDC:
 
                     logger.info(f"running {opname}")
 
-                    experiment = sdc.experiment.from_command(instruction)
+                    experiment, instrument = sdc.experiment.from_command(instruction)
 
                     if experiment is None:
                         continue
@@ -1134,7 +1139,10 @@ class SDC:
                         "datafile": f"{basename}_{sequence_id}_{opname}.csv",
                     }
 
-                    results, m = pstat.run(experiment)
+                    if instrument == "versastat":
+                        results, m = pstat.run(experiment)
+                    elif instrument == "keithley":
+                        results, m = self.keithley.run(experiment)
 
                     try:
                         status = results.check_quality()
