@@ -45,7 +45,7 @@ class ConstantCurrent(SDCArgs):
     """constant current experiment
 
     Attributes:
-        potential (float): potential (V)
+        current (float): setpoint (A)
         duration (float): scan length (s)
         interval (float): scan point duration (s)
 
@@ -54,14 +54,14 @@ class ConstantCurrent(SDCArgs):
         {
           "op": "constant_current",
           "instrument": "keithley",
-          "potential": -0.5,
+          "current": 0.5,
           "duration": 120,
           "interval": 0.5
         }
         ```
     """
 
-    potential: float = 0.0
+    current: float = 1.0
     duration: float = 120
     interval: float = 1.0
 

@@ -30,7 +30,7 @@ class Keithley(Keithley2450):
         metadata = {"timestamp_start": datetime.now(), "parameters": argstring}
 
         results = self.constant_current(
-            experiment.potential, experiment.duration, experiment.interval
+            experiment.current, experiment.duration, experiment.interval
         )
 
         metadata["timestamp_end"] = datetime.now()
