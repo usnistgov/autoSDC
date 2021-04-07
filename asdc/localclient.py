@@ -126,7 +126,7 @@ class SDC:
         self.logfile = logfile
         self.configvalues = config
 
-        self.keithley = sdc.keithley.Keithley2450()
+        self.keithley = sdc.keithley.Keithley()
 
         # stage initialization
         self.speed = config.get("speed", 1e-3)
