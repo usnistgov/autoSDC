@@ -66,7 +66,7 @@ class ConstantCurrent(SDCArgs):
     interval: float = 1.0
 
     stop_execution: bool = False
-    setup_func: None
+    setup_func: Optional[str] = None
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
         return None
