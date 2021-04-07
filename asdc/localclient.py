@@ -824,7 +824,7 @@ class SDC:
                 key: precondition_purge_time * rate / 60 for key, rate in _rates.items()
             }
             volume_needed = defaultdict(float, volume_needed)
-            for key, value in precondition_volume_needed:
+            for key, value in precondition_volume_needed.items():
                 volume_needed[key] += value
 
             setup_composition = precondition_composition
