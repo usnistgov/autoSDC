@@ -726,22 +726,22 @@ class SDC:
 
         return
 
-        def _purge(self, composition, duration, purge_ratio=0.95, purge_rate=11):
-            rates = self._scale_flow(composition, nominal_rate=purge_rate)
-            self.pump_array.set_rates(rates, start=True, fast=True)
-            self.reglo.set_rates(
-                {
-                    Channel.LOOP: -purge_ratio * purge_rate,
-                    Channel.DRAIN: -purge_ratio * purge_rate,
-                }
-            )
-            time.sleep(duration)
+    def _purge(self, composition, duration, purge_ratio=0.95, purge_rate=11):
+        rates = self._scale_flow(composition, nominal_rate=purge_rate)
+        self.pump_array.set_rates(rates, start=True, fast=True)
+        self.reglo.set_rates(
+            {
+                Channel.LOOP: -purge_ratio * purge_rate,
+                Channel.DRAIN: -purge_ratio * purge_rate,
+            }
+        )
+        time.sleep(duration)
 
-            # reverse the loop direction
-            self.reglo.continuousFlow(6.0, channel=Channel.LOOP)
-            time.sleep(3)
-            self.pump_array.stop_all(fast=True)
-            self.reglo.stop(Channel.DRAIN)
+        # reverse the loop direction
+        self.reglo.continuousFlow(6.0, channel=Channel.LOOP)
+        time.sleep(3)
+        self.pump_array.stop_all(fast=True)
+        self.reglo.stop(Channel.DRAIN)
 
     def establish_droplet(
         self,
