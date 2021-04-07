@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from ruamel import yaml
 from datetime import datetime
+from collections import defaultdict
 from aioconsole import ainput, aprint
 from contextlib import contextmanager, asynccontextmanager
 
@@ -725,6 +726,23 @@ class SDC:
 
         return
 
+        def _purge(self, composition, duration, purge_ratio=0.95, purge_rate=11):
+            rates = self._scale_flow(composition, nominal_rate=purge_rate)
+            self.pump_array.set_rates(rates, start=True, fast=True)
+            self.reglo.set_rates(
+                {
+                    Channel.LOOP: -purge_ratio * purge_rate,
+                    Channel.DRAIN: -purge_ratio * purge_rate,
+                }
+            )
+            time.sleep(duration)
+
+            # reverse the loop direction
+            self.reglo.continuousFlow(6.0, channel=Channel.LOOP)
+            time.sleep(3)
+            self.pump_array.stop_all(fast=True)
+            self.reglo.stop(Channel.DRAIN)
+
     def establish_droplet(
         self,
         flow_instructions: Dict = {},
@@ -742,6 +760,20 @@ class SDC:
             x_wafer: sample x coordinate to move to before forming a droplet
             y_wafer: sample y coordinate to move to before forming a droplet
 
+        ```json
+        {
+          "op": "set_flow",
+          "pH": 10,
+          "flow_rate": 1.25,
+          "precondition_composition": {"H2SO4": 1.0},
+          "precondition_purge_time": 30,
+          "precondition_time": 120,
+          "composition": {"NaCl": 1.0},
+          "purge_time": 60,
+
+        }
+        ```
+
         """
 
         def check_syringe_levels(
@@ -758,21 +790,44 @@ class SDC:
             to_refill = [key for key, value in surplus.items() if value < headroom]
             return to_refill
 
-        relative_rates = flow_instructions.get("relative_rates")
-        target_rate = float(flow_instructions.get("flow_rate", 1.0))
-        purge_time = float(flow_instructions.get("purge_time", 30))
-        pH_target = float(flow_instructions.get("pH"))
-
         # some hardcoded configuration
         pulse_flowrate = -10.0
         purge_rate = 11.0
         purge_ratio = 0.95
-        purge_rates = self._scale_flow(relative_rates, nominal_rate=purge_rate)
+
+        composition = flow_instructions.get("composition")
+        target_rate = float(flow_instructions.get("flow_rate", 1.0))
+        purge_time = float(flow_instructions.get("purge_time", 30))
+        pH_target = float(flow_instructions.get("pH"))
+
+        purge_rates = self._scale_flow(composition, nominal_rate=purge_rate)
 
         # compute required volumes in mL
         volume_needed = {
             key: purge_time * rate / 60 for key, rate in purge_rates.items()
         }
+
+        # optionally: condition with a different solution
+        precondition = False
+        precondition_composition = flow_instructions.get("precondition_composition")
+        if precondition_composition is not None:
+            precondition = True
+            precondition_time = flow_instructions.get("precondition_time", 120)
+            precondition_purge_time = flow_instructions.get(
+                "precondition_purge_time", 30
+            )
+            _rates = self._scale_flow(precondition_composition, nominal_rate=purge_rate)
+            precondition_volume_needed = {
+                key: precondition_purge_time * rate / 60 for key, rate in _rates.items()
+            }
+            volume_needed = defaultdict(float, volume_needed)
+            for key, value in precondition_volume_needed:
+                volume_needed[key] += value
+
+            setup_composition = precondition_composition
+        else:
+            setup_composition = composition
+
         logger.info(f"solution push target: {volume_needed}")
 
         levels = self.pump_array.levels()
@@ -800,6 +855,7 @@ class SDC:
 
         with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
 
+            # surface cleanup
             if self.cleanup_pause > 0:
                 cleanup_drain_rate = -10.0
                 cleanup_loop_rate = -cleanup_drain_rate / 2
@@ -821,12 +877,14 @@ class SDC:
                 time.sleep(self.cleanup_pause / 2)
                 self.reglo.stop((Channel.LOOP, Channel.DRAIN))
 
+            # sample alignment and droplet formation
             height_difference = self.droplet_height - self.wetting_height
             height_difference = max(0, height_difference)
             with sdc.position.sync_z_step(
                 height=height_difference, speed=self.speed
             ) as stage:
 
+                # sample alignment
                 if x_wafer is not None and y_wafer is not None:
                     self.move_stage(x_wafer, y_wafer, self.cell_frame)
 
@@ -835,9 +893,10 @@ class SDC:
                 time.sleep(2)
 
                 # counterpump slower to fill the droplet
+                # stop the RINSE channel halfway through
                 logger.debug("filling droplet")
                 cell_fill_rates = self._scale_flow(
-                    relative_rates, nominal_rate=self.fill_rate
+                    setup_composition, nominal_rate=self.fill_rate
                 )
                 self.pump_array.set_rates(cell_fill_rates, start=True, fast=True)
                 self.reglo.set_rates(
@@ -869,26 +928,24 @@ class SDC:
             logfile = os.path.join(self.data_dir, "purge.csv")
 
         with self.phmeter.monitor(interval=1, logfile=logfile):
-            logger.debug("purging solution")
-            self.pump_array.set_rates(purge_rates, start=True, fast=True)
-            self.reglo.set_rates(
-                {
-                    Channel.LOOP: -purge_ratio * purge_rate,
-                    Channel.DRAIN: -purge_ratio * purge_rate,
-                }
+
+            if precondition:
+                logger.debug("purging with preconditioning solution")
+                self._purge(
+                    precondition_composition,
+                    precondition_purge_time,
+                    purge_ratio=purge_ratio,
+                    purge_rate=purge_rate,
+                )
+                logger.debug("preconditioning")
+                time.sleep(precondition_time)
+
+            logger.debug("purging with target solution")
+            self._purge(
+                composition, purge_time, purge_ratio=purge_ratio, purge_rate=purge_rate
             )
-
-            time.sleep(purge_time)
-
-            # reverse the loop direction
-            self.reglo.continuousFlow(6.0, channel=Channel.LOOP)
-
-            time.sleep(3)
-
             logger.debug(f"stepping flow rates to {target_rate}")
             self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
-            self.pump_array.stop_all(fast=True)
-            self.reglo.stop(Channel.DRAIN)
 
         current_pH_reading = self.phmeter.pH[-1]
         if pH_target is not None:
