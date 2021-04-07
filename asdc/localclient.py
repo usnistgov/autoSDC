@@ -126,7 +126,10 @@ class SDC:
         self.logfile = logfile
         self.configvalues = config
 
-        self.keithley = sdc.keithley.Keithley()
+        self.keithley_address = config.get(
+            "keithley_address", "PCIROOT(0)#PCI(1400)#USBROOT(0)#USB(2)#USB(2)"
+        )
+        self.keithley = sdc.keithley.Keithley(address=self.keithley_address)
 
         # stage initialization
         self.speed = config.get("speed", 1e-3)
