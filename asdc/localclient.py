@@ -833,21 +833,21 @@ class SDC:
 
         logger.info(f"solution push target: {volume_needed}")
 
-        levels = self.pump_array.levels()
-        logger.info(f"current solution levels: {levels}")
+        # levels = self.pump_array.levels()
+        # logger.info(f"current solution levels: {levels}")
 
-        to_refill = check_syringe_levels(volume_needed, levels)
+        # to_refill = check_syringe_levels(volume_needed, levels)
 
-        while len(to_refill) > 0:
-            pump_ids = [
-                f"{name} (pump {self.pump_array.get_pump_id(name)})"
-                for name in to_refill
-            ]
-            pump_ids = ", ".join(pump_ids)
-            logger.warning(f"Refill and reset syringes: {pump_ids}")
-            input("refill and reset pumps to proceed")
-            levels = self.pump_array.levels()
-            to_refill = check_syringe_levels(volume_needed, levels)
+        # while len(to_refill) > 0:
+        #     pump_ids = [
+        #         f"{name} (pump {self.pump_array.get_pump_id(name)})"
+        #         for name in to_refill
+        #     ]
+        #     pump_ids = ", ".join(pump_ids)
+        #     logger.warning(f"Refill and reset syringes: {pump_ids}")
+        #     input("refill and reset pumps to proceed")
+        #     levels = self.pump_array.levels()
+        #     to_refill = check_syringe_levels(volume_needed, levels)
 
         # droplet workflow -- start at zero
         logger.debug("starting droplet workflow")
