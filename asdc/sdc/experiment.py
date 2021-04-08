@@ -35,7 +35,7 @@ def from_command(instruction):
     Expt = potentiostat_ops.get(opname)
 
     if Expt is None:
-        return None
+        return None, None
 
     return Expt(**instruction_data), instrument
 
