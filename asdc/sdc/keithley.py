@@ -81,7 +81,7 @@ class Keithley(Keithley2450):
             )
 
             timeout_old = self.timeout()
-            self.timeout(total_time + 5)
+            self.timeout(total_time + 30)
             data = self.sense.sweep()
 
             # revert timeout
