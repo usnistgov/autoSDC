@@ -81,12 +81,13 @@ class Keithley(Keithley2450):
             )
 
             timeout_old = self.timeout()
-            self.timeout(total_time + 30)
+            self.timeout(total_time + 60)
             data = self.sense.sweep()
 
+
+            all_data = self.sense.sweep.get_selected()
             # revert timeout
             self.timeout(timeout_old)
-            all_data = self.sense.sweep.get_selected()
 
         # parse data stream to pandas array
         df = pd.DataFrame(np.array(all_data).reshape(-1, len(elems)), columns=elems)
