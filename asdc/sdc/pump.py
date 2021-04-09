@@ -149,6 +149,17 @@ class PumpArray:
         print(f"asking pump {pump_id} to run")
         self.eval("run", pump_id=pump_id)
 
+    def bump(self, fast=True):
+        with serial.Serial(
+            port=self.port, baudrate=self.baud, timeout=self.timeout
+        ) as ser:
+            for pump_id in self.solutions.keys():
+                if self.flow_setpoint[pump_id] > 0:
+                    self.eval("run", pump_id=pump_id, ser=ser, fast=fast)
+                    time.sleep(0.06)
+                    self.eval("stop", pump_id=pump_id, ser=ser, fast=fast)
+                    time.sleep(0.06)
+
     def run_all(self, fast=False):
         with serial.Serial(
             port=self.port, baudrate=self.baud, timeout=self.timeout
