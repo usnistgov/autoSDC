@@ -65,7 +65,7 @@ class Keithley(Keithley2450):
         # sync current source time with host system clock
         t = datetime.now()
         self.write(
-            f"syst:time: {t.year}, {t.month}, {t.day}, {t.hour}, {t.minute}, {t.second}"
+            f"syst:time {t.year}, {t.month}, {t.day}, {t.hour}, {t.minute}, {t.second}"
         )
 
         elems = ["source_value", "measurement", "relative_time", "time", "date"]
@@ -83,7 +83,6 @@ class Keithley(Keithley2450):
             timeout_old = self.timeout()
             self.timeout(total_time + 60)
             data = self.sense.sweep()
-
 
             all_data = self.sense.sweep.get_selected()
             # revert timeout
