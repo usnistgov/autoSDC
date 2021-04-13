@@ -135,7 +135,7 @@ class TafelData(EchemData):
 
         return self.model
 
-    def fit(self, window=(0.025, 0.25), truncate=False, median=True):
+    def fit(self, window=(0.025, 0.25), truncate=False, median=True, tafel_binsize=.01,lsv_threshold=.8,tafel_binsize=.01):
         isna = np.isnan(self["current"].values)
         potential = self["potential"].values[~isna]
         current = self["current"].values[~isna]
@@ -144,7 +144,7 @@ class TafelData(EchemData):
         u = potential - self.ocp
         wmin, wmax = window
         tafel_data, fits = tafelfit.tafel_fit(
-            u, current, windows=np.arange(wmin, wmax, 0.001), clip_inflection=truncate
+            u, current, windows=np.arange(wmin, wmax, 0.001), clip_inflection=truncate,lsv_threshold=lsv_threshold,tafel_binsize=tafel_binsize
         )
 
         self.tafel_data = tafel_data
@@ -247,7 +247,7 @@ class TafelData(EchemData):
 
         plt.tight_layout()
 
-    def plot_bv(self, fit=False, w=0.2):
+    def plot_bv(self, fit=False, w=0.2,tafel_binsize=.01,lsv_threshold=.8):
         """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
         plt.plot(self["potential"], np.log10(np.abs(self["current"])))
@@ -258,7 +258,7 @@ class TafelData(EchemData):
 
         if fit:
             ylim = plt.ylim()
-            model = self.fit(w=w)
+            model = self.fit(w=w,tafel_binsize=tafel_binsize,lsv_threshold=lsv_threshold)
 
             # evaluate and plot model
             V, I_mod = self.evaluate_model()
