@@ -135,7 +135,7 @@ class TafelData(EchemData):
 
         return self.model
 
-    def fit(self, window=(0.025, 0.25), truncate=False, median=True, tafel_binsize=.01,lsv_threshold=.8,tafel_binsize=.01):
+    def fit(self, window=(0.025, 0.25), truncate=False, median=True, tafel_binsize=.01,lsv_threshold=.8):
         isna = np.isnan(self["current"].values)
         potential = self["potential"].values[~isna]
         current = self["current"].values[~isna]
