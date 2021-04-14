@@ -195,7 +195,7 @@ class TafelData(EchemData):
                 zorder=1000,
             )
 
-    def plot(self, fit=False, w=0.2, window=(0.025, 0.25), plot_all=False):
+    def plot(self, fit=False, w=0.2, window=(0.025, 0.25), plot_all=False, tafel_binsize=.01,lsv_threshold=.8):
         """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
         plt.plot(self["potential"], np.log10(np.abs(self["current"])))
@@ -206,7 +206,7 @@ class TafelData(EchemData):
 
         if fit:
             ylim = plt.ylim()
-            self.fit(window=window)
+            self.fit(window=window, tafel_binsize=tafel_binsize,lsv_threshold=lsv_threshold)
             overpotential = self["potential"] - self.ocp
 
             lims = plt.gca().get_ylim()
