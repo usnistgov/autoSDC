@@ -154,6 +154,7 @@ class TafelData(EchemData):
             self.i_corr = (
                 fits["cathodic"]["j0"].median() + fits["anodic"]["j0"].median()
             ) / 2
+            self.i_corr_gap=np.abs(np.log10(fits["cathodic"]["j0"].median()) -np.log10(fits["anodic"]["j0"].median()))
             self.alpha_c = fits["cathodic"]["dlog(j)/dV"].median()
             self.alpha_a = fits["anodic"]["dlog(j)/dV"].median()
 
@@ -161,6 +162,8 @@ class TafelData(EchemData):
             self.i_corr = (
                 tafel_data["cathodic"]["j0"] + tafel_data["anodic"]["j0"]
             ) / 2
+            self.i_corr_gap=np.abs(np.log10(tafel_data["cathodic"]["j0"]) -np.log10(tafel_data["anodic"]["j0"]))
+
             self.alpha_c = tafel_data["cathodic"]["dlog(j)/dV"]
             self.alpha_a = tafel_data["anodic"]["dlog(j)/dV"]
 
