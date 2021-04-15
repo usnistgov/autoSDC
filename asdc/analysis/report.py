@@ -74,7 +74,7 @@ def process_tafel(experiment, dir="data"):
         model = tafel.fit()
         tafeloutput={"tafel_E_oc": tafel.ocp, "i_corr": tafel.i_corr,"i_corr_gap":tafel.i_corr_gap}
     except:
-        tafeloutput={"tafel_E_oc": nan, "i_corr": nan,"i_corr_gap":nan}
+        tafeloutput={"tafel_E_oc": np.nan, "i_corr": np.nan,"i_corr_gap":np.nan}
     return tafeloutput
 
 
