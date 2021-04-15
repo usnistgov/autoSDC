@@ -71,7 +71,7 @@ def process_tafel(experiment, dir="data"):
     tafel.clip_current_to_range()
 
     model = tafel.fit()
-    return {"tafel_E_oc": tafel.ocp, "i_corr": tafel.i_corr}
+    return {"tafel_E_oc": tafel.ocp, "i_corr": tafel.i_corr,"i_corr_gap":tafel.i_corr_gap}
 
 
 def process_row(row, db, dir=dir):
