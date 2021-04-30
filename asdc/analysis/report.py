@@ -49,9 +49,9 @@ def process_lpr(experiments, dir="data", r2_thresh=0.95):
         ok=True
         if r2 < r2_thresh:
             ok=False
-        if not asdc.analysis.lpr.current_crosses_zero(lprdat):
+        if not analysis.lpr.current_crosses_zero(lprdat):
             ok = False
-        if not asdc.analysis.lpr.valid_scan_range(lprdat):
+        if not analysis.lpr.valid_scan_range(lprdat):
             ok = False
         if not ok:
             pr = np.nan
