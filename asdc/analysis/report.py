@@ -41,12 +41,19 @@ def process_lpr(experiments, dir="data", r2_thresh=0.95):
 
     for experiment in experiments:
         datafile = os.path.join(dir, experiment["datafile"])
-        lpr = pd.read_csv(datafile)
-        lpr = analysis.LPRData(lpr)
-        lpr.check_quality(r2_thresh=r2_thresh)
+        lprdat = pd.read_csv(datafile)
+        lpr = analysis.LPRData(lprdat)
+        #lpr.check_quality(r2_thresh=r2_thresh)
 
         pr, ocp, r2 = lpr.fit()
+        ok=True
         if r2 < r2_thresh:
+            ok=False
+        if not asdc.analysis.lpr.current_crosses_zero(lprdat):
+            ok = False
+        if not asdc.analysis.lpr.valid_scan_range(lprdat):
+            ok = False
+        if not ok:
             pr = np.nan
             ocp = np.nan
             r2 = np.nan
