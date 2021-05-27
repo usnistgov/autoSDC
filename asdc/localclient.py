@@ -1285,7 +1285,7 @@ class SDC:
             with sdc.position.sync_z_step(height=height_difference, speed=self.speed):
 
                 self.move_stage(x_combi, y_combi, self.camera_frame)
-                self.capture_image_new(primary_key=sample.id)
+                self.capture_image_new(sample.id)
                 self.move_stage(x_combi, y_combi, self.cell_frame)
 
     def run_characterization(self, args: str):
