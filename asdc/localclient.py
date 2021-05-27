@@ -1264,20 +1264,16 @@ class SDC:
             time.sleep(self.cleanup_pause)
             self.reglo.stop((Channel.LOOP, Channel.DRAIN))
 
-    def collect_image(self, instructions):
+    def collect_image(self, instructions, cleanup=True):
         x_combi, y_combi = instructions.get("x", None), instructions.get("y", None)
         sample = self.db["location"].find_one(x_combi=x_combi, y_combi=y_combi)
 
         # check for an instruction group name/intent
         intent = instructions.get("intent")
 
-        # run cleanup
-        self.pump_array.stop_all(counterbalance="full", fast=True)
-        time.sleep(0.25)
-
         with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
 
-            if self.cleanup_pause > 0:
+            if cleanup and self.cleanup_pause > 0:
                 self.clean_droplet()
 
             height_difference = self.characterization_height - self.wetting_height
@@ -1789,7 +1785,7 @@ class SDC:
             logger.debug(json.dumps(instruction_chain))
             self.run_experiment(instruction_chain)
             if capture_images:
-                self.capture_image_new(instruction_chain[0])
+                self.collect_image(instruction_chain[0])
 
         return
 
