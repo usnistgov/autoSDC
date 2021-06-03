@@ -1281,7 +1281,7 @@ class SDC:
             with sdc.position.sync_z_step(height=height_difference, speed=self.speed):
 
                 self.move_stage(x_combi, y_combi, self.camera_frame)
-                self.capture_image_new(sample.id)
+                self.capture_image_new(sample["id"])
                 self.move_stage(x_combi, y_combi, self.cell_frame)
 
     def run_characterization(self, args: str):
@@ -1697,7 +1697,7 @@ class SDC:
 
         return
 
-    def capture_image_new(self, sample):
+    def capture_image_new(self, sample_id):
         """capture an image from the webcam.
 
         pass an experiment index to serialize metadata to db
@@ -1712,14 +1712,14 @@ class SDC:
         # BGR --> RGB format
         frame = frame[..., ::-1].copy()
 
-        if sample is not None:
+        if sample_id is not None:
 
             image_name = f"deposit_pic_{sample.id:03d}.png"
 
             with sdc.position.controller() as stage:
                 metadata = {
                     "op": "image",
-                    "location_id": sample.id,
+                    "location_id": sample_id,
                     "image_xv": stage.x,
                     "image_yv": stage.y,
                     "datafile": image_name,
