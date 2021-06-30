@@ -129,7 +129,10 @@ class SDC:
         self.keithley_address = config.get(
             "keithley_address", "PCIROOT(0)#PCI(1400)#USBROOT(0)#USB(2)#USB(2)"
         )
-        self.keithley = sdc.keithley.Keithley(address=self.keithley_address)
+        try:
+            self.keithley = sdc.keithley.Keithley(address=self.keithley_address)
+        except:
+            print("failed to connect to keithley -- carrying on")
 
         # stage initialization
         self.speed = config.get("speed", 1e-3)
