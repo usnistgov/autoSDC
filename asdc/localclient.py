@@ -1796,7 +1796,7 @@ class SDC:
         instructions = self.default_experiment
         for i in instructions:
             if "op" in i and i["op"] == "potentiostatic":
-                i["potential"] = potential
+                i["initial_potential"] = potential
 
         self.run_experiment(instructions)
 
