@@ -1795,7 +1795,7 @@ class SDC:
     def run_hold(self, potential=0.0):
         instructions = self.default_experiment
         for i in instructions:
-            if i["op"] == "potentiostatic":
+            if "op" in i and i["op"] == "potentiostatic":
                 i["potential"] = potential
 
         self.run_experiment(instructions)
