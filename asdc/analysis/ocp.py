@@ -4,6 +4,7 @@ import pandas as pd
 from csaps import csaps
 from pandas import DataFrame
 import matplotlib.pyplot as plt
+from streamz.dataframe import DataFrame as sdf
 
 from asdc.analysis.echem_data import EchemData
 
@@ -87,6 +88,6 @@ class OCPData(EchemData):
         plt.xlabel("elapsed time (s)")
         plt.ylabel("potential (V)")
         plt.tight_layout()
-        smoothed_potential = sdf.rolling(self.smoothing_window).potential.mean()
+        smoothed_potential = self.rolling(self.smoothing_window).potential.mean()
         plt.plot(self.elapsed_time,smoothed_potential,'-',label='Smoothed data')
         plt.legend()
