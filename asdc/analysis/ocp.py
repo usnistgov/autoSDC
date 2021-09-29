@@ -57,6 +57,10 @@ def ocp_convergence(ocp, smooth=0.001, tr=100):
 
 
 class OCPData(EchemData):
+    stabilization_range: float = 0.002
+    stabilization_window: float = 90
+    smoothing_window: float = 10
+    minimum_duration: float = 300
     @property
     def _constructor(self):
         return OCPData
@@ -79,7 +83,10 @@ class OCPData(EchemData):
     def plot(self):
         """ plot open circuit potential vs elapsed time """
         # super().plot('elapsed_time', 'potential')
-        plt.plot(self.elapsed_time, self.potential)
+        plt.plot(self.elapsed_time, self.potential,'.',label='Raw data')
         plt.xlabel("elapsed time (s)")
         plt.ylabel("potential (V)")
         plt.tight_layout()
+        smoothed_potential = sdf.rolling(self.smoothing_window).potential.mean()
+        plt.plot(self.elapsed_time,smoothed_potential,'-',label='Smoothed data')
+        plt.legend()

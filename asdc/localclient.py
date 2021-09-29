@@ -265,6 +265,11 @@ class SDC:
             self.reflectometer = None
             self.light = None
 
+        # keep track of OCP trace value to run relative scans
+        # without having to chain ametek backend calls explicitly
+        # better to chain experiments and split them at serialization time?
+        self.ocp_hold_value = None
+
     def get_last_known_position(self, x_versa, y_versa, resume=False):
         """set up initial cell reference relative to a previous database entry if possible
 
@@ -1061,6 +1066,9 @@ class SDC:
         # heuristic check for experimental error signals?
         """
 
+        # reset OCP reference value
+        self.ocp_hold_value = None
+
         # check for an instruction group name/intent
         intent = instructions[0].get("intent")
 
@@ -1115,6 +1123,11 @@ class SDC:
                     if experiment is None:
                         continue
 
+                    # set up data-dependent experiments?
+                    # check if voltage reference is vs hold (good name for this?)
+                    # load values from db/disk -- alternatively previous experiment sets it?
+                    experiment.update_relative_scan(self.ocp_hold_value)
+
                     metadata = {
                         "op": opname,
                         "location_id": location_id,
@@ -1127,6 +1140,11 @@ class SDC:
                         status = results.check_quality()
                     except Exception as err:
                         logger.error(f"data check: {err}")
+
+                    if experiment.name == "OpenCircuit":
+                        # record open circuit potential after hold for
+                        # reference by downstream experiments
+                        self.ocp_hold_value = results["potential"].iloc[-5:].mean()
 
                     metadata.update(m)
 
@@ -1154,6 +1172,53 @@ class SDC:
                         )
 
         logger.info(f"finished experiment {location_id}: {summary}")
+
+    def clean_droplet(self):
+        """ just clean up without a rinse """
+
+        pulse_flowrate = -10.0
+
+        if self.cleanup_pause > 0:
+            cleanup_drain_rate = -10.0
+            cleanup_loop_rate = -cleanup_drain_rate / 2
+            logger.debug("cleaning up...")
+            self.reglo.set_rates(
+                {Channel.DRAIN: cleanup_drain_rate, Channel.LOOP: cleanup_loop_rate}
+            )
+
+            if self.cleanup_pulse_duration > 0:
+                self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
+                time.sleep(self.cleanup_pulse_duration)
+                self.reglo.continuousFlow(cleanup_drain_rate, channel=Channel.DRAIN)
+
+            # run the RINSE channel for only half the cleanup duration
+            # to allow the NEEDLE time to clean everything up
+            time.sleep(self.cleanup_pause)
+            self.reglo.stop((Channel.LOOP, Channel.DRAIN))
+
+    def collect_image(self, instructions):
+        x_combi, y_combi = instructions.get("x", None), instructions.get("y", None)
+        sample = self.db["location"].find_one(x_combi=x_combi, y_combi=y_combi)
+
+        # check for an instruction group name/intent
+        intent = instructions.get("intent")
+
+        # run cleanup
+        self.pump_array.stop_all(counterbalance="full", fast=True)
+        time.sleep(0.25)
+
+        with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
+
+            if self.cleanup_pause > 0:
+                self.clean_droplet()
+
+            height_difference = self.characterization_height - self.wetting_height
+            height_difference = max(0, height_difference)
+            with sdc.position.sync_z_step(height=height_difference, speed=self.speed):
+
+                self.move_stage(x_combi, y_combi, self.camera_frame)
+                self.capture_image_new(primary_key=sample.id)
+                self.move_stage(x_combi, y_combi, self.cell_frame)
 
     def run_characterization(self, args: str):
         """perform cell cleanup and characterization
@@ -1568,6 +1633,46 @@ class SDC:
 
         return
 
+    def capture_image_new(self, sample):
+        """capture an image from the webcam.
+
+        pass an experiment index to serialize metadata to db
+        """
+
+        with self.light_on():
+            camera = cv2.VideoCapture(self.camera_index)
+            # give the camera enough time to come online before reading data...
+            time.sleep(0.5)
+            status, frame = camera.read()
+
+        # BGR --> RGB format
+        frame = frame[..., ::-1].copy()
+
+        if sample is not None:
+
+            image_name = f"deposit_pic_{sample.id:03d}.png"
+
+            with sdc.position.controller() as stage:
+                metadata = {
+                    "op": "image",
+                    "location_id": sample.id,
+                    "image_xv": stage.x,
+                    "image_yv": stage.y,
+                    "datafile": image_name,
+                    "image_name": image_name,
+                }
+
+            with self.db as tx:
+                tx["experiment"].insert(metadata)
+
+        else:
+            image_name = "test-image.png"
+
+        imageio.imsave(os.path.join(self.data_dir, image_name), frame)
+        camera.release()
+
+        return
+
     def bubble(self, primary_key: int):
         """ record a bubble in the deposit """
 
@@ -1608,13 +1713,15 @@ class SDC:
 
         return instructions
 
-    def batch_execute_experiments(self, instructions_file=None):
+    def batch_execute_experiments(self, instructions_file=None, capture_images=False):
 
         instructions = self.load_experiments(instructions_file)
 
         for instruction_chain in instructions:
             logger.debug(json.dumps(instruction_chain))
             self.run_experiment(instruction_chain)
+            if capture_images:
+                self.capture_image_new(instruction_chain[0])
 
         return
 

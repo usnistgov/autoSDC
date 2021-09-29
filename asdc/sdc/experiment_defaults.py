@@ -51,6 +51,44 @@ class SDCArgs:
         status = setup_func(args)
         return args
 
+    def update_relative_scan(self, open_circuit_potential):
+        """Mutating update -- transform potentials 'VS HOLD' to 'VS REF'.
+
+        potentials currently have matching keys like
+        {key}_potential = value
+        versus_{key} = reference_type_string
+
+        this is a bit hacky. cleaner would be to have types for potentials:
+
+        class Potential(pydantic.BaseModel):
+            value: float = 0.0
+            reference: pydantic.Literal["VS REF", "VS OC", "VS PREV", "VS HOLD"]
+
+        then it should be safer to make `str(potential) -> "0.0,VS OC"`
+        """
+        if open_circuit_potential is None:
+            return
+
+        # update any potential that is relative to "VS HOLD"
+        to_update = [key for key, value in self.as_dict().items() if value == "VS HOLD"]
+
+        for versus_key in to_update:
+
+            # key matching (brittle / depends on field names in experiment arguments)
+            key = versus_key.replace("versus_", "")
+            potential_key = f"{key}_potential"
+
+            # transform potential specified relative to measured OCP
+            # to the reference electrode frame
+            relative_potential = getattr(self, potential_key)
+            absolute_potential = open_circuit_potential + relative_potential
+
+            # write back data to both potential and reference fields
+            setattr(self, potential_key, absolute_potential)
+            setattr(self, versus_key, "VS REF")
+
+        return
+
 
 @dataclass
 class MeasureOCP(SDCArgs):
@@ -117,6 +155,32 @@ class PotentiostaticArgs(SDCArgs):
     versus_initial: str = "VS REF"
     time_per_point: float = 0.00001
     duration: float = 10
+    limit_1_type: Optional[str] = None
+    limit_1_direction: str = "<"
+    limit_1_value: float = 0
+    limit_2_type: Optional[str] = None
+    limit_2_direction: str = "<"
+    limit_2_value: float = 0
+    current_range: str = "AUTO"
+    acquisition_mode: str = "AUTO"
+    electrometer: str = "AUTO"
+    e_filter: str = "AUTO"
+    i_filter: str = "AUTO"
+    leave_cell_on: str = "YES"
+    cell: str = "EXTERNAL"
+    enable_ir_compensation: str = "DISABLED"
+    bandwidth: str = "AUTO"
+    low_current_interface_bandwidth: str = "AUTO"
+
+
+@dataclass
+class PotentiodynamicArgs(SDCArgs):
+    initial_potential: float = 0.0
+    versus_initial: str = "VS REF"
+    final_potential: float = 0.0
+    versus_final: str = "VS REF"
+    step_height: float = 0.1
+    step_time: float = 1.0
     limit_1_type: Optional[str] = None
     limit_1_direction: str = "<"
     limit_1_value: float = 0
@@ -259,13 +323,13 @@ class CorrosionOpenCircuitArgs(SDCArgs):
 class CyclicVoltammetryArgs(SDCArgs):
     initial_potential: float = 0.0
     versus_initial: str = "VS REF"
-    vertex_potential_1: float = 1.0
+    vertex_1_potential: float = 1.0
     versus_vertex_1: str = "VS REF"
-    vertex_hold_1: float = 0
+    vertex_1_hold: float = 0
     acquire_data_during_vertex_hold_1: str = "NO"
-    vertex_potential_2: float = -1.0
+    vertex_2_potential: float = -1.0
     versus_vertex_2: str = "VS REF"
-    vertex_hold_2: float = 0
+    vertex_2_hold: float = 0
     acquire_data_during_vertex_hold_2: str = "NO"
     scan_rate: float = 0.1
     cycles: int = 3
