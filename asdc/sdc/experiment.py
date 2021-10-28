@@ -478,6 +478,57 @@ class CyclicVoltammetry(CyclicVoltammetryArgs):
         return analysis.CVData(echem_data)
 
 
+@dataclass
+class PotentiostaticEIS(PotentiostaticEISArgs):
+    """Potentiostatic electrochemical impedance spectroscopy
+
+    Attributes:
+        start_frequency: float = 1  # Hz
+        end_frequency: float = 1  # Hz
+        amplitude_potential: float = 1  # V
+        point_spacing: str = "LOGARITHMIC"
+        n_points: int = 100
+        measurement_delay: float = 0.1
+        initial_potential: float = -0.25
+        versus: str = "VS OC"
+        current_range: str = "2MA"
+
+    Example:
+        ```json
+        {
+            "op": "potentiostatic_eis",
+            "initial_potential": 0.0,
+            "versus": "OC",
+            "start_frequency": 1e5,
+            "end_frequency": 1e-2,
+            "amplitude_potential": 0.02,
+            "point_spacing": "LOGARITHMIC",
+            "n_points": 5,
+        }
+        ```
+
+    """
+
+    versus: str = "VS OC"
+    stop_execution: bool = False
+    setup_func: str = "AddTafel"
+
+    def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
+        return None
+
+    def getargs(self):
+
+        # override any default arguments...
+        args = self.__dict__
+        args["versus_initial"] = args["versus"]
+
+        args = PotentiostaticEISArgs.from_dict(args)
+        return args.format()
+
+    def marshal(self, echem_data: Dict[str, Sequence[float]]):
+        return analysis.PotentiostaticEISData(echem_data)
+
+
 potentiostat_ops = {
     "cv": CyclicVoltammetry,
     "lsv": LSV,
@@ -489,4 +540,5 @@ potentiostat_ops = {
     "potentiodynamic": Potentiodynamic,
     "staircase_lsv": StaircaseLSV,
     "constant_current": ConstantCurrent,
+    "potentiostatic_eis": PotentiostaticEIS,
 }

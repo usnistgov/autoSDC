@@ -280,6 +280,41 @@ class TafelArgs(SDCArgs):
 
 
 @dataclass
+class PotentiostaticEISArgs(SDCArgs):
+    """Potentiostatic EIS
+
+    point_spacing can be `LINEAR` or `LOGARITHMIC`
+    n_points: frequency samples. in logarithmic scale, this is points per decade
+    data_quality: value in (0, 10)
+    measurement_delay: delay between impedance samples
+
+            "initial_potential": 0.0,
+            "versus": "OC",
+            "start_frequency": 1e5,
+            "end_frequency": 1e-2,
+            "amplitude_potential": 0.02,
+            "point_spacing": "LOGARITHMIC",
+            "n_points": 5,
+    """
+
+    start_frequency: float = 1e5  # Hz
+    end_frequency: float = 1e-2  # Hz
+    amplitude_potential: float = 0.02  # V
+    point_spacing: str = "LOGARITHMIC"
+    n_points: int = 5
+    data_quality: int = 1
+    measurement_delay: float = 0.1
+    initial_potential: float = -0.25
+    versus_initial: str = "VS OC"
+    current_range: str = "2MA"
+    electrometer: str = "AUTO"
+    leave_cell_on: str = "YES"
+    cell: str = "EXTERNAL"
+    bandwidth: str = "AUTO"
+    low_current_interface_bandwidth: str = "AUTO"
+
+
+@dataclass
 class OpenCircuitArgs(SDCArgs):
     time_per_point: float = 1
     duration: float = 10
