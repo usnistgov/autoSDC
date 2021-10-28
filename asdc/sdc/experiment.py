@@ -511,7 +511,7 @@ class PotentiostaticEIS(PotentiostaticEISArgs):
 
     versus: str = "VS OC"
     stop_execution: bool = False
-    setup_func: str = "AddTafel"
+    setup_func: str = "AddEISPotentiostatic"
 
     def register_early_stopping(self, sdf: streamz.dataframe.DataFrame):
         return None
