@@ -7,4 +7,5 @@ from asdc.analysis.tafel import TafelData
 from asdc.analysis.potentiodynamic import PotentiodynamicData
 from asdc.analysis.potentiostatic import PotentiostaticData
 from asdc.analysis.constant_current import ConstantCurrentData
+from asdc.analysis.eis import PotentiostaticEISData
 from asdc.analysis import lpr
