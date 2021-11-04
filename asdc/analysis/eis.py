@@ -23,10 +23,22 @@ class PotentiostaticEISData(EchemData):
         return True
 
     def plot(self, fit=False):
-        """ plot Potentiostatic: current vs potential """
-        plt.plot(self["frequency"], self["impedance_real"])
+        """ EIS Bode plot: |Z| and phase(Z) vs log(ω) """
+        fig, axes = plt.subplots(sharex=True)
+        plt.sca(axes[0])
+
+        # construct complex impedance
+        Z = self["impedance_real"] + 1j * self["impedance_imag"]
+
+        plt.plot(self["frequency"], np.abs(Z))
+        plt.ylabel("|Z|")
+
+        plt.sca(axes[1])
+        plt.plot(self["frequency"], np.angle(Z))
+        plt.ylabel("phase(Z)")
+
         plt.xlabel("frequency (Hz)")
-        plt.ylabel("Re(impedance)")
+
         plt.semilogx()
 
         plt.tight_layout()
