@@ -103,7 +103,7 @@ class Potentiostat:
         }
 
         if eis_mode:
-            results["frequency"] = self.freqency(start, num_points)
+            results["frequency"] = self.frequency(start, num_points)
             results["impedance_real"] = self.impedance_real(start, num_points)
             results["impedance_imag"] = self.impedance_imag(start, num_points)
 
