@@ -226,7 +226,7 @@ class TafelData(EchemData):
                     linestyle='--'
                 )
                 plt.axhline(
-                    np.log10(best_fit["j0"]), label=f"i_{{corr}} ({segment})", color=colors[idx]
+                    np.log10(best_fit["j0"]), label=f"i$_{{corr}}$ ({segment})", color=colors[idx]
                 )
                 plt.axvline(
                     self.ocp + best_fit["window_min"],
