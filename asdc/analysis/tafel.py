@@ -201,9 +201,9 @@ class TafelData(EchemData):
     def plot(self, fit=False, w=0.2, window=(0.025, 0.25), plot_all=False, tafel_binsize=.01,lsv_threshold=.8):
         """ Tafel plot: log current against the potential """
         # # super().plot('current', 'potential')
-        plt.plot(self["potential"], np.log10(np.abs(self["current"])))
-        plt.xlabel("potential (V)")
-        plt.ylabel("log current (A)")
+        plt.plot(self["potential"], np.log10(np.abs(self["current"])),'.',label='Measured Data')
+        plt.xlabel("Potential (V  vs. Ag/AgCl)")
+        plt.ylabel("log[Current (A)]")
         ylim = plt.ylim()
         xlim = plt.xlim()
 
@@ -213,29 +213,34 @@ class TafelData(EchemData):
             overpotential = self["potential"] - self.ocp
 
             lims = plt.gca().get_ylim()
+            plt.axvline(self.ocp,color='k',label='OCP')
 
             colors = ["g", "m"]
+            blab='Fit bounds'
             for idx, (segment, best_fit) in enumerate(self.tafel_data.items()):
 
                 plt.plot(
                     self["potential"].values,
                     np.log10(best_fit["j0"]) + best_fit["dlog(j)/dV"] * overpotential,
                     color=colors[idx],
+                    linestyle='--'
                 )
                 plt.axhline(
-                    np.log10(best_fit["j0"]), label=f"j0 {segment}", color=colors[idx]
+                    np.log10(best_fit["j0"]), label=fr"i_corr ({segment})", color=colors[idx]
                 )
                 plt.axvline(
                     self.ocp + best_fit["window_min"],
                     color="k",
                     alpha=0.2,
-                    linestyle="--",
+                    linestyle="..",
+                    label=blab
                 )
+                blab=None
                 plt.axvline(
                     self.ocp + best_fit["window_max"],
                     color="k",
                     alpha=0.2,
-                    linestyle="--",
+                    linestyle="..",
                 )
             if plot_all:
                 self.plot_all_fits()

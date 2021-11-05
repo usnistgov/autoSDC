@@ -188,8 +188,8 @@ class LPRData(EchemData):
         # # super().plot('current', 'potential')
         plt.plot(self["current"], self["potential"], ".",label='Measured data')
         plt.axvline(0, color="k", alpha=0.5, linewidth=0.5)
-        plt.xlabel("current (A)")
-        plt.ylabel("potential (V)")
+        plt.xlabel("Current (A)")
+        plt.ylabel("Potential (V vs. Ag/AgCl)")
 
         if fit:
             self.fit()

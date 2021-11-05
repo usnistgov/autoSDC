@@ -84,9 +84,9 @@ class OCPData(EchemData):
     def plot(self):
         """ plot open circuit potential vs elapsed time """
         # super().plot('elapsed_time', 'potential')
-        plt.plot(self.elapsed_time, self.potential,'.',label='Raw data')
-        plt.xlabel("elapsed time (s)")
-        plt.ylabel("potential (V)")
+        plt.plot(self.elapsed_time, self.potential,'.',label='Measured data')
+        plt.xlabel("Elapsed time (s)")
+        plt.ylabel("Potential (V vs. Ag/AgCl)")
         plt.tight_layout()
         smoothed_potential = self.rolling(self.smoothing_window).potential.mean()
         plt.plot(self.elapsed_time,smoothed_potential,'-',label='Smoothed data')
