@@ -232,7 +232,7 @@ class TafelData(EchemData):
                     self.ocp + best_fit["window_min"],
                     color="k",
                     alpha=0.2,
-                    linestyle="..",
+                    linestyle=":",
                     label=blab
                 )
                 blab=None
@@ -240,7 +240,7 @@ class TafelData(EchemData):
                     self.ocp + best_fit["window_max"],
                     color="k",
                     alpha=0.2,
-                    linestyle="..",
+                    linestyle=":",
                 )
             if plot_all:
                 self.plot_all_fits()
