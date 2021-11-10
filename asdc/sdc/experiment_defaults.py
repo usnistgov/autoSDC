@@ -8,6 +8,11 @@ from collections.abc import Iterable
 logger = logging.getLogger(__name__)
 
 
+def standard_hydrogen_ref(potential):
+    """convert standard hydrogen potentials to Ag/AgCl reference"""
+    return potential + 0.197
+
+
 class SDCArgs:
     """base class for default experiment arguments
 
@@ -29,9 +34,18 @@ class SDCArgs:
     @classmethod
     def from_dict(cls, args):
         """ override default dataclass arguments, but skip any keys that aren't attributes of the dataclass """
-        return cls(
-            **{k: v for k, v in args.items() if k in inspect.signature(cls).parameters}
-        )
+        values = {
+            k: v for k, v in args.items() if k in inspect.signature(cls).parameters
+        }
+
+        voltage_overrides = [k for k, v in values.items() if v == "VS SHE"]
+        for k in voltage_overrides:
+            values[k] = "VS REF"
+            _, voltage_key = k.split("_")
+            vkey = f"{voltage_key}_potential"
+            values[vkey] = standard_hydrogen_ref(values[vkey])
+
+        return cls(**values)
 
     def format(self):
         """ format a comma-delimited argument string in the order expected by Ametek backend """
