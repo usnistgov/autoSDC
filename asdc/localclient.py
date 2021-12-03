@@ -369,6 +369,10 @@ class SDC:
             _stage = cam.orient_new(
                 "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
             )
+        elif self.frame_orientation == "+y":
+            _stage = cam.orient_new(
+                "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, sympy.pi, "ZYZ")
+            )
         else:
             raise NotImplementedError
 
@@ -406,10 +410,14 @@ class SDC:
         # relative to the last recorded positions
         cell = self.cell_frame
 
+        if orientation is None:
+            orientation = self.frame_orientation
         if orientation == "-y":
             _stage = cell.orient_new(
                 "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
             )
+        elif orientation == "+y":
+            "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, sympy.pi, "ZYZ")
         else:
             raise NotImplementedError
 
