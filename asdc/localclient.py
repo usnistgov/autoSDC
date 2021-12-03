@@ -215,12 +215,12 @@ class SDC:
         xray_offset = config.get("xray_offset", [44.74, -4.4035])
 
         self.cell_frame = CoordSys3D("cell")
-        if self.orientation == "-y":
+        if self.frame_orientation == "-y":
             rel_frame = self.cell_frame.orient_new_axis(
                 "rel_frame", 0, self.cell_frame.k
             )
 
-        if self.orientation == "+y":
+        if self.frame_orientation == "+y":
             rel_frame = self.cell_frame.orient_new_axis(
                 "rel_frame", sympy.pi, self.cell_frame.k
             )
