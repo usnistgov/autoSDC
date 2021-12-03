@@ -417,7 +417,9 @@ class SDC:
                 "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
             )
         elif orientation == "+y":
-            "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, sympy.pi, "ZYZ")
+            _stage = cell.orient_new(
+                "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, sympy.pi, "ZYZ")
+            )
         else:
             raise NotImplementedError
 
