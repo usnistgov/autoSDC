@@ -215,17 +215,24 @@ class SDC:
         xray_offset = config.get("xray_offset", [44.74, -4.4035])
 
         self.cell_frame = CoordSys3D("cell")
-        self.camera_frame = self.cell_frame.locate_new(
-            "camera",
-            camera_offset[0] * self.cell_frame.i + camera_offset[1] * self.cell_frame.j,
+        if self.orientation == "-y":
+            rel_frame = self.cell_frame.orient_new_axis(
+                "rel_frame", 0, self.cell_frame.k
+            )
+
+        if self.orientation == "+y":
+            rel_frame = self.cell_frame.orient_new_axis(
+                "rel_frame", sympy.pi, self.cell_frame.k
+            )
+
+        self.camera_frame = rel_frame.locate_new(
+            "camera", camera_offset[0] * rel_frame.i + camera_offset[1] * rel_frame.j,
         )
-        self.laser_frame = self.cell_frame.locate_new(
-            "laser",
-            laser_offset[0] * self.cell_frame.i + laser_offset[1] * self.cell_frame.j,
+        self.laser_frame = rel_frame.locate_new(
+            "laser", laser_offset[0] * rel_frame.i + laser_offset[1] * rel_frame.j,
         )
-        self.xray_frame = self.cell_frame.locate_new(
-            "xray",
-            xray_offset[0] * self.cell_frame.i + xray_offset[1] * self.cell_frame.j,
+        self.xray_frame = rel_frame.locate_new(
+            "xray", xray_offset[0] * rel_frame.i + xray_offset[1] * rel_frame.j,
         )
 
         if self.resume:
@@ -385,14 +392,15 @@ class SDC:
         v_origin = l[1] * cam.i + l[0] * cam.j
 
         # construct the shifted stage frame
-        if self.frame_orientation == "-y":
+        stage = _stage.locate_new("stage", v_origin)
 
-            stage = _stage.locate_new("stage", v_origin)
-        elif self.frame_orientation == "+y":
-            dstage = _stage.locate_new("dstage", v_origin)
-            stage = dstage.orient_new_axis("stage", sympy.pi, dstage.k)
-        else:
-            raise NotImplementedError
+        # if self.frame_orientation == "-y":
+        #     stage = _stage.locate_new("stage", v_origin)
+        # elif self.frame_orientation == "+y":
+        #     dstage = _stage.locate_new("dstage", v_origin)
+        #     stage = dstage.orient_new_axis("stage", sympy.pi, dstage.k)
+        # else:
+        #     raise NotImplementedError
 
         self.stage_frame = stage
 
@@ -439,13 +447,14 @@ class SDC:
         if orientation is None:
             orientation = self.frame_orientation
 
-        if self.frame_orientation == "-y":
-            stage = _stage.locate_new("stage", v_origin)
-        elif self.frame_orientation == "+y":
-            dstage = _stage.locate_new("dstage", v_origin)
-            stage = dstage.orient_new_axis("stage", sympy.pi, dstage.k)
-        else:
-            raise NotImplementedError
+        stage = _stage.locate_new("stage", v_origin)
+        # if self.frame_orientation == "-y":
+        #     stage = _stage.locate_new("stage", v_origin)
+        # elif self.frame_orientation == "+y":
+        #     dstage = _stage.locate_new("dstage", v_origin)
+        #     stage = dstage.orient_new_axis("stage", sympy.pi, dstage.k)
+        # else:
+        #     raise NotImplementedError
 
         return stage
 
