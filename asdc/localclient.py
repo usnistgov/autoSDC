@@ -386,9 +386,11 @@ class SDC:
 
         # construct the shifted stage frame
         if self.frame_orientation == "-y":
+
             stage = _stage.locate_new("stage", v_origin)
         elif self.frame_orientation == "+y":
-            stage = _stage.orient_new_axis("stage", sympy.pi, _stage.k)
+            dstage = _stage.locate_new("dstage", v_origin)
+            stage = dstage.orient_new_axis("stage", sympy.pi, dstage.k)
         else:
             raise NotImplementedError
 
@@ -440,7 +442,8 @@ class SDC:
         if self.frame_orientation == "-y":
             stage = _stage.locate_new("stage", v_origin)
         elif self.frame_orientation == "+y":
-            stage = _stage.orient_new_axis("stage", sympy.pi, _stage.k)
+            dstage = _stage.locate_new("dstage", v_origin)
+            stage = dstage.orient_new_axis("stage", sympy.pi, dstage.k)
         else:
             raise NotImplementedError
 
