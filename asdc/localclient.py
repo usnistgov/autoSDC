@@ -318,7 +318,6 @@ class SDC:
 
     def current_versa_xy(self):
         """ get current stage coords in mm """
-
         with sdc.position.controller() as pos:
             x_versa = pos.x * 1e3
             y_versa = pos.y * 1e3
@@ -347,6 +346,7 @@ class SDC:
 
         logger.debug(f"wafer edge coordinates: {wafer_edge_coords}")
         logger.debug(f"center coordinate: {center}")
+        logger.debug(f"wafer diameter: {0.002 * tri.circumradius} mm")
 
         # move the stage to focus the camera on the center of the wafer...
         current = np.array(self.current_versa_xy())
