@@ -365,16 +365,10 @@ class SDC:
         # relative to the last recorded positions
         cam = self.camera_frame
 
-        if self.frame_orientation == "-y":
-            _stage = cam.orient_new(
-                "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
-            )
-        elif self.frame_orientation == "+y":
-            _stage = cam.orient_new(
-                "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, sympy.pi, "ZYZ")
-            )
-        else:
-            raise NotImplementedError
+        # start assuming orientation -y
+        _stage = cam.orient_new(
+            "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
+        )
 
         # find the origin of the combi wafer in the coincident stage frame
         v = 0.0 * cam.i + 0.0 * cam.j
@@ -391,7 +385,13 @@ class SDC:
         v_origin = l[1] * cam.i + l[0] * cam.j
 
         # construct the shifted stage frame
-        stage = _stage.locate_new("stage", v_origin)
+        if self.frame_orientation == "-y":
+            stage = _stage.locate_new("stage", v_origin)
+        elif self.frame_orientation == "+y":
+            stage = _stage.orient_new_axis("stage", sympy.pi, _stage.k)
+        else:
+            raise NotImplementedError
+
         self.stage_frame = stage
 
     def sync_coordinate_systems(
@@ -410,18 +410,9 @@ class SDC:
         # relative to the last recorded positions
         cell = self.cell_frame
 
-        if orientation is None:
-            orientation = self.frame_orientation
-        if orientation == "-y":
-            _stage = cell.orient_new(
-                "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
-            )
-        elif orientation == "+y":
-            _stage = cell.orient_new(
-                "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, sympy.pi, "ZYZ")
-            )
-        else:
-            raise NotImplementedError
+        _stage = cell.orient_new(
+            "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
+        )
 
         # find the origin of the combi wafer in the coincident stage frame
         v = ref["x_combi"] * cell.i + ref["y_combi"] * cell.j
@@ -442,6 +433,17 @@ class SDC:
 
         # construct the shifted stage frame
         stage = _stage.locate_new("stage", v_origin)
+
+        if orientation is None:
+            orientation = self.frame_orientation
+
+        if self.frame_orientation == "-y":
+            stage = _stage.locate_new("stage", v_origin)
+        elif self.frame_orientation == "+y":
+            stage = _stage.orient_new_axis("stage", sympy.pi, _stage.k)
+        else:
+            raise NotImplementedError
+
         return stage
 
     def compute_position_update(self, x: float, y: float, frame: Any) -> np.ndarray:
