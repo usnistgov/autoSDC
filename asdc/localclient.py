@@ -313,9 +313,11 @@ class SDC:
                 }
             )
         else:
-            # arbitrarily grab the first position
+            # used to arbitrarily grab the first position
+            # this breaks things if reloading reference frame after
+            # realigning wafer. currently grab most recent position.
             # TODO: verify that this record comes from the current session...
-            ref = refs.iloc[0].to_dict()
+            ref = refs.iloc[-1].to_dict()
             ref["x_versa"] *= 1e3
             ref["y_versa"] *= 1e3
             ref = pd.Series(ref)
