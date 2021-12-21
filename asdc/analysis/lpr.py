@@ -186,9 +186,9 @@ class LPRData(EchemData):
         Optional: plot a regression line computing the polarization resistance
         """
         # # super().plot('current', 'potential')
-        plt.plot(self["current"], self["potential"], ".",label='Measured data')
+        plt.plot(self["current"]*1000, self["potential"], ".",label='Measured data')
         plt.axvline(0, color="k", alpha=0.5, linewidth=0.5)
-        plt.xlabel("Current (A)")
+        plt.xlabel("Current (mA)")
         plt.ylabel("Potential (V vs. Ag/AgCl)")
 
         if fit:
@@ -196,8 +196,8 @@ class LPRData(EchemData):
 
             ylim = plt.ylim()
             x = np.linspace(self.current.min(), self.current.max(), 100)
-            plt.plot(x, self.evaluate_model(x), linestyle="--", color="k", alpha=0.5,label='LPR fit')
-            plt.plot(self.fit_current, self["potential"],label='Residual current')
+            plt.plot(x*1000, self.evaluate_model(x), linestyle="--", color="k", alpha=0.5,label='LPR fit')
+            plt.plot(self.fit_current*1000, self["potential"],label='Residual current')
             plt.ylim(ylim)
 
         plt.tight_layout()
