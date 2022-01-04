@@ -925,19 +925,21 @@ class SDC:
                 time.sleep(2)
 
                 # counterpump slower to fill the droplet
-                # stop the RINSE channel halfway through
                 logger.debug("filling droplet")
                 cell_fill_rates = self._scale_flow(
                     setup_composition, nominal_rate=self.fill_rate
                 )
+
+                # howie wants to turn on the drain and syringe array together
+                # purge the extra leg of loop for a bit
                 self.pump_array.set_rates(cell_fill_rates, start=True, fast=True)
-                self.reglo.set_rates(
-                    {
-                        # Channel.SOURCE: self.fill_rate,
-                        Channel.LOOP: -self.fill_rate,
-                        Channel.DRAIN: -self.fill_counter_ratio * self.fill_rate,
-                    }
+                self.reglo.continuousFlow(
+                    -self.fill_counter_ratio * self.fill_rate, channel=Channel.DRAIN
                 )
+                time.sleep(10)
+                self.reglo.continuousFlow(-self.fill_rate, channel=Channel.LOOP)
+
+                # stop the RINSE channel halfway through
                 time.sleep(self.fill_time / 2)
                 self.reglo.stop(Channel.RINSE)
                 time.sleep(self.fill_time / 2)
