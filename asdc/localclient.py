@@ -422,9 +422,20 @@ class SDC:
         # relative to the last recorded positions
         cell = self.cell_frame
 
-        _stage = cell.orient_new(
-            "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
-        )
+        if self.frame_orientation == "-y":
+            _stage = self.cell_frame.orient_new_axis("_stage", 0, self.cell_frame.k)
+
+        if self.frame_orientation == "+y":
+            _stage = self.cell_frame.orient_new_axis(
+                "_stage", sympy.pi, self.cell_frame.k
+            )
+
+        # I think this is obviated by moving the temporary reference frame
+        # up in the constructor...
+        # this was with orientation -y
+        # _stage = cell.orient_new(
+        #     "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
+        # )
 
         # find the origin of the combi wafer in the coincident stage frame
         v = ref["x_combi"] * cell.i + ref["y_combi"] * cell.j
