@@ -396,14 +396,6 @@ class SDC:
         # construct the shifted stage frame
         stage = _stage.locate_new("stage", v_origin)
 
-        # if self.frame_orientation == "-y":
-        #     stage = _stage.locate_new("stage", v_origin)
-        # elif self.frame_orientation == "+y":
-        #     dstage = _stage.locate_new("dstage", v_origin)
-        #     stage = dstage.orient_new_axis("stage", sympy.pi, dstage.k)
-        # else:
-        #     raise NotImplementedError
-
         self.stage_frame = stage
 
     def sync_coordinate_systems(
@@ -423,19 +415,19 @@ class SDC:
         cell = self.cell_frame
 
         if self.frame_orientation == "-y":
-            _stage = self.cell_frame.orient_new_axis("_stage", 0, self.cell_frame.k)
+            rel_cell = cell.orient_new_axis("rec_cell", 0, cell.k)
 
         if self.frame_orientation == "+y":
-            _stage = self.cell_frame.orient_new_axis(
-                "_stage", sympy.pi, self.cell_frame.k
-            )
+            rel_cell = cell.orient_new_axis("rel_cell", sympy.pi, cell.k)
 
-        # I think this is obviated by moving the temporary reference frame
-        # up in the constructor...
-        # this was with orientation -y
-        # _stage = cell.orient_new(
-        #     "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
-        # )
+        # orient the stage wrt to the wafer holder coordinate system
+        # (the reference frame that doesn't depend on wafer orientation)
+        # this was aligned with orientation -y
+        # this rotation is needed to flip the axes so that the z axis points down
+        # in the current configuration of the stages (+x points east, +y points south)
+        _stage = rel_cell.orient_new(
+            "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
+        )
 
         # find the origin of the combi wafer in the coincident stage frame
         v = ref["x_combi"] * cell.i + ref["y_combi"] * cell.j
@@ -461,13 +453,6 @@ class SDC:
             orientation = self.frame_orientation
 
         stage = _stage.locate_new("stage", v_origin)
-        # if self.frame_orientation == "-y":
-        #     stage = _stage.locate_new("stage", v_origin)
-        # elif self.frame_orientation == "+y":
-        #     dstage = _stage.locate_new("dstage", v_origin)
-        #     stage = dstage.orient_new_axis("stage", sympy.pi, dstage.k)
-        # else:
-        #     raise NotImplementedError
 
         return stage
 
