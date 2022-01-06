@@ -215,23 +215,22 @@ class SDC:
         xray_offset = config.get("xray_offset", [44.74, -4.4035])
 
         self.cell_frame = CoordSys3D("cell")
+
         if self.frame_orientation == "-y":
-            rel_frame = self.cell_frame.orient_new_axis(
-                "rel_frame", 0, self.cell_frame.k
-            )
-
+            theta = 0
         if self.frame_orientation == "+y":
-            rel_frame = self.cell_frame.orient_new_axis(
-                "rel_frame", sympy.pi, self.cell_frame.k
-            )
+            theta = sympy.pi
 
-        # self.camera_frame = rel_frame.locate_new(
-        #     "camera", camera_offset[0] * rel_frame.i + camera_offset[1] * rel_frame.j,
-        # )
-        self.camera_frame = self.cell_frame.locate_new(
-            "camera",
-            camera_offset[0] * self.cell_frame.i + camera_offset[1] * self.cell_frame.j,
+        rel_frame = self.cell_frame.orient_new_axis(
+            "rel_frame", theta, self.cell_frame.k
         )
+
+        # shift relative to the sample holder reference frame
+        # then rotate into the sample reference frame
+        cam = rel_frame.locate_new(
+            "_camera", camera_offset[0] * rel_frame.i + camera_offset[1] * rel_frame.j,
+        )
+        self.camera_frame = cam.orient_new_axis("camera", -theta, cam.k)
 
         self.laser_frame = rel_frame.locate_new(
             "laser", laser_offset[0] * rel_frame.i + laser_offset[1] * rel_frame.j,
