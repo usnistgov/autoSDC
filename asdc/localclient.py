@@ -429,6 +429,7 @@ class SDC:
             "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
         )
 
+        # older version relied on coincident reference frame shift...
         # find the origin of the combi wafer in the coincident stage frame
         v = ref["x_combi"] * cell.i + ref["y_combi"] * cell.j
         combi_origin = v.to_matrix(_stage)
@@ -437,14 +438,16 @@ class SDC:
         combi_origin = np.array(combi_origin).squeeze()[:-1]
 
         # now find the origin of the stage frame
-        xv_init = np.array([ref["x_versa"], ref["y_versa"]])
+        xv_ref = np.array([ref["x_versa"], ref["y_versa"]])
         if resume:
-            offset = np.array([x_versa, y_versa]) - xv_init
+            offset = np.array([x_versa, y_versa]) - xv_ref
             logger.debug(f"wafer offset: {offset}")
             # xv_init += offset
 
-        l = xv_init - combi_origin
-        v_origin = l[1] * cell.i + l[0] * cell.j
+        # coordinate of wafer center in stage frame
+        l = xv_ref - combi_origin
+
+        v_origin = l[1] * rel_cell.i + l[0] * rel_cell.j
 
         # construct the shifted stage frame
         stage = _stage.locate_new("stage", v_origin)
