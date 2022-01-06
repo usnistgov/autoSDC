@@ -225,9 +225,14 @@ class SDC:
                 "rel_frame", sympy.pi, self.cell_frame.k
             )
 
-        self.camera_frame = rel_frame.locate_new(
-            "camera", camera_offset[0] * rel_frame.i + camera_offset[1] * rel_frame.j,
+        # self.camera_frame = rel_frame.locate_new(
+        #     "camera", camera_offset[0] * rel_frame.i + camera_offset[1] * rel_frame.j,
+        # )
+        self.camera_frame = self.cell_frame.locate_new(
+            "camera",
+            camera_offset[0] * self.cell_frame.i + camera_offset[1] * self.cell_frame.j,
         )
+
         self.laser_frame = rel_frame.locate_new(
             "laser", laser_offset[0] * rel_frame.i + laser_offset[1] * rel_frame.j,
         )
