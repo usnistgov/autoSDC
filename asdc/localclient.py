@@ -45,6 +45,7 @@ from asdc import visualization
 from asdc.analysis import EchemData
 
 from asdc.sdc.reglo import Channel
+from asdc.utils import make_circle
 
 potentiostat_id = 17109013
 
@@ -483,7 +484,7 @@ class SDC:
             P.express_coordinates(self.stage_frame), dtype=np.float
         )
 
-        logger.debug(f"target coordinites: {target_coords}")
+        logger.debug(f"target coordinates: {target_coords}")
 
         with sdc.position.controller() as pos:
             # map m -> mm
@@ -1149,7 +1150,7 @@ class SDC:
         if block:
             message = f"*confirm*: {message}"
 
-        logger.info(message)
+            logger.info(message)
 
         if block:
             input("press enter to allow running the experiment...")
@@ -1282,10 +1283,22 @@ class SDC:
             if p == "image":
                 self.collect_image(location_id)
 
-    def clean_droplet(self):
-        """ just clean up without a rinse """
+    def clean_droplet(self, stage=None):
+        """Just clean up without a rinse.
+
+        Add a circular trajectory.
+        Not safe to run if the cell is in contact with the sample...
+        """
 
         pulse_flowrate = -10.0
+
+        # current stage coords in mm
+        x_versa, y_versa = self.current_versa_xy()
+
+        # plan a circular trajectory with 2mm radius
+        c = make_circle(r=2, n=10)
+        stage_targets = np.array([x_versa, y_versa]) + c
+        n_segments, _ = stage_targets.shape
 
         if self.cleanup_pause > 0:
             cleanup_drain_rate = -10.0
@@ -1300,9 +1313,13 @@ class SDC:
                 time.sleep(self.cleanup_pulse_duration)
                 self.reglo.continuousFlow(cleanup_drain_rate, channel=Channel.DRAIN)
 
-            # run the RINSE channel for only half the cleanup duration
-            # to allow the NEEDLE time to clean everything up
-            time.sleep(self.cleanup_pause)
+            # time.sleep(self.cleanup_pause)
+            for stage_target in stage_targets:
+                self.move_stage(
+                    stage_target[0], stage_target[1], self.stage_frame, stage=stage
+                )
+                time.sleep(self.cleanup_pause / n_segments)
+
             self.reglo.stop((Channel.LOOP, Channel.DRAIN))
 
     def collect_image(self, location_id, cleanup=True):
@@ -1315,10 +1332,12 @@ class SDC:
         x_combi = sample["x_combi"]
         y_combi = sample["y_combi"]
 
-        with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
+        with sdc.position.sync_z_step(
+            height=self.wetting_height, speed=self.speed
+        ) as stage:
 
             if cleanup and self.cleanup_pause > 0:
-                self.clean_droplet()
+                self.clean_droplet(stage=stage)
 
             height_difference = self.characterization_height - self.wetting_height
             height_difference = max(0, height_difference)
