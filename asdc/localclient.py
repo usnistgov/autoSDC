@@ -146,6 +146,7 @@ class SDC:
         self.initial_combi_position = pd.Series(config["initial_combi_position"])
         self.v_position = self.initial_versastat_position
         self.c_position = self.initial_combi_position
+        self.z_contact = None
         self.initialize_z_position = config.get("initialize_z_position", False)
 
         # which wafer direction is aligned with position controller +x direction?
@@ -297,6 +298,14 @@ class SDC:
         # without having to chain ametek backend calls explicitly
         # better to chain experiments and split them at serialization time?
         self.ocp_hold_value = None
+
+    def register_sample_contact(self):
+        """Run this when the cell is in contact with the sample."""
+        with sdc.position.controller(ip="192.168.10.11") as pos:
+            p = pos.current_position()
+
+        logger.debug(f"registering sample contact: z={p[-1]}")
+        self.z_contact = p[-1]
 
     def get_last_known_position(self, x_versa, y_versa, resume=False):
         """set up initial cell reference relative to a previous database entry if possible
@@ -893,66 +902,45 @@ class SDC:
         self.reglo.set_rates({Channel.RINSE: 5.0, Channel.NEEDLE: -10.0})
         time.sleep(1)
 
-        with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
+        # with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
 
-            # surface cleanup
-            if self.cleanup_pause > 0:
-                cleanup_drain_rate = -10.0
-                cleanup_loop_rate = -cleanup_drain_rate / 2
-                logger.debug("cleaning up...")
-                self.reglo.set_rates(
-                    {Channel.DRAIN: cleanup_drain_rate, Channel.LOOP: cleanup_loop_rate}
-                )
+        # sample alignment and droplet formation
+        with sdc.position.controller(speed=self.speed) as stage:
 
-                if self.cleanup_pulse_duration > 0:
-                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
-                    time.sleep(self.cleanup_pulse_duration)
-                    self.reglo.continuousFlow(cleanup_drain_rate, channel=Channel.DRAIN)
+            # sample alignment
+            if x_wafer is not None and y_wafer is not None:
+                self.move_stage(x_wafer, y_wafer, self.cell_frame)
 
-                # run the RINSE channel for only half the cleanup duration
-                # to allow the NEEDLE time to clean everything up
-                time.sleep(self.cleanup_pause / 2)
-                self.reglo.stop(Channel.RINSE)
+            # go to droplet height
+            stage.z = self.z_contact + self.droplet_height
 
-                time.sleep(self.cleanup_pause / 2)
-                self.reglo.stop((Channel.LOOP, Channel.DRAIN))
+            logger.debug("starting rinse")
+            self.reglo.set_rates({Channel.RINSE: 5.0})
+            time.sleep(2)
 
-            # sample alignment and droplet formation
-            height_difference = self.droplet_height - self.wetting_height
-            height_difference = max(0, height_difference)
-            with sdc.position.sync_z_step(
-                height=height_difference, speed=self.speed
-            ) as stage:
+            # counterpump slower to fill the droplet
+            logger.debug("filling droplet")
+            cell_fill_rates = self._scale_flow(
+                setup_composition, nominal_rate=self.fill_rate
+            )
 
-                # sample alignment
-                if x_wafer is not None and y_wafer is not None:
-                    self.move_stage(x_wafer, y_wafer, self.cell_frame)
+            # howie wants to turn on the drain and syringe array together
+            # purge the extra leg of loop for a bit
+            self.pump_array.set_rates(cell_fill_rates, start=True, fast=True)
+            self.reglo.continuousFlow(
+                -self.fill_counter_ratio * self.fill_rate, channel=Channel.DRAIN
+            )
+            time.sleep(10)
+            self.reglo.continuousFlow(-self.fill_rate, channel=Channel.LOOP)
 
-                logger.debug("starting rinse")
-                self.reglo.set_rates({Channel.RINSE: 5.0})
-                time.sleep(2)
-
-                # counterpump slower to fill the droplet
-                logger.debug("filling droplet")
-                cell_fill_rates = self._scale_flow(
-                    setup_composition, nominal_rate=self.fill_rate
-                )
-
-                # howie wants to turn on the drain and syringe array together
-                # purge the extra leg of loop for a bit
-                self.pump_array.set_rates(cell_fill_rates, start=True, fast=True)
-                self.reglo.continuousFlow(
-                    -self.fill_counter_ratio * self.fill_rate, channel=Channel.DRAIN
-                )
-                time.sleep(10)
-                self.reglo.continuousFlow(-self.fill_rate, channel=Channel.LOOP)
-
-                # stop the RINSE channel halfway through
-                time.sleep(self.fill_time / 2)
-                self.reglo.stop(Channel.RINSE)
-                time.sleep(self.fill_time / 2)
+            # stop the RINSE channel halfway through
+            time.sleep(self.fill_time / 2)
+            self.reglo.stop(Channel.RINSE)
+            time.sleep(self.fill_time / 2)
 
             # drop down to wetting height
+            stage.z = self.z_contact + self.wetting_height
+
             # counterpump faster to shrink the droplet
             logger.debug("differentially pumping to shrink the droplet")
             shrink_flowrate = self.fill_rate * self.shrink_counter_ratio
@@ -962,8 +950,9 @@ class SDC:
             logger.debug("equalizing differential pumping rate")
             self.reglo.continuousFlow(-self.fill_rate, channel=Channel.DRAIN)
 
-        # drop down to contact...
-        time.sleep(3)
+            # drop down to contact...
+            stage.z = self.z_contact
+            time.sleep(3)
 
         # purge... (and monitor pH)
         if logfile is None:
@@ -1337,7 +1326,7 @@ class SDC:
         y_combi = sample["y_combi"]
 
         with sdc.position.sync_z_step(
-            height=self.wetting_height, speed=self.speed
+            height=self.wetting_height, speed=self.speed, revert=False
         ) as stage:
 
             if cleanup and self.cleanup_pause > 0:
@@ -1345,11 +1334,12 @@ class SDC:
 
             height_difference = self.characterization_height - self.wetting_height
             height_difference = max(0, height_difference)
-            with sdc.position.sync_z_step(height=height_difference, speed=self.speed):
+            with sdc.position.sync_z_step(
+                height=height_difference, speed=self.speed, revert=False
+            ):
 
                 self.move_stage(x_combi, y_combi, self.camera_frame)
                 self.capture_image_new(sample["id"])
-                self.move_stage(x_combi, y_combi, self.cell_frame)
 
     def run_characterization(self, args: str):
         """perform cell cleanup and characterization
@@ -1851,6 +1841,8 @@ class SDC:
         return instructions
 
     def batch_execute_experiments(self, instructions_file=None, capture_images=False):
+        # remember z stage coordinate
+        self.register_sample_contact(self)
 
         instructions = self.load_experiments(instructions_file)
 
