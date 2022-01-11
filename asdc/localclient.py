@@ -289,6 +289,10 @@ class SDC:
             self.reflectometer = None
             self.light = None
 
+        # if we explicitly don't want to switch the light, don't
+        if not config.get("toggle_light", True):
+            self.light = None
+
         # keep track of OCP trace value to run relative scans
         # without having to chain ametek backend calls explicitly
         # better to chain experiments and split them at serialization time?
