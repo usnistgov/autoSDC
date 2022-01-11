@@ -1300,7 +1300,7 @@ class SDC:
         x_versa, y_versa = self.current_versa_xy()
 
         # plan a circular trajectory with 2mm radius
-        c = make_circle(r=2, n=10)
+        c = make_circle(r=2, n=30)
         stage_targets = np.array([x_versa, y_versa]) + c
         n_segments, _ = stage_targets.shape
 
