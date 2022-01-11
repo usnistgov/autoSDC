@@ -1275,6 +1275,13 @@ class SDC:
 
         logger.info(f"finished experiment {location_id}: {summary}")
 
+        # a bit inflexible? post-experiment hooks
+        post = header.get("post", [])
+
+        for p in post:
+            if p == "image":
+                self.collect_image(location_id)
+
     def clean_droplet(self):
         """ just clean up without a rinse """
 
@@ -1298,12 +1305,15 @@ class SDC:
             time.sleep(self.cleanup_pause)
             self.reglo.stop((Channel.LOOP, Channel.DRAIN))
 
-    def collect_image(self, instructions, cleanup=True):
-        x_combi, y_combi = instructions.get("x", None), instructions.get("y", None)
-        sample = self.db["location"].find_one(x_combi=x_combi, y_combi=y_combi)
+    def collect_image(self, location_id, cleanup=True):
+        """Clean up droplet and collect image for sample `location_id`.
 
-        # check for an instruction group name/intent
-        intent = instructions.get("intent")
+        Return cell to the measured spot at the end...
+        """
+
+        sample = self.db["location"].find_one(id=location_id)
+        x_combi = sample["x_combi"]
+        y_combi = sample["y_combi"]
 
         with sdc.position.sync_z_step(height=self.wetting_height, speed=self.speed):
 
@@ -1689,9 +1699,15 @@ class SDC:
     @contextmanager
     def light_on(self):
         """ context manager to toggle the light on and off for image acquisition """
-        self.light.set("on")
+        if self.light is not None:
+            self.light.set("on")
+        else:
+            logger.debug("sample light relay not connected.")
+
         yield
-        self.light.set("off")
+
+        if self.light is not None:
+            self.light.set("off")
 
     def capture_image(self, primary_key=None):
         """capture an image from the webcam.
