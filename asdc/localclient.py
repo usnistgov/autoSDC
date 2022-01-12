@@ -596,9 +596,6 @@ class SDC:
 
         self.move_stage(x, y, frame)
 
-        # @ctl -- update the semaphore in the controller process
-        # await self.dm_controller(web_client, '<@UHNHM7198> update position is set.')
-
     def _scale_flow(self, rates: Dict, nominal_rate: float = 0.5) -> Dict:
         """ high nominal flow_rate for running out to steady state """
 
@@ -608,137 +605,6 @@ class SDC:
             total_rate = 1.0
 
         return {key: val * nominal_rate / total_rate for key, val in rates.items()}
-
-    def debug_reglo_droplet(
-        self,
-        prep_height=0.004,
-        wetting_height=0.0011,
-        fill_rate=1.0,
-        fill_counter_ratio=0.75,
-        fill_time=None,
-        shrink_counter_ratio=1.1,
-        shrink_time=None,
-        flow_rate=0.5,
-        target_rate=0.05,
-        cleanup_duration=3,
-        cleanup_pulse_duration=0,
-        stage_speed=0.001,
-    ):
-        """slack bot command for prototyping droplet contact routine
-
-        #### json arguments
-
-        | Name             | Type  | Description                                         | Default |
-        |------------------|-------|-----------------------------------------------------|---------|
-        | `prep_height`    | float | z setting to grow the droplet                       |     4mm |
-        | `wetting_height` | float | z setting to wet the droplet to the surface         |   1.1mm |
-        | `fill_rate`      | float | pumping rate during droplet growth                  | 1 mL/min |
-        | `fill_counter_ratio` | float | counterpumping ratio during droplet growth          |    0.75 |
-        | `fill_time`      | float | droplet growth duration (s)                         |    None |
-        | `shrink_counter_ratio` | float | counterpumping ratio during droplet wetting phase   |     1.1 |
-        | `shrink_time`    | float | droplet wetting duration (s)                        |    None |
-        | `flow_rate`      | float | total flow rate during droplet formation (mL/min)   |     0.5 |
-        | `target_rate`    | float | final flow rate after droplet formation  (mL/min)   |    0.05 |
-        | `cleanup`        | float | duration of pre-droplet-formation cleanup siphoning |       0 |
-        | `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
-
-        """
-
-        # stage speed is specified in m/s
-        stage_speed = min(stage_speed, 1e-3)
-        stage_speed = max(stage_speed, 1e-5)
-
-        # start at zero
-        with sdc.position.sync_z_step(height=wetting_height, speed=stage_speed):
-
-            if cleanup_duration > 0:
-                # TODO: turn on the needle
-                # make an option to pulse loop and dump simultaneously, same rate opposite directions?
-                logger.debug("cleaning up...")
-                self.reglo.continuousFlow(-10.0, channel=Channel.NEEDLE)
-                self.reglo.stop([Channel.SOURCE, Channel.LOOP])
-
-                if cleanup_pulse_duration > 0:
-                    pulse_flowrate = -1.0
-                    # self.reglo.continuousFlow(pulse_flowrate, channel=Channel.LOOP)
-                    self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
-                    time.sleep(cleanup_pulse_duration)
-
-                self.reglo.stop(channel=Channel.DRAIN)
-
-                time.sleep(cleanup_duration)
-
-            height_difference = prep_height - wetting_height
-            height_difference = max(0, height_difference)
-            with sdc.position.sync_z_step(height=height_difference, speed=stage_speed):
-
-                # counterpump slower to fill the droplet
-                logger.debug("filling droplet")
-                self.reglo.set_rates(
-                    {
-                        Channel.SOURCE: fill_rate,
-                        Channel.LOOP: -fill_rate,
-                        Channel.DRAIN: -fill_counter_ratio * fill_rate,
-                    }
-                )
-
-                fill_start = time.time()
-                if fill_time is None:
-                    input("*filling droplet*: press enter to continue...")
-                else:
-                    time.sleep(fill_time)
-                fill_time = time.time() - fill_start
-
-            # drop down to wetting height
-            # counterpump faster to shrink the droplet
-            logger.debug("shrinking droplet")
-            shrink_flowrate = fill_rate * shrink_counter_ratio
-            self.reglo.continuousFlow(-shrink_flowrate, channel=Channel.DRAIN)
-
-            shrink_start = time.time()
-            if shrink_time is None:
-                input("*shrinking droplet*: press enter to continue...")
-            else:
-                time.sleep(shrink_time)
-            shrink_time = time.time() - shrink_start
-
-            logger.debug("equalizing differential pumping rate")
-            self.reglo.continuousFlow(-fill_rate, channel=Channel.DRAIN)
-
-        # drop down to contact height
-        # instructions['fill_time'] = fill_time
-        # instructions['shrink_time'] = shrink_time
-
-        time.sleep(3)
-
-        # purge...
-        logger.debug("purging solution")
-        purge_rate = 11.0
-        self.reglo.set_rates(
-            {
-                Channel.SOURCE: purge_rate,
-                Channel.LOOP: -purge_rate,
-                Channel.DRAIN: -purge_rate,
-            }
-        )
-
-        time.sleep(30)
-
-        # reverse the loop direction
-        self.reglo.continuousFlow(6.0, channel=Channel.LOOP)
-
-        time.sleep(3)
-
-        # disable source and dump
-        self.reglo.stop([Channel.SOURCE, Channel.DRAIN])
-
-        # step to target flow rate
-        self.reglo.set_rates({Channel.LOOP: target_rate, Channel.NEEDLE: -2.0})
-
-        # message = f"contact routine with {json.dumps(locals())}"
-        # logger.debug(message)
-        logger.debug(f"local vars: {locals}")
-        return
 
     def cleanup_droplet(self):
         """ pick up the cell head and do a rinse and clean. """
@@ -822,6 +688,21 @@ class SDC:
 
         }
         ```
+
+        | Name             | Type  | Description                                         | Default |
+        |------------------|-------|-----------------------------------------------------|---------|
+        | `prep_height`    | float | z setting to grow the droplet                       |     4mm |
+        | `wetting_height` | float | z setting to wet the droplet to the surface         |   1.1mm |
+        | `fill_rate`      | float | counterpumping ratio during droplet growth          |    0.75 |
+        | `fill_time`      | float | droplet growth duration (s)                         |    None |
+        | `shrink_rate`    | float | counterpumping ratio during droplet wetting phase   |     1.1 |
+        | `shrink_time`    | float | droplet wetting duration (s)                        |    None |
+        | `flow_rate`      | float | total flow rate during droplet formation (mL/min)   |     0.5 |
+        | `target_rate`    | float | final flow rate after droplet formation  (mL/min)   |    0.05 |
+        | `cleanup`        | float | duration of pre-droplet-formation cleanup siphoning |       0 |
+        | `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
+        | `solutions`      | List[str]   | list of solutions to pump with                |   None  |
+
 
         """
 
@@ -992,76 +873,6 @@ class SDC:
             logger.info(
                 f"current pH reading is {current_pH_reading} (target is {pH_target})"
             )
-
-        return
-
-    def syringe_establish_droplet(
-        self, x_wafer: float, y_wafer: float, flow_instructions: Dict
-    ):
-        """ align the stage with a sample point, form a droplet, and flush lines if needed """
-
-        rates = flow_instructions.get("rates")
-        cell_fill_rates = self._scale_flow(rates, nominal_rate=0.5)
-        line_flush_rates = self._scale_flow(rates, nominal_rate=1.0)
-
-        # if relative flow rates don't match, purge solution
-        line_flush_duration = flow_instructions.get("hold_time", 0)
-        line_flush_needed = relative_flow(rates) != relative_flow(
-            self.pump_array.flow_setpoint
-        )
-
-        # droplet workflow -- start at zero
-        logger.debug("starting droplet workflow")
-        with sdc.position.sync_z_step(
-            height=self.wetting_height, speed=self.speed
-        ) as stage:
-
-            if self.cleanup_pause > 0:
-                logger.debug("cleaning up...")
-                self.pump_array.stop_all(counterbalance="full", fast=True)
-                time.sleep(self.cleanup_pause)
-
-            self.move_stage(x_wafer, y_wafer, self.cell_frame)
-
-            height_difference = self.droplet_height - self.wetting_height
-            height_difference = max(0, height_difference)
-            with sdc.position.sync_z_step(height=height_difference, speed=self.speed):
-
-                # counterpump slower to fill the droplet
-                logger.debug("differentially pumping to grow the droplet")
-                self.pump_array.set_rates(
-                    cell_fill_rates,
-                    counterpump_ratio=self.fill_ratio,
-                    start=True,
-                    fast=True,
-                )
-                time.sleep(self.fill_time)
-
-            # drop down to wetting height
-            # counterpump faster to shrink the droplet
-            logger.debug("differentially pumping to shrink the droplet")
-            self.pump_array.set_rates(
-                cell_fill_rates,
-                counterpump_ratio=self.shrink_ratio,
-                start=True,
-                fast=True,
-            )
-            time.sleep(self.shrink_time)
-
-            logger.debug("equalizing differential pumping rate")
-            self.pump_array.set_rates(
-                line_flush_rates, counterpump_ratio=0.95, start=True, fast=True
-            )
-
-        # flush lines with cell in contact
-        if line_flush_needed:
-            logger.debug("performing line flush")
-            time.sleep(line_flush_duration)
-
-        time.sleep(3)
-
-        logger.debug(f"stepping flow rates to {rates}")
-        self.pump_array.set_rates(rates, counterpump_ratio=0.95, start=True, fast=True)
 
         return
 
@@ -1382,7 +1193,7 @@ class SDC:
                 self.establish_droplet(flow_instructions, x_combi, y_combi)
 
         # run cleanup and optical characterization
-        self.pump_array.stop_all(counterbalance="full", fast=True)
+        self.pump_array.stop_all(fast=True)
         time.sleep(0.25)
 
         characterization_ops = set(i.get("op") for i in instructions if "op" in i)
@@ -1497,117 +1308,6 @@ class SDC:
 
             # move back to the cell frame for the second spot
             self.move_stage(x_combi, y_combi, self.cell_frame)
-
-    def droplet(self, args: str):
-        """slack bot command for prototyping droplet contact routine
-
-        #### json arguments
-
-        | Name             | Type  | Description                                         | Default |
-        |------------------|-------|-----------------------------------------------------|---------|
-        | `prep_height`    | float | z setting to grow the droplet                       |     4mm |
-        | `wetting_height` | float | z setting to wet the droplet to the surface         |   1.1mm |
-        | `fill_rate`      | float | counterpumping ratio during droplet growth          |    0.75 |
-        | `fill_time`      | float | droplet growth duration (s)                         |    None |
-        | `shrink_rate`    | float | counterpumping ratio during droplet wetting phase   |     1.1 |
-        | `shrink_time`    | float | droplet wetting duration (s)                        |    None |
-        | `flow_rate`      | float | total flow rate during droplet formation (mL/min)   |     0.5 |
-        | `target_rate`    | float | final flow rate after droplet formation  (mL/min)   |    0.05 |
-        | `cleanup`        | float | duration of pre-droplet-formation cleanup siphoning |       0 |
-        | `stage_speed`    | float | stage velocity during droplet formation op          |   0.001 |
-        | `solutions`      | List[str]   | list of solutions to pump with                |   None  |
-
-        """
-        instructions = json.loads(args)
-
-        prep_height = max(0, instructions.get("height", 0.004))
-        wetting_height = max(0, instructions.get("wetting_height", 0.0011))
-        fill_ratio = instructions.get("fill_rate", 0.75)
-        fill_time = instructions.get("fill_time", None)
-        shrink_ratio = instructions.get("shrink_rate", 1.1)
-        shrink_time = instructions.get("shrink_time", None)
-        flow_rate = instructions.get("flow_rate", 0.5)
-        target_rate = instructions.get("target_rate", 0.05)
-        cleanup_duration = instructions.get("cleanup", 0)
-        stage_speed = instructions.get("stage_speed", self.speed)
-        solutions = instructions.get("solutions")
-
-        # stage speed is specified in m/s
-        stage_speed = min(stage_speed, 1e-3)
-        stage_speed = max(stage_speed, 1e-5)
-
-        # just pump from the first syringe pump
-        # solution = next(iter(self.solutions))
-        if solutions is None:
-            solution = self.solutions[0]
-            s = next(iter(solution))
-            _rates = {s: flow_rate}
-        elif type(solutions) is list:
-            _rates = {s: 1.0 for s in solutions}
-        elif type(solutions) is dict:
-            _rates = solutions
-
-        rates = self._scale_flow(_rates, nominal_rate=flow_rate)
-        target_rates = self._scale_flow(_rates, nominal_rate=target_rate)
-
-        logger.info(f"rates: {rates}")
-        logger.info(f"target_rates: {target_rates}")
-
-        # start at zero
-        with sdc.position.z_step(height=wetting_height, speed=stage_speed):
-
-            if cleanup_duration > 0:
-                logger.info("cleaning up...")
-                self.pump_array.stop_all(counterbalance="full", fast=True)
-                time.sleep(cleanup_duration)
-
-            height_difference = prep_height - wetting_height
-            height_difference = max(0, height_difference)
-            with sdc.position.z_step(height=height_difference, speed=stage_speed):
-
-                # counterpump slower to fill the droplet
-                logger.info("filling droplet")
-                self.pump_array.set_rates(
-                    rates, counterpump_ratio=fill_ratio, start=True, fast=True
-                )
-                fill_start = time.time()
-                if fill_time is None:
-                    input("*filling droplet*: press enter to continue...")
-                else:
-                    time.sleep(fill_time)
-                fill_time = time.time() - fill_start
-
-            # drop down to wetting height
-            # counterpump faster to shrink the droplet
-            logger.info("shrinking droplet")
-            self.pump_array.set_rates(rates, counterpump_ratio=shrink_ratio, fast=True)
-            shrink_start = time.time()
-            if shrink_time is None:
-                input("*shrinking droplet*: press enter to continue...")
-            else:
-                time.sleep(shrink_time)
-            shrink_time = time.time() - shrink_start
-
-            logger.info("equalizing differential pumping rate")
-            self.pump_array.set_rates(rates, fast=True, start=True)
-
-        # drop down to contact height
-        instructions["fill_time"] = fill_time
-        instructions["shrink_time"] = shrink_time
-
-        time.sleep(3)
-
-        logger.info(f"stepping flow rates to {rates}")
-        self.pump_array.set_rates(
-            target_rates, counterpump_ratio=0.95, fast=True, start=True
-        )
-
-        message = f"contact routine with {json.dumps(instructions)}"
-        web_client.chat_postMessage(
-            channel="#asdc", text=message, icon_emoji=":sciencebear:"
-        )
-
-        return
 
     def flag(self, primary_key: int):
         """ mark a datapoint as bad """
@@ -1823,7 +1523,7 @@ class SDC:
 
     def stop_pumps(self):
         """ shut off the syringe and counterbalance pumps """
-        self.pump_array.stop_all(counterbalance="off")
+        self.pump_array.stop_all()
 
     def load_experiments(self, instructions_file=None):
         root_dir = os.path.dirname(self.data_dir)
@@ -1842,7 +1542,7 @@ class SDC:
 
     def batch_execute_experiments(self, instructions_file=None, capture_images=False):
         # remember z stage coordinate
-        self.register_sample_contact(self)
+        self.register_sample_contact()
 
         instructions = self.load_experiments(instructions_file)
 
@@ -1861,10 +1561,6 @@ class SDC:
                 i["initial_potential"] = potential
 
         self.run_experiment(instructions)
-
-    def purge_cell(self):
-
-        return
 
     def droplet_video(self):
 
