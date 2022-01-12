@@ -1632,7 +1632,16 @@ def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
 
 
 if __name__ == "__main__":
+    """Command-line entry point for interactive SDC work.
 
+    Example
+    ```shell
+    ipython -i asdc/localclient.py experiments/test/config.yaml -- --verbose
+    ```
+
+    The extra `--` is needed so that `ipython` passes long flags to the script
+    instead of trying to interpret them as arguments to the interpreter itself.
+    """
     parser = argparse.ArgumentParser(description="SDC client")
     parser.add_argument("configfile", type=str, help="config file")
     parser.add_argument(
