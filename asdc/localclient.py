@@ -18,7 +18,8 @@ from collections import defaultdict
 from aioconsole import ainput, aprint
 from contextlib import contextmanager, asynccontextmanager
 
-from typing import Any, List, Dict, Optional, Tuple, Union
+from numbers import Number
+from typing import Any, List, Dict, Optional, Tuple, Union, Sequence
 
 import traceback
 
@@ -68,7 +69,10 @@ logger = logging.getLogger()
 
 
 def save_plot(results: EchemData, figpath: str, post_slack: bool = True, title=None):
+    """Plot e-chem data and save image file to figures directory.
 
+    Optionally post to slack instance.
+    """
     try:
         results.plot()
     except Exception as err:
@@ -82,25 +86,25 @@ def save_plot(results: EchemData, figpath: str, post_slack: bool = True, title=N
 
 
 def relative_flow(rates):
-    """ convert a dictionary of flow rates to ratios of each component """
+    """Convert a dictionary of flow rates to ratios of each component."""
     total = sum(rates.values())
     if total == 0.0:
         return rates
     return {key: rate / total for key, rate in rates.items()}
 
 
-def to_vec(x, frame):
-    """ convert python iterable coordinates to vector in specified reference frame """
+def to_vec(x: Sequence[Number], frame: CoordSys3D):
+    """Convert python iterable coordinates to vector in specified reference frame."""
     return x[0] * frame.i + x[1] * frame.j
 
 
-def to_coords(x, frame):
-    """ express coordinates in specified reference frame """
+def to_coords(x: Sequence[Number], frame: CoordSys3D):
+    """Express coordinates in specified reference frame."""
     return frame.origin.locate_new("P", to_vec(x, frame))
 
 
 class SDC:
-    """ scanning droplet cell """
+    """Scanning droplet cell interface."""
 
     def __init__(
         self,
@@ -301,11 +305,10 @@ class SDC:
 
     def register_sample_contact(self):
         """Run this when the cell is in contact with the sample."""
-        with sdc.position.controller(ip="192.168.10.11") as pos:
-            p = pos.current_position()
+        with sdc.position.controller() as pos:
+            self.z_contact = pos.z
 
-        logger.debug(f"registering sample contact: z={p[-1]}")
-        self.z_contact = p[-1]
+        logger.debug(f"registering sample contact: z={self.z_contact}")
 
     def get_last_known_position(self, x_versa, y_versa, resume=False):
         """set up initial cell reference relative to a previous database entry if possible
@@ -313,7 +316,6 @@ class SDC:
         If not, or if `resume` is False, set initial cell reference from config file. It is
         the operator's responsibility to ensure this initial position matches the physical configuration
         """
-
         # load last known combi position and update internal state accordingly
         refs = pd.DataFrame(self.location_table.all())
 
@@ -344,7 +346,7 @@ class SDC:
         return ref
 
     def current_versa_xy(self):
-        """ get current stage coords in mm """
+        """Get current stage coords in mm."""
         with sdc.position.controller() as pos:
             x_versa = pos.x * 1e3
             y_versa = pos.y * 1e3
@@ -352,9 +354,11 @@ class SDC:
         return x_versa, y_versa
 
     def locate_wafer_center(self):
-        """align reference frames to wafer center
+        """Align reference frames to wafer center.
 
-        identify a circumcircle corresponding three points on the wafer edge
+        Identify a circumcircle corresponding three points on the wafer edge.
+        After coordinate system alignment, this function automatically aligns
+        the cell with the sample center.
         """
         wafer_edge_coords = []
         logger.info(
@@ -419,8 +423,7 @@ class SDC:
     def sync_coordinate_systems(
         self, orientation=None, register_initial=False, resume=False
     ):
-        """ set up stage reference frames relative to the cell coordinate system """
-
+        """Set up stage reference frames relative to the cell coordinate system."""
         with sdc.position.controller() as pos:
             # map m -> mm
             x_versa = pos.x * 1e3
@@ -478,7 +481,7 @@ class SDC:
         return stage
 
     def compute_position_update(self, x: float, y: float, frame: Any) -> np.ndarray:
-        """compute frame update to map combi coordinate to the specified reference frame
+        """Compute frame update to map combi coordinate to the specified reference frame.
 
         Arguments:
             x: wafer x coordinate (`mm`)
@@ -491,7 +494,6 @@ class SDC:
         Important:
             all reference frames are in `mm`; the position controller works with `meters`
         """
-
         P = to_coords([x, y], frame)
         target_coords = np.array(
             P.express_coordinates(self.stage_frame), dtype=np.float
@@ -517,7 +519,9 @@ class SDC:
         stage: Any = None,
         threshold: float = 0.0001,
     ):
-        """specify target positions in combi reference frame
+        """Align the sample with target positions `x` and `y`
+
+        Specify any reference `frame`; default is the cell frame
 
         Arguments:
             x: wafer x coordinate (`mm`)
@@ -583,7 +587,6 @@ class SDC:
             - `y`: wafer y coordinate (`mm`)
             - `reference_frame`: target reference frame (`cell`, `camera`, `laser`)
         """
-
         if self.verbose:
             logger.debug(f"local vars (move): {locals()}")
 
@@ -597,8 +600,7 @@ class SDC:
         self.move_stage(x, y, frame)
 
     def _scale_flow(self, rates: Dict, nominal_rate: float = 0.5) -> Dict:
-        """ high nominal flow_rate for running out to steady state """
-
+        """Set absolute flow rates given dictionary of solution proportions."""
         total_rate = sum(rates.values())
 
         if total_rate <= 0.0:
@@ -607,7 +609,7 @@ class SDC:
         return {key: val * nominal_rate / total_rate for key, val in rates.items()}
 
     def cleanup_droplet(self):
-        """ pick up the cell head and do a rinse and clean. """
+        """Pick up the cell head and do a rinse and clean."""
         pulse_flowrate = -10.0
 
         # start surface flushing system
@@ -642,6 +644,7 @@ class SDC:
         return
 
     def _purge(self, composition, duration, purge_ratio=0.95, purge_rate=11):
+        """Run the loop with high flow rate at some nominal composition to flush."""
         rates = self._scale_flow(composition, nominal_rate=purge_rate)
         self.pump_array.set_rates(rates, start=True, fast=True)
         self.reglo.set_rates(
@@ -883,8 +886,7 @@ class SDC:
         plot=True,
         remeasure_ocp=False,
     ):
-        """ run a one-off e-chem sequence without touching the stages or pumps """
-
+        """Run a one-off e-chem sequence without touching the stages or pumps."""
         logger.info(f"running experiment {instructions}")
 
         if type(instructions) is dict:
@@ -959,8 +961,8 @@ class SDC:
         if block:
             input("press enter to allow running the experiment...")
 
-    def run_experiment(self, instructions: List[Dict], plot=True):
-        """run an SDC experiment
+    def run_experiment(self, instructions: Sequence[Dict], plot: bool = True):
+        """Run an SDC experiment sequence
 
         args should contain a sequence of SDC experiments -- basically the "instructions"
         segment of an autoprotocol protocol
@@ -969,7 +971,6 @@ class SDC:
         TODO: define heuristic checks (and hard validation) as part of the experimental protocol API
         # heuristic check for experimental error signals?
         """
-
         # reset OCP reference value
         self.ocp_hold_value = None
 
@@ -1093,7 +1094,6 @@ class SDC:
         Add a circular trajectory.
         Not safe to run if the cell is in contact with the sample...
         """
-
         pulse_flowrate = -10.0
 
         # current stage coords in mm
@@ -1131,7 +1131,6 @@ class SDC:
 
         Return cell to the measured spot at the end...
         """
-
         sample = self.db["location"].find_one(id=location_id)
         x_combi = sample["x_combi"]
         y_combi = sample["y_combi"]
@@ -1166,7 +1165,6 @@ class SDC:
         ]
 
         """
-
         # the header block should contain the `experiment_id`
         # for the spots to be characterized
         instructions = json.loads(args)
@@ -1280,7 +1278,6 @@ class SDC:
         the header instruction should contain a list of primary keys
         corresponding to sample points that should be characterized.
         """
-
         # the header block should contain
         instructions = json.loads(args)
         experiment_id = instructions.get("experiment_id")
@@ -1310,14 +1307,12 @@ class SDC:
             self.move_stage(x_combi, y_combi, self.cell_frame)
 
     def flag(self, primary_key: int):
-        """ mark a datapoint as bad """
-
+        """Mark a datapoint as bad."""
         with self.db as tx:
             tx["experiment"].update({"id": primary_key, "flag": True}, ["id"])
 
     def coverage(self, primary_key: int, coverage_estimate: float):
-        """ record deposition coverage on (0.0,1.0). """
-
+        """Record deposition coverage on (0.0,1.0)."""
         if coverage_estimate < 0.0 or coverage_estimate > 1.0:
             _slack.post_message(
                 f":terriblywrong: *error:* coverage estimate should be in the range (0.0, 1.0)"
@@ -1329,7 +1324,7 @@ class SDC:
                 )
 
     def refl(self, primary_key: int, reflectance_readout: float):
-        """ record the reflectance of the deposit (0.0,inf). """
+        """Record the reflectance of the deposit (0.0,inf)."""
 
         if reflectance_readout < 0.0:
             _slack.post_message(
@@ -1344,7 +1339,7 @@ class SDC:
     def reflectance_linescan(
         self, stepsize: float = 0.00015, n_steps: int = 32, stage: Any = None
     ) -> Tuple[List[float], List[float]]:
-        """perform a laser reflectance linescan
+        """Perform a laser reflectance linescan.
 
         Arguments:
             stepsize: distance between linescan measurements (meters)
@@ -1385,7 +1380,7 @@ class SDC:
         return mean, var
 
     def reflectance(self, primary_key=None, stage=None):
-
+        """Acquire reflectance linescan data for sample `primary_key`."""
         # get the stage position at the start of the linescan
         with sdc.position.controller() as s:
             metadata = {"reflectance_xv": s.x, "reflectance_yv": s.y}
@@ -1427,7 +1422,6 @@ class SDC:
 
         pass an experiment index to serialize metadata to db
         """
-
         with self.light_on():
             camera = cv2.VideoCapture(self.camera_index)
             # give the camera enough time to come online before reading data...
@@ -1465,7 +1459,6 @@ class SDC:
 
         pass an experiment index to serialize metadata to db
         """
-
         with self.light_on():
             camera = cv2.VideoCapture(self.camera_index)
             # give the camera enough time to come online before reading data...
@@ -1501,14 +1494,12 @@ class SDC:
         return
 
     def bubble(self, primary_key: int):
-        """ record a bubble in the deposit """
-
+        """Record a bubble in the deposit."""
         with self.db as tx:
             tx["experiment"].update({"id": primary_key, "has_bubble": True}, ["id"])
 
     def comment(self, primary_key: int, text: str):
-        """ add a comment """
-
+        """Add a comment associated with experiment record `primary_key`."""
         row = self.experiment_table.find_one(id=primary_key)
 
         if row["comment"]:
@@ -1526,6 +1517,7 @@ class SDC:
         self.pump_array.stop_all()
 
     def load_experiments(self, instructions_file=None):
+        """Load experiment sequence from json datafile `instructions_file`."""
         root_dir = os.path.dirname(self.data_dir)
         if instructions_file is None:
             instructions_file = os.path.join(root_dir, "instructions.json")
@@ -1541,6 +1533,7 @@ class SDC:
         return instructions
 
     def batch_execute_experiments(self, instructions_file=None, capture_images=False):
+        """Execute all experiments from a json file."""
         # remember z stage coordinate
         self.register_sample_contact()
 
@@ -1555,6 +1548,7 @@ class SDC:
         return
 
     def run_hold(self, potential=0.0):
+        """One-off helper function to run quick potentiostatic hold."""
         instructions = self.default_experiment
         for i in instructions:
             if "op" in i and i["op"] == "potentiostatic":
@@ -1563,7 +1557,7 @@ class SDC:
         self.run_experiment(instructions)
 
     def droplet_video(self):
-
+        """One-off helper function to acquire video of the droplet formation procedure."""
         flowrates = {"flow_rate": 1.0, "relative_rates": {"H2O": 1.0}, "purge_time": 15}
 
         points = [[0, 15], [15, 15], [15, 0], [0, 0]]
@@ -1575,8 +1569,7 @@ class SDC:
 
 
 def sdc_client(config_file: str, resume: bool, zmq_pub: bool, verbose: bool):
-    """ set up scanning droplet cell client loading from CONFIG_FILE """
-
+    """Set up scanning droplet cell client loading from CONFIG_FILE."""
     experiment_root, _ = os.path.split(config_file)
 
     with open(config_file, "r") as f:
