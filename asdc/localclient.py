@@ -608,40 +608,40 @@ class SDC:
 
         return {key: val * nominal_rate / total_rate for key, val in rates.items()}
 
-    def cleanup_droplet(self):
-        """Pick up the cell head and do a rinse and clean."""
-        pulse_flowrate = -10.0
+    # def cleanup_droplet(self):
+    #     """Pick up the cell head and do a rinse and clean."""
+    #     pulse_flowrate = -10.0
 
-        # start surface flushing system
-        self.reglo.set_rates({Channel.RINSE: 5.0, Channel.NEEDLE: -10.0})
-        time.sleep(1)
+    #     # start surface flushing system
+    #     self.reglo.set_rates({Channel.RINSE: 5.0, Channel.NEEDLE: -10.0})
+    #     time.sleep(1)
 
-        # lift up the cell; don't set it back down
-        with sdc.position.controller() as pos:
-            pos.update_z(delta=abs(self.wetting_height))
+    #     # lift up the cell; don't set it back down
+    #     with sdc.position.controller() as pos:
+    #         pos.update_z(delta=abs(self.wetting_height))
 
-        if self.cleanup_pause > 0:
-            cleanup_drain_rate = -10.0
-            cleanup_loop_rate = -cleanup_drain_rate / 2
-            logger.debug("cleaning up...")
-            self.reglo.set_rates(
-                {Channel.DRAIN: cleanup_drain_rate, Channel.LOOP: cleanup_loop_rate}
-            )
+    #     if self.cleanup_pause > 0:
+    #         cleanup_drain_rate = -10.0
+    #         cleanup_loop_rate = -cleanup_drain_rate / 2
+    #         logger.debug("cleaning up...")
+    #         self.reglo.set_rates(
+    #             {Channel.DRAIN: cleanup_drain_rate, Channel.LOOP: cleanup_loop_rate}
+    #         )
 
-            if self.cleanup_pulse_duration > 0:
-                self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
-                time.sleep(self.cleanup_pulse_duration)
-                self.reglo.continuousFlow(cleanup_drain_rate, channel=Channel.DRAIN)
+    #         if self.cleanup_pulse_duration > 0:
+    #             self.reglo.continuousFlow(pulse_flowrate, channel=Channel.DRAIN)
+    #             time.sleep(self.cleanup_pulse_duration)
+    #             self.reglo.continuousFlow(cleanup_drain_rate, channel=Channel.DRAIN)
 
-            # run the RINSE channel for only half the cleanup duration
-            # to allow the NEEDLE time to clean everything up
-            time.sleep(self.cleanup_pause / 2)
-            self.reglo.stop(Channel.RINSE)
+    #         # run the RINSE channel for only half the cleanup duration
+    #         # to allow the NEEDLE time to clean everything up
+    #         time.sleep(self.cleanup_pause / 2)
+    #         self.reglo.stop(Channel.RINSE)
 
-            time.sleep(self.cleanup_pause / 2)
-            self.reglo.stop((Channel.LOOP, Channel.DRAIN))
+    #         time.sleep(self.cleanup_pause / 2)
+    #         self.reglo.stop((Channel.LOOP, Channel.DRAIN))
 
-        return
+    #     return
 
     def _purge(self, composition, duration, purge_ratio=0.95, purge_rate=11):
         """Run the loop with high flow rate at some nominal composition to flush."""
@@ -1085,19 +1085,29 @@ class SDC:
         post = header.get("post", [])
 
         for p in post:
+            if p == "clean":
+                self.clean_droplet()
             if p == "image":
                 self.collect_image(location_id)
 
-    def clean_droplet(self, stage=None):
+    def clean_droplet(self):
         """Just clean up without a rinse.
 
+        Assumes cell is in contact with sample.
         Add a circular trajectory.
-        Not safe to run if the cell is in contact with the sample...
         """
         pulse_flowrate = -10.0
 
-        # current stage coords in mm
-        x_versa, y_versa = self.current_versa_xy()
+        # lift up the cell; don't set it back down
+        with sdc.position.controller(speed=self.speed) as stage:
+
+            # note: units are in meters!
+            # this should be the same as self.z_contact + self.wetting_height
+            stage.z += abs(self.wetting_height)
+
+            # current stage coords in mm
+            x_versa = 1e3 * stage.x
+            y_versa = 1e3 * stage.y
 
         # plan a circular trajectory with 2mm radius
         c = make_circle(r=2, n=30)
@@ -1117,39 +1127,33 @@ class SDC:
                 time.sleep(self.cleanup_pulse_duration)
                 self.reglo.continuousFlow(cleanup_drain_rate, channel=Channel.DRAIN)
 
+            # move the sample in a circular trajectory to help cleanup
             # time.sleep(self.cleanup_pause)
-            for stage_target in stage_targets:
-                self.move_stage(
-                    stage_target[0], stage_target[1], self.stage_frame, stage=stage
-                )
-                time.sleep(self.cleanup_pause / n_segments)
+            with sdc.position.controller(speed=self.speed) as stage:
+                for stage_target in stage_targets:
+                    self.move_stage(
+                        stage_target[0], stage_target[1], self.stage_frame, stage=stage
+                    )
+                    time.sleep(self.cleanup_pause / n_segments)
 
             self.reglo.stop((Channel.LOOP, Channel.DRAIN))
 
-    def collect_image(self, location_id, cleanup=True):
-        """Clean up droplet and collect image for sample `location_id`.
+    def collect_image(self, location_id):
+        """Collect image for sample `location_id`.
 
-        Return cell to the measured spot at the end...
+        Leaves the cell at image capture configuration.
         """
         sample = self.db["location"].find_one(id=location_id)
         x_combi = sample["x_combi"]
         y_combi = sample["y_combi"]
 
-        with sdc.position.sync_z_step(
-            height=self.wetting_height, speed=self.speed, revert=False
-        ) as stage:
+        with sdc.position.controller(speed=self.speed) as stage:
+            # update target z coordinate in meters
+            stage.z = self.z_contact + abs(self.characterization_height)
 
-            if cleanup and self.cleanup_pause > 0:
-                self.clean_droplet(stage=stage)
-
-            height_difference = self.characterization_height - self.wetting_height
-            height_difference = max(0, height_difference)
-            with sdc.position.sync_z_step(
-                height=height_difference, speed=self.speed, revert=False
-            ):
-
-                self.move_stage(x_combi, y_combi, self.camera_frame)
-                self.capture_image_new(sample["id"])
+            # align the surface cam with specified sample
+            self.move_stage(x_combi, y_combi, self.camera_frame)
+            self.capture_image_new(sample["id"])
 
     def run_characterization(self, args: str):
         """perform cell cleanup and characterization
