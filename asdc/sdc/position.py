@@ -30,6 +30,10 @@ from System.Net import IPAddress
 from SolartronAnalytical.DeviceInterface.NanomotionXCD import XCD, XcdSettings
 
 
+# stage limits in meters
+LIMITS = {"x": (0, 0.1), "y": (0, 0.1), "z": (0, 0.1)}
+
+
 @contextmanager
 def controller(ip=CONTROLLER_ADDRESS, speed=1e-4):
     """ context manager that wraps position controller class Position. """
@@ -295,6 +299,13 @@ class Position:
         step_height: ease off vertically before updating position
         poll_interval: busy-waiting polling interval (seconds)
         """
+
+        # check setpoint against stage limits.
+        initial_position = np.array(self.current_position())
+        setpoint = initial_position + np.array(delta)
+        for s, (axis, limits) in zip(setpoint, LIMITS.items()):
+            if s < limits[0] or s > limits[1]:
+                raise ValueError(f"setpoint {axis}={s} outside limits.")
 
         if step_height is not None and step_height > 0:
             step_height = abs(step_height)
