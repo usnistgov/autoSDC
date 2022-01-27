@@ -300,6 +300,9 @@ class Position:
         poll_interval: busy-waiting polling interval (seconds)
         """
 
+        if len(delta) == 2:
+            delta = [delta[0], delta[1], 0]
+
         # check setpoint against stage limits.
         initial_position = np.array(self.current_position())
         setpoint = initial_position + np.array(delta)
