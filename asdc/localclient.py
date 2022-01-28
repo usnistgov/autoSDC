@@ -156,7 +156,8 @@ class SDC:
         # which wafer direction is aligned with position controller +x direction?
         self.frame_orientation = config.get("frame_orientation", "-y")
 
-        self.step_height = config.get("step_height", 0.0)
+        # step height in meters
+        self.step_height = config.get("step_height", 0.01)
         self.cleanup_pause = config.get("cleanup_pause", 0)
         self.cleanup_pulse_duration = config.get("cleanup_pulse_duration", 0)
         self.cell = config.get("cell", "INTERNAL")
