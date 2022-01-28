@@ -136,7 +136,7 @@ class PumpArray:
 
             if check_response:
                 s = ser.read(self.buffer_size)
-                logger.debug(s.decode())
+                logger.debug(s)
                 return s
         else:
             with serial.Serial(
@@ -145,7 +145,7 @@ class PumpArray:
                 ser.write(encode(command))
                 if check_response:
                     s = ser.read(self.buffer_size)
-                    logger.debug(s.decode())
+                    logger.debug(s)
                     return s
 
     def refresh_ui(self, pump_id=0):
