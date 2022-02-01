@@ -25,8 +25,13 @@ class LSVData(EchemData):
     def plot(self, fit=False):
         """ plot LSV: current vs potential """
         # # super().plot('current', 'potential')
-        plt.plot(self["potential"], self["current"])
+
+        abscurrent = np.abs(self["current"])
+        abscurrent = np.clip(abscurrent, 1e-9, None)
+        log_i = np.log10(abscurrent)
+
+        plt.plot(self["potential"], log_i)
         plt.xlabel("potential (V)")
-        plt.ylabel("current (A)")
+        plt.ylabel("log current (A)")
 
         plt.tight_layout()
