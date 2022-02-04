@@ -223,21 +223,25 @@ class SDC:
 
         self.cell_frame = CoordSys3D("cell")
 
+        # store sample/sample holder angle
+        # for use in wafer orientation routines
+        self.sample_angle = 0
         if self.frame_orientation == "-y":
-            theta = 0
+            self.sample_angle = 0
         if self.frame_orientation == "+y":
-            theta = sympy.pi
+            self.sample_angle = sympy.pi
 
         rel_frame = self.cell_frame.orient_new_axis(
-            "rel_frame", theta, self.cell_frame.k
+            "rel_frame", self.sample_angle, self.cell_frame.k
         )
+        self.sample_holder_frame = rel_frame
 
         # shift relative to the sample holder reference frame
         # then rotate into the sample reference frame
         cam = rel_frame.locate_new(
             "_camera", camera_offset[0] * rel_frame.i + camera_offset[1] * rel_frame.j,
         )
-        self.camera_frame = cam.orient_new_axis("camera", -theta, cam.k)
+        self.camera_frame = cam.orient_new_axis("camera", -self.sample_angle, cam.k)
 
         self.laser_frame = rel_frame.locate_new(
             "laser", laser_offset[0] * rel_frame.i + laser_offset[1] * rel_frame.j,
@@ -378,7 +382,7 @@ class SDC:
 
         logger.debug(f"wafer edge coordinates: {wafer_edge_coords}")
         logger.debug(f"center coordinate: {center}")
-        logger.debug(f"wafer diameter: {0.002 * tri.circumradius} mm")
+        logger.debug(f"wafer diameter: {2000 * tri.circumradius} mm")
 
         # move the stage to focus the camera on the center of the wafer...
         current = np.array(self.current_versa_xy())
@@ -394,8 +398,10 @@ class SDC:
             stage.update(delta=delta)
 
         # set up the stage reference frame
-        # relative to the last recorded positions
-        cam = self.camera_frame
+        # rotate into the relative reference frame...
+        cam = self.camera_frame.orient_new_axis(
+            "camera", self.sample_angle, self.camera_frame.k
+        )
 
         # start assuming orientation -y
         _stage = cam.orient_new(
@@ -436,11 +442,13 @@ class SDC:
         # relative to the last recorded positions
         cell = self.cell_frame
 
-        if self.frame_orientation == "-y":
-            rel_cell = cell.orient_new_axis("rec_cell", 0, cell.k)
+        # if self.frame_orientation == "-y":
+        #     rel_cell = cell.orient_new_axis("rel_cell", 0, cell.k)
 
-        if self.frame_orientation == "+y":
-            rel_cell = cell.orient_new_axis("rel_cell", sympy.pi, cell.k)
+        # if self.frame_orientation == "+y":
+        #     rel_cell = cell.orient_new_axis("rel_cell", sympy.pi, cell.k)
+
+        rel_cell = cell.orient_new_axis("rel_cell", self.sample_angle, cell.k)
 
         # orient the stage wrt to the wafer holder coordinate system
         # (the reference frame that doesn't depend on wafer orientation)
