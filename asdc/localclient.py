@@ -425,7 +425,7 @@ class SDC:
         origin = np.array(origin).squeeze()[:-1]  # truncate to 2D
 
         l = np.array(center) - origin
-        v_origin = l[0] * self.lab_camera_frame.i + l[1] * self.lab_camera_frame.j
+        v_origin = l[1] * self.lab_camera_frame.i + l[0] * self.lab_camera_frame.j
 
         stage = _stage.locate_new("stage", v_origin)
         self.stage_frame = stage
