@@ -249,7 +249,7 @@ class SDC:
         self.laser_frame = self.sample_holder_frame.locate_new(
             "laser",
             self.laser_offset[0] * rel_frame.i
-            + self.laser_offset[1] * self.sample_holder_frame_frame.j,
+            + self.laser_offset[1] * self.sample_holder_frame.j,
         )
         self.xray_frame = self.sample_holder_frame.locate_new(
             "xray",
