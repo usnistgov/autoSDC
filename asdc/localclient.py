@@ -217,9 +217,9 @@ class SDC:
 
         # define reference frames
         # load camera and laser offsets from configuration file
-        camera_offset = config.get("camera_offset", [38.3, -0.4])
-        laser_offset = config.get("laser_offset", [38, -0.3])
-        xray_offset = config.get("xray_offset", [44.74, -4.4035])
+        self.camera_offset = config.get("camera_offset", [38.3, -0.4])
+        self.laser_offset = config.get("laser_offset", [38, -0.3])
+        self.xray_offset = config.get("xray_offset", [44.74, -4.4035])
 
         self.cell_frame = CoordSys3D("cell")
 
@@ -238,16 +238,23 @@ class SDC:
 
         # shift relative to the sample holder reference frame
         # then rotate into the sample reference frame
-        cam = rel_frame.locate_new(
-            "_camera", camera_offset[0] * rel_frame.i + camera_offset[1] * rel_frame.j,
+        cam = self.sample_holder_frame.locate_new(
+            "_camera",
+            self.camera_offset[0] * rel_frame.i
+            + self.camera_offset[1] * self.sample_holder_frame.j,
         )
+        self.lab_camera_frame = cam
         self.camera_frame = cam.orient_new_axis("camera", -self.sample_angle, cam.k)
 
-        self.laser_frame = rel_frame.locate_new(
-            "laser", laser_offset[0] * rel_frame.i + laser_offset[1] * rel_frame.j,
+        self.laser_frame = self.sample_holder_frame.locate_new(
+            "laser",
+            self.laser_offset[0] * rel_frame.i
+            + self.laser_offset[1] * self.sample_holder_frame_frame.j,
         )
-        self.xray_frame = rel_frame.locate_new(
-            "xray", xray_offset[0] * rel_frame.i + xray_offset[1] * rel_frame.j,
+        self.xray_frame = self.sample_holder_frame.locate_new(
+            "xray",
+            self.xray_offset[0] * rel_frame.i
+            + self.xray_offset[1] * self.sample_holder_frame.j,
         )
 
         if self.resume:
@@ -378,6 +385,7 @@ class SDC:
         tri = geometry.Triangle(*wafer_edge_coords)
 
         # center is the versascan coordinate such that the camera frame is on the wafer origin
+        # shift this point
         center = np.array(tri.circumcenter, dtype=float)
 
         logger.debug(f"wafer edge coordinates: {wafer_edge_coords}")
@@ -397,35 +405,60 @@ class SDC:
             input("press enter to allow lateral cell motion...")
             stage.update(delta=delta)
 
-        # set up the stage reference frame
-        # rotate into the relative reference frame...
-        cam = self.camera_frame.orient_new_axis(
-            "camera", self.sample_angle, self.camera_frame.k
-        )
+        # take a different approach -- follow resuming code
+        cell = self.cell_frame
+        rel_cell = cell.orient_new_axis("rel_cell", self.sample_angle, cell.k)
 
-        # start assuming orientation -y
-        _stage = cam.orient_new(
+        # set up the stage coincident with the canonical sample holder frame
+        _stage = rel_cell.orient_new(
             "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
         )
 
-        # find the origin of the combi wafer in the coincident stage frame
-        v = 0.0 * cam.i + 0.0 * cam.j
-        combi_origin = v.to_matrix(_stage)
+        # now we have the coordinate that puts the camera over the wafer center
+        # so if we subtract camera offset  from that point we should get the
+        # stage coordinate that centers the cell over the wafer
 
-        # truncate to 2D vector
-        combi_origin = np.array(combi_origin).squeeze()[:-1]
+        # find the origin of the sample holder in the coincident stage frame
+        v = 0.0 * self.lab_camera_frame.i + 0.0 * self.lab_camera_frame.j
+        origin = v.to_matrix(_stage)
 
-        # now find the origin of the stage frame
-        # xv_init = np.array([ref['x_versa'], ref['y_versa']])
-        xv_init = np.array(center)
+        origin = np.array(origin).squeeze()[:-1]  # truncate to 2D
 
-        l = xv_init - combi_origin
-        v_origin = l[1] * cam.i + l[0] * cam.j
+        l = np.array(center) - origin
+        v_origin = l[0] * self.lab_camera_frame.i + l[1] * self.lab_camera_frame.j
 
-        # construct the shifted stage frame
         stage = _stage.locate_new("stage", v_origin)
-
         self.stage_frame = stage
+
+        # # set up the stage reference frame
+        # # rotate into the relative reference frame...
+        # cam = self.camera_frame.orient_new_axis(
+        #     "camera", self.sample_angle, self.camera_frame.k
+        # )
+
+        # # start assuming orientation -y
+        # _stage = cam.orient_new(
+        #     "_stage", BodyOrienter(sympy.pi / 2, sympy.pi, 0, "ZYZ")
+        # )
+
+        # # find the origin of the combi wafer in the coincident stage frame
+        # v = 0.0 * cam.i + 0.0 * cam.j
+        # combi_origin = v.to_matrix(_stage)
+
+        # # truncate to 2D vector
+        # combi_origin = np.array(combi_origin).squeeze()[:-1]
+
+        # # now find the origin of the stage frame
+        # # xv_init = np.array([ref['x_versa'], ref['y_versa']])
+        # xv_init = np.array(center)
+
+        # l = xv_init - combi_origin
+        # v_origin = l[1] * cam.i + l[0] * cam.j
+
+        # # construct the shifted stage frame
+        # stage = _stage.locate_new("stage", v_origin)
+
+        # self.stage_frame = stage
 
     def sync_coordinate_systems(
         self, orientation=None, register_initial=False, resume=False
