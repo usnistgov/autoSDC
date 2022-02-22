@@ -137,8 +137,13 @@ class TafelData(EchemData):
 
     def fit(self, window=(0.025, 0.25), truncate=False, median=True, tafel_binsize=.01,lsv_threshold=.8):
         isna = np.isnan(self["current"].values)
+
         potential = self["potential"].values[~isna]
         current = self["current"].values[~isna]
+
+        istoolow = self["current"].values<10**-8
+        potential = self["potential"].values[~istoolow]
+        current = self["current"].values[~istoolow]
         self.ocp = tafelfit.estimate_ocp(potential, current, w=3)
 
         u = potential - self.ocp
