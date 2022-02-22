@@ -141,9 +141,9 @@ class TafelData(EchemData):
         potential = self["potential"].values[~isna]
         current = self["current"].values[~isna]
 
-        istoolow = self["current"].values<10**-8
-        potential = self["potential"].values[~istoolow]
-        current = self["current"].values[~istoolow]
+        istoolow = self["current"].values<0
+        potential = potential.values[~istoolow]
+        current = current.values[~istoolow]
         self.ocp = tafelfit.estimate_ocp(potential, current, w=3)
 
         u = potential - self.ocp
