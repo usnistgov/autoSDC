@@ -94,7 +94,7 @@ def process_row(row, db, dir=dir):
     # unpack flowrate stuff
     flow_instructions = instructions[0]
     row["flow_rate"] = flow_instructions["flow_rate"]
-    row["composition"] = flow_instructions["composition"]
+    row["relative_rates"] = flow_instructions["relative_rates"]
     row["purge_time"] = flow_instructions["purge_time"]
 
     # read and process pH logs
